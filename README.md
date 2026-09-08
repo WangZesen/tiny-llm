@@ -67,12 +67,33 @@ Training evaluates a fixed sample of 1,048,576 validation targets each epoch and
 the full validation split after the last epoch. Reported loss is token-weighted
 cross-entropy in nats. Padding in the last validation block does not contribute.
 
+## Sequential buffered loading
+
+Training partitions the selected cache prefix into sequence-aligned ranges. Each
+range is read sequentially across binary shards into a compact `uint16` buffer,
+then drained using shuffled sequence indices. Only the requested microbatch is
+converted to `int64`; batches and virtual epochs can cross buffer boundaries.
+The original sequence boundaries and next-token targets are preserved.
+
+`data.buffer_size_mib: 64` controls the active token buffer. With the default
+`data.prefetch: true`, one background reader loads the next range, using about
+128 MiB of token storage in total (plus two lookahead tokens, row indices, the
+validation subset, and microbatch tensors). Set prefetch to false for one-buffer
+loading. `data.shuffle_buffer` remains the separate preparation-time document
+shuffle setting. No token-cache regeneration is needed.
+
+`runtime.seed` independently determines range order and each range's row order;
+thread timing does not affect samples. Full validation streams in original order.
+The fixed epoch-validation subset is collected during one sequential validation
+scan at startup and retained in RAM for subsequent epochs (about 2 MiB by default).
+Startup also retains the existing cache checksum verification.
+
 ## Run the complete tuning campaign
 
 ```bash
 uv run tiny-llm sweep --config configs/20m.yaml \
-  --benchmarks runs/benchmarks --output runs/campaign --gpus 0,1
-uv run tiny-llm report --runs runs/campaign
+  --benchmarks runs/benchmarks --output runs/campaign-buffered --gpus 0,1
+uv run tiny-llm report --runs runs/campaign-buffered
 ```
 
 The sweep runs one independent training process per GPU, never distributed
@@ -95,7 +116,16 @@ Each run contains:
 - `final.pt` and `result.json`: final training state and full-validation metrics.
 
 Resume using the saved configuration. Device and output-directory changes are
-allowed; recipe, precision, data identity, and batch changes are rejected.
+allowed, as is changing `data.prefetch`. Recipe, precision, data identity, batch,
+seed, and buffer-size changes are rejected. Checkpoint format v2 records loader
+format v1 and a committed sample cursor. Resume reconstructs the current range
+and row position directly, without replaying earlier training ranges or saving
+buffer contents. The normal startup cache checksum scan still runs.
+
+Old global-permutation checkpoints cannot resume training under this loader;
+start a fresh run. Their model weights remain usable for evaluation and analysis.
+The previous campaign is preserved under `runs/campaign`; fresh buffered runs use
+`runs/campaign-buffered` and reuse the existing model computation benchmarks.
 
 ```bash
 uv run tiny-llm train --config runs/baseline/resolved.yaml \

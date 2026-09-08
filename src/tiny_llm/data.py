@@ -1,4 +1,4 @@
-"""One-time C4 tokenization and random-access packed token caches."""
+"""C4 token caches and bounded, sequential readers with in-memory shuffling."""
 
 import hashlib
 import json
@@ -7,6 +7,7 @@ import os
 import shutil
 import time
 from bisect import bisect_right
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import numpy as np
@@ -212,19 +213,21 @@ class TokenCache:
             "identity"
         ):
             raise ValueError("invalid cache manifest version or identity")
-        self.maps: dict[str, list] = {}
+        self.paths: dict[str, list[Path]] = {}
         self.offsets: dict[str, list[int]] = {}
+        self._subset_key = None
+        self._subset = None
         for split, info in self.manifest["splits"].items():
-            offsets, arrays = [0], []
+            offsets, paths = [0], []
             for shard in info["shards"]:
                 path = self.directory / shard["file"]
                 if path.stat().st_size != shard["tokens"] * 2:
                     raise ValueError(f"truncated token shard: {path}")
-                arrays.append(np.memmap(path, dtype="<u2", mode="r"))
+                paths.append(path)
                 offsets.append(offsets[-1] + shard["tokens"])
             if offsets[-1] != info["tokens"]:
                 raise ValueError("manifest token count does not match shards")
-            self.maps[split], self.offsets[split] = arrays, offsets
+            self.paths[split], self.offsets[split] = paths, offsets
 
     def validate_config(self, config: Config):
         data, manifest = config.data, self.manifest
@@ -256,19 +259,36 @@ class TokenCache:
         return math.ceil(targets / length) if partial else targets // length
 
     def read(self, split: str, start: int, stop: int) -> np.ndarray:
+        """Read a contiguous interval into a compact owning array, without mmap."""
         if not 0 <= start < stop <= self.offsets[split][-1]:
             raise IndexError("token range outside cache")
-        pieces = []
+        values = np.empty(stop - start, dtype="<u2")
+        self.read_into(split, start, stop, values)
+        return values
+
+    def read_into(self, split: str, start: int, stop: int, destination: np.ndarray):
+        """Fill a preallocated uint16 array using sequential reads within each file."""
+        if not 0 <= start < stop <= self.offsets[split][-1]:
+            raise IndexError("token range outside cache")
+        if destination.dtype != np.dtype("<u2") or not destination.flags.c_contiguous:
+            raise ValueError("destination must be a contiguous uint16 array")
+        if destination.size < stop - start:
+            raise ValueError("destination is too small")
+        output = memoryview(destination).cast("B")
+        written = 0
         while start < stop:
             index = bisect_right(self.offsets[split], start) - 1
             end = min(stop, self.offsets[split][index + 1])
-            pieces.append(
-                self.maps[split][index][
-                    start - self.offsets[split][index] : end - self.offsets[split][index]
-                ]
-            )
+            remaining = 2 * (end - start)
+            with self.paths[split][index].open("rb", buffering=0) as handle:
+                handle.seek(2 * (start - self.offsets[split][index]))
+                while remaining:
+                    size = handle.readinto(output[written : written + remaining])
+                    if not size:
+                        raise OSError(f"unexpected EOF in token shard: {self.paths[split][index]}")
+                    written += size
+                    remaining -= size
             start = end
-        return np.concatenate(pieces).astype(np.int64)
 
     def batch(self, split: str, indices, length: int, device: torch.device):
         inputs = np.zeros((len(indices), length), dtype=np.int64)
@@ -279,10 +299,198 @@ class TokenCache:
             values = self.read(split, start, min(start + length + 1, count))
             inputs[row, : len(values) - 1] = values[:-1]
             targets[row, : len(values) - 1] = values[1:]
-        result = [torch.from_numpy(values) for values in (inputs, targets)]
-        if device.type == "cuda":
-            result = [values.pin_memory() for values in result]
-        return tuple(values.to(device, non_blocking=True) for values in result)
+        return transfer_batch(inputs, targets, device)
+
+    def validation_subset(self, config: Config, should_stop=None):
+        """Collect the fixed subset in one sequential scan, retaining only its tokens."""
+        length = config.model.context_length
+        key = (length, config.evaluation.seed, config.evaluation.subset_blocks)
+        if key == self._subset_key:
+            return self._subset
+        indices = validation_indices(self, config, full=False)
+        tokens = np.zeros((len(indices), length + 1), dtype="<u2")
+        valid = np.minimum(length, self.offsets["validation"][-1] - 1 - indices * length)
+        capacity = buffer_blocks(config.data.buffer_size_mib, length)
+        total = self.blocks("validation", length, partial=True)
+        for first in range(0, total, capacity):
+            if should_stop is not None and should_stop():
+                raise InterruptedError("validation subset preparation interrupted")
+            end = min(total, first + capacity)
+            values = self.read(
+                "validation", first * length, min(end * length + 1, self.offsets["validation"][-1])
+            )
+            left, right = np.searchsorted(indices, [first, end])
+            for row in range(left, right):
+                offset = (int(indices[row]) - first) * length
+                count = int(valid[row]) + 1
+                tokens[row, :count] = values[offset : offset + count]
+            del values
+        self._subset_key, self._subset = key, (tokens, valid)
+        return self._subset
+
+
+def transfer_batch(inputs: np.ndarray, targets: np.ndarray, device: torch.device):
+    result = [torch.from_numpy(values) for values in (inputs, targets)]
+    if device.type == "cuda":
+        result = [values.pin_memory() for values in result]
+    return tuple(values.to(device, non_blocking=True) for values in result)
+
+
+def subset_batch(tokens, valid, device: torch.device):
+    inputs, targets = tokens[:, :-1].astype(np.int64), tokens[:, 1:].astype(np.int64)
+    mask = np.arange(targets.shape[1])[None, :] >= valid[:, None]
+    inputs[mask], targets[mask] = 0, -100
+    return transfer_batch(inputs, targets, device)
+
+
+def buffer_blocks(size_mib: float, length: int) -> int:
+    capacity = int(size_mib * 2**20) // (2 * length)
+    if capacity < 1:
+        raise ValueError("buffer must hold at least one uint16 sequence")
+    return capacity
+
+
+class BufferedTokenLoader:
+    """Fill, shuffle by row index, and drain; at most two compact token buffers.
+
+    A range contains complete original blocks plus one lookahead token (two extra
+    bytes). Range order and row permutations have independent seed namespaces.
+    Only the committed sample cursor is needed to resume, even with prefetching.
+    """
+
+    VERSION = 1
+
+    def __init__(
+        self,
+        cache: TokenCache,
+        split: str,
+        length: int,
+        blocks: int,
+        size_mib: float = 64,
+        seed: int | None = None,
+        prefetch: bool = True,
+        cursor: int = 0,
+    ):
+        if not 0 <= cursor <= blocks or not 0 < blocks <= cache.blocks(split, length, partial=True):
+            raise ValueError("invalid buffered loader block budget or cursor")
+        self.cache, self.split, self.length = cache, split, length
+        self.blocks, self.cursor, self.seed = blocks, cursor, seed
+        self.capacity = buffer_blocks(size_mib, length)
+        ranges = math.ceil(blocks / self.capacity)
+        self.order = (
+            np.arange(ranges)
+            if seed is None
+            else np.random.default_rng(np.random.SeedSequence([seed, 0])).permutation(ranges)
+        )
+        sizes = np.minimum(self.capacity, blocks - self.order * self.capacity)
+        self.ends = np.cumsum(sizes)
+        self.range_position = int(np.searchsorted(self.ends, cursor, side="right"))
+        self.identity = dict(
+            version=self.VERSION,
+            cache_identity=cache.manifest["identity"],
+            split=split,
+            length=length,
+            blocks=blocks,
+            buffer_blocks=self.capacity,
+            seed=seed,
+        )
+        self.prefetch = prefetch
+        self._executor = None
+        self._future = None
+        self._active = None
+        self._windows = None
+        self._row_order = None
+        self._closed = False
+
+    def _load(self, position: int):
+        first = int(self.order[position]) * self.capacity
+        end = min(self.blocks, first + self.capacity)
+        values = np.empty((end - first) * self.length + 1, dtype="<u2")
+        stop = min(end * self.length + 1, self.cache.offsets[self.split][-1])
+        self.cache.read_into(self.split, first * self.length, stop, values)
+        values[stop - first * self.length :] = 0
+        return values
+
+    def _activate(self):
+        # Release all views before promoting the future and scheduling another read.
+        self._windows = self._active = self._row_order = None
+        if self._future is None:
+            self._active = self._load(self.range_position)
+        else:
+            self._active = self._future.result()
+            self._future = None
+        count = (len(self._active) - 1) // self.length
+        self._windows = np.lib.stride_tricks.sliding_window_view(self._active, self.length + 1)[
+            :: self.length
+        ]
+        range_id = int(self.order[self.range_position])
+        self._row_order = (
+            np.arange(count)
+            if self.seed is None
+            else np.random.default_rng(
+                np.random.SeedSequence([self.seed, 1, range_id])
+            ).permutation(count)
+        )
+        if self.prefetch and self.range_position + 1 < len(self.order):
+            if self._executor is None:
+                self._executor = ThreadPoolExecutor(
+                    max_workers=1, thread_name_prefix="token-reader"
+                )
+            self._future = self._executor.submit(self._load, self.range_position + 1)
+
+    def next_batch(self, count: int, device: torch.device):
+        if self._closed:
+            raise RuntimeError("loader is closed")
+        if count <= 0 or self.cursor + count > self.blocks:
+            raise ValueError("batch exceeds remaining token blocks")
+        inputs = np.empty((count, self.length), dtype=np.int64)
+        targets = np.empty_like(inputs)
+        filled = 0
+        while filled < count:
+            if self._active is None:
+                self._activate()
+            start = int(self.ends[self.range_position - 1]) if self.range_position else 0
+            offset = self.cursor - start
+            take = min(count - filled, int(self.ends[self.range_position]) - self.cursor)
+            rows = self._row_order[offset : offset + take]
+            values = self._windows[rows]  # Only this microbatch is gathered/copied.
+            inputs[filled : filled + take] = values[:, :-1]
+            targets[filled : filled + take] = values[:, 1:]
+            first = int(self.order[self.range_position]) * self.capacity
+            if (first + len(self._row_order)) * self.length >= self.cache.offsets[self.split][-1]:
+                valid = self.cache.offsets[self.split][-1] - 1 - (first + rows) * self.length
+                mask = np.arange(self.length)[None, :] >= valid[:, None]
+                inputs[filled : filled + take][mask] = 0
+                targets[filled : filled + take][mask] = -100
+            self.cursor += take
+            filled += take
+            if self.cursor == self.ends[self.range_position]:
+                self.range_position += 1
+                self._windows = self._active = self._row_order = None
+        return transfer_batch(inputs, targets, device)
+
+    def state_dict(self, committed_cursor: int | None = None):
+        cursor = self.cursor if committed_cursor is None else committed_cursor
+        if not 0 <= cursor <= self.cursor:
+            raise ValueError("committed cursor is ahead of the loader")
+        return self.identity | {"cursor": cursor}
+
+    def validate_state(self, state: dict):
+        if state != self.state_dict():
+            raise ValueError("incompatible buffered loader state")
+
+    def close(self):
+        if self._executor is not None:
+            self._executor.shutdown(wait=True, cancel_futures=True)
+            self._executor = None
+        self._future = self._windows = self._active = self._row_order = None
+        self._closed = True
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.close()
 
 
 def validation_indices(cache: TokenCache, config: Config, full: bool):

@@ -37,6 +37,13 @@ Virtual epoch boundaries do not reset the schedule, optimizer, or data order.
 The token budget counts tied embeddings once; the report also records the
 non-embedding count to avoid confusing different papers' size conventions.
 
+Training order uses loader v1: sequence-aligned 64 MiB ranges shuffled by seed,
+then independently shuffled sequence indices within each resident range. One
+prefetched range overlaps I/O with model computation. The training prefix and
+virtual epoch boundaries are unchanged; the sequence order differs from the
+previous global permutation, so the buffered campaign starts from scratch under
+`runs/campaign-buffered`. Previous results remain under `runs/campaign`.
+
 ## Twelve complete runs
 
 1. **20M, six runs:** LR {0.0003, 0.001, 0.003} × decay {0, 0.1}; beta2=0.95.

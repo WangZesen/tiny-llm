@@ -1,0 +1,42 @@
+{
+  "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151",
+  "buffer_size_mib": 64,
+  "sequence_length": 1024,
+  "micro_batch_size": 16,
+  "blocks": 98311,
+  "targets": 100670464,
+  "ranges": 4,
+  "seed": 42,
+  "cpu_threads": 1,
+  "note": "Local data-only wall time includes file reads, buffer allocation, row shuffling, uint16 gathers and int64 CPU batch conversion; excludes model, H2D transfer and cache verification. OS page cache was not dropped. No slow-disk or old-loader comparison.",
+  "measurements": [
+    {
+      "trial": 1,
+      "prefetch": false,
+      "seconds": 0.1636127596721053,
+      "targets_per_second": 615297145.5389706,
+      "token_mib_per_second": 1173.5861693171894
+    },
+    {
+      "trial": 2,
+      "prefetch": true,
+      "seconds": 0.15589452721178532,
+      "targets_per_second": 645760090.4952712,
+      "token_mib_per_second": 1231.6896257310318
+    },
+    {
+      "trial": 3,
+      "prefetch": true,
+      "seconds": 0.12305804435163736,
+      "targets_per_second": 818073003.9259763,
+      "token_mib_per_second": 1560.3504255790258
+    },
+    {
+      "trial": 4,
+      "prefetch": false,
+      "seconds": 0.13545316644012928,
+      "targets_per_second": 743212334.1649356,
+      "token_mib_per_second": 1417.5650294588768
+    }
+  ]
+}

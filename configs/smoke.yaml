@@ -16,6 +16,8 @@ data:
   tokenizer_revision: main
   shuffle_seed: 42
   shuffle_buffer: 10000
+  buffer_size_mib: 64
+  prefetch: true
   shard_tokens: 16777216
   tokenize_batch_size: 256
   prepare_train_tokens: 262144

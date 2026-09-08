@@ -74,6 +74,7 @@ def test_evaluation_state_and_weighting(tiny_config, cache_dir):
 def test_offline_train_and_resume(tiny_config, cache_dir, monkeypatch, device):
     import tiny_llm.train as module
 
+    tiny_config.data.buffer_size_mib = 24 / 2**20
     tiny_config.runtime.device = device
     tiny_config.runtime.amp = device != "cpu"
     tiny_config.runtime.deterministic = device == "cpu"
@@ -104,12 +105,18 @@ def test_offline_train_and_resume(tiny_config, cache_dir, monkeypatch, device):
     interrupted = train(tiny_config)
     assert interrupted["status"] == "interrupted"
     monkeypatch.setattr(module, "make_optimizer", original)
+    tiny_config.data.prefetch = False
     resumed = train(tiny_config, tiny_config.runtime.output_dir / "latest.pt")
     assert resumed["final_validation"]["loss"] == pytest.approx(
         result["final_validation"]["loss"], abs=1e-4 if device != "cpu" else 0
     )
     a = torch.load(complete.runtime.output_dir / "final.pt", weights_only=False)
     b = torch.load(tiny_config.runtime.output_dir / "final.pt", weights_only=False)
+    assert a["version"] == b["version"] == 2
+    assert a["loader"] == b["loader"]
+    assert a["loader"]["version"] == 1
+    assert a["loader"]["cursor"] == a["cursor"] == 16
+    assert all(isinstance(v, (str, int)) for v in a["loader"].values())
     for key in a["model"]:
         if device == "cpu":
             assert torch.equal(a["model"][key], b["model"][key])

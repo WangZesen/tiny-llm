@@ -6,13 +6,18 @@ import time
 from collections.abc import Callable
 from pathlib import Path
 
-import numpy as np
 import torch
 from loguru import logger
 from safetensors.torch import load_file, save_file
 
 from tiny_llm.config import Config, save_config
-from tiny_llm.data import TokenCache, fingerprint, training_boundaries, validation_indices
+from tiny_llm.data import (
+    BufferedTokenLoader,
+    TokenCache,
+    fingerprint,
+    subset_batch,
+    training_boundaries,
+)
 from tiny_llm.model import Llama, token_losses
 from tiny_llm.runtime import (
     actual_backend,
@@ -93,26 +98,44 @@ def evaluate(
     start = time.monotonic()
     total_loss = torch.zeros((), device=device, dtype=torch.float64)
     count = 0
-    indices = validation_indices(cache, config, full)
+    loader = None
     try:
         with preserve_rng():
             model.eval()
-            for offset in range(0, len(indices), config.evaluation.batch_size):
+            if full:
+                count_blocks = cache.blocks("validation", config.model.context_length, partial=True)
+                loader = BufferedTokenLoader(
+                    cache,
+                    "validation",
+                    config.model.context_length,
+                    count_blocks,
+                    config.data.buffer_size_mib,
+                    prefetch=config.data.prefetch,
+                )
+            else:
+                tokens, valid = cache.validation_subset(config, should_stop)
+                count_blocks = len(tokens)
+            for offset in range(0, count_blocks, config.evaluation.batch_size):
                 if should_stop is not None and should_stop():
                     raise InterruptedError("evaluation interrupted")
-                x, y = cache.batch(
-                    "validation",
-                    indices[offset : offset + config.evaluation.batch_size],
-                    config.model.context_length,
-                    device,
-                )
+                batch_size = min(config.evaluation.batch_size, count_blocks - offset)
+                if full:
+                    x, y = loader.next_batch(batch_size, device)
+                else:
+                    x, y = subset_batch(
+                        tokens[offset : offset + batch_size],
+                        valid[offset : offset + batch_size],
+                        device,
+                    )
                 with autocast(config, device):
                     losses = token_losses(model(x), y)
                 total_loss += losses.double().sum()
                 count += int((y != -100).sum().item())
                 if full and offset % (config.evaluation.batch_size * 100) == 0:
-                    logger.info("Full validation: {}/{} blocks", offset, len(indices))
+                    logger.info("Full validation: {}/{} blocks", offset, count_blocks)
     finally:
+        if loader is not None:
+            loader.close()
         model.train(was_training)
     if count == 0:
         raise ValueError("empty validation set")
@@ -134,7 +157,9 @@ def recipe_identity(config: Config, cache: TokenCache) -> str:
     for name in ("output_dir", "device", "cpu_threads"):
         value["runtime"].pop(name)
     value["data"].pop("cache_dir")
+    value["data"].pop("prefetch")  # Scheduling changes do not alter sample order.
     value["cache_identity"] = cache.manifest["identity"]
+    value["loader_version"] = BufferedTokenLoader.VERSION
     return fingerprint(value)
 
 
@@ -176,16 +201,23 @@ def _train(config: Config, resume: Path | None) -> dict:
     blocks, length = boundaries[-1], config.model.context_length
     if blocks > cache.blocks("train", length):
         raise ValueError(f"cache too small: need {blocks * length + 1:,} training tokens")
-    order = np.random.default_rng(config.runtime.seed).permutation(blocks)
     optimizer = make_optimizer(model, config, device)
     compute_loss = loss_function(model, config, device)
     identity = recipe_identity(config, cache)
     cursor, step, completed_epochs, best_loss = 0, 0, 0, float("inf")
     best_epoch = None
+    state = None
     if resume:
         # Resume checkpoints are trusted local pickle artifacts, not untrusted model downloads.
         state = torch.load(resume, map_location="cpu", weights_only=False)
-        if state.get("version") != 1 or state["recipe_identity"] != identity:
+        if state.get("version") == 1:
+            raise ValueError(
+                "legacy checkpoint uses global memmap shuffling; start a new buffered "
+                "training run (weights remain usable for evaluation)"
+            )
+        if state.get("version") != 2:
+            raise ValueError(f"unsupported training checkpoint version: {state.get('version')}")
+        if state["recipe_identity"] != identity:
             raise ValueError("resume checkpoint is incompatible with this recipe or token cache")
         model.load_state_dict(state["model"], strict=True)
         optimizer.load_state_dict(state["optimizer"])
@@ -198,6 +230,18 @@ def _train(config: Config, resume: Path | None) -> dict:
             cursor * length,
             completed_epochs,
         )
+    loader = BufferedTokenLoader(
+        cache,
+        "train",
+        length,
+        blocks,
+        config.data.buffer_size_mib,
+        seed=config.runtime.seed,
+        prefetch=config.data.prefetch,
+        cursor=cursor,
+    )
+    if state is not None:
+        loader.validate_state(state["loader"])
     save_config(config, output / "resolved.yaml")
     metadata = environment()
     metadata.update(
@@ -212,6 +256,7 @@ def _train(config: Config, resume: Path | None) -> dict:
         realized_tokens=blocks * length,
         epochs=len(boundaries),
         deterministic=config.runtime.deterministic,
+        loader=loader.identity,
     )
     atomic_json(output / ("environment-resume.json" if resume else "environment.json"), metadata)
     logger.info(
@@ -236,7 +281,7 @@ def _train(config: Config, resume: Path | None) -> dict:
         atomic_checkpoint(
             output / name,
             dict(
-                version=1,
+                version=2,
                 recipe_identity=identity,
                 config=config.model_dump(mode="json"),
                 model=model.state_dict(),
@@ -247,6 +292,7 @@ def _train(config: Config, resume: Path | None) -> dict:
                 completed_epochs=completed_epochs,
                 best_loss=best_loss,
                 best_epoch=best_epoch,
+                loader=loader.state_dict(committed_cursor=cursor),
             ),
         )
 
@@ -255,11 +301,12 @@ def _train(config: Config, resume: Path | None) -> dict:
     if device.type == "cuda":
         torch.cuda.reset_peak_memory_stats(device)
     try:
+        logger.info("Collecting fixed validation subset with a sequential scan")
+        cache.validation_subset(config, should_stop=lambda: stopped)
         model.train()
         for epoch_index in range(completed_epochs, len(boundaries)):
             boundary = boundaries[epoch_index]
             while cursor < boundary:
-                step_start = cursor
                 step_blocks = min(config.training.batch_tokens // length, boundary - cursor)
                 lr = learning_rate(config, (cursor + step_blocks) * length, blocks * length)
                 for group in optimizer.param_groups:
@@ -268,12 +315,7 @@ def _train(config: Config, resume: Path | None) -> dict:
                 step_loss = torch.zeros((), device=device)
                 for offset in range(0, step_blocks, config.training.micro_batch_size):
                     count = min(config.training.micro_batch_size, step_blocks - offset)
-                    x, y = cache.batch(
-                        "train",
-                        order[step_start + offset : step_start + offset + count],
-                        length,
-                        device,
-                    )
+                    x, y = loader.next_batch(count, device)
                     summed_loss = compute_loss(x, y)
                     (summed_loss / (step_blocks * length)).backward()
                     step_loss += summed_loss.detach()
@@ -360,6 +402,7 @@ def _train(config: Config, resume: Path | None) -> dict:
             # Exclude evaluation/checkpoint time from the next throughput window.
             window_start = time.monotonic()
         checkpoint("final.pt")
+        loader.close()  # Release training buffers before allocating validation buffers.
         final_eval = evaluate(model, cache, config, device, full=True, should_stop=lambda: stopped)
         result = dict(
             status="complete",
@@ -407,6 +450,7 @@ def _train(config: Config, resume: Path | None) -> dict:
         )
         raise
     finally:
+        loader.close()
         for sig, handler in previous_handlers.items():
             signal.signal(sig, handler)
 
