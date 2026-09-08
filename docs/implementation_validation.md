@@ -44,7 +44,7 @@ throughput. The profiler confirms FlashAttention forward and backward dispatch.
 |---|---:|---|---:|---:|
 | 20M | 16 | enabled | 352,068 | 2.90 |
 | 50M | 16 | enabled | 204,059 | 4.90 |
-| 90M | 8 | enabled | 114,909 | See JSON |
+| 90M | 8 | enabled | 114,909 | 4.80 |
 
 Exact measurements are in [benchmark_results.json](benchmark_results.json).
 Synthetic rates exclude data loading, evaluation, checkpointing, and compilation;

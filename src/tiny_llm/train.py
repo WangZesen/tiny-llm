@@ -3,6 +3,7 @@
 import math
 import signal
 import time
+from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
@@ -81,7 +82,12 @@ def loss_function(model, config: Config, device: torch.device):
 
 @torch.no_grad()
 def evaluate(
-    model: Llama, cache: TokenCache, config: Config, device: torch.device, full: bool
+    model: Llama,
+    cache: TokenCache,
+    config: Config,
+    device: torch.device,
+    full: bool,
+    should_stop: Callable[[], bool] | None = None,
 ) -> dict:
     was_training = model.training
     start = time.monotonic()
@@ -92,6 +98,8 @@ def evaluate(
         with preserve_rng():
             model.eval()
             for offset in range(0, len(indices), config.evaluation.batch_size):
+                if should_stop is not None and should_stop():
+                    raise InterruptedError("evaluation interrupted")
                 x, y = cache.batch(
                     "validation",
                     indices[offset : offset + config.evaluation.batch_size],
@@ -312,7 +320,9 @@ def _train(config: Config, resume: Path | None) -> dict:
                     result = dict(status="interrupted", step=step, tokens=cursor * length)
                     atomic_json(output / "status.json", result)
                     return result
-            evaluation = evaluate(model, cache, config, device, full=False)
+            evaluation = evaluate(
+                model, cache, config, device, full=False, should_stop=lambda: stopped
+            )
             append_metric(
                 metrics_path,
                 {
@@ -325,7 +335,7 @@ def _train(config: Config, resume: Path | None) -> dict:
                 },
             )
             logger.info(
-                "Epoch {} validation loss {:.5f} | perplexity {:.3f}",
+                "Epoch {} validation loss {:.5f} | perplexity {}",
                 epoch_index + 1,
                 evaluation["loss"],
                 evaluation["perplexity"],
@@ -350,7 +360,7 @@ def _train(config: Config, resume: Path | None) -> dict:
             # Exclude evaluation/checkpoint time from the next throughput window.
             window_start = time.monotonic()
         checkpoint("final.pt")
-        final_eval = evaluate(model, cache, config, device, full=True)
+        final_eval = evaluate(model, cache, config, device, full=True, should_stop=lambda: stopped)
         result = dict(
             status="complete",
             parameters=model.parameter_count,
@@ -379,6 +389,11 @@ def _train(config: Config, resume: Path | None) -> dict:
         atomic_json(output / "result.json", result)
         atomic_json(output / "status.json", result)
         logger.success("Completed training: full validation loss {:.5f}", final_eval["loss"])
+        return result
+    except InterruptedError:
+        checkpoint()
+        result = dict(status="interrupted", step=step, tokens=cursor * length)
+        atomic_json(output / "status.json", result)
         return result
     except BaseException as exc:
         atomic_json(

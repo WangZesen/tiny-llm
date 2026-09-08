@@ -50,6 +50,12 @@ def test_evaluation_state_and_weighting(tiny_config, cache_dir):
     tiny_config.evaluation.batch_size = 1
     repeated = evaluate(model, cache, tiny_config, torch.device("cpu"), full=True)
     assert repeated["loss"] == pytest.approx(result["loss"], abs=1e-7)
+    with pytest.raises(InterruptedError):
+        evaluate(
+            model, cache, tiny_config, torch.device("cpu"), full=True, should_stop=lambda: True
+        )
+    assert model.training
+    assert torch.equal(before["torch"], rng_state()["torch"])
 
 
 @pytest.mark.parametrize(
