@@ -1,0 +1,78 @@
+import json
+from types import SimpleNamespace
+
+import numpy as np
+import pytest
+
+from tiny_llm.data import TokenCache, prepare
+
+
+def test_preparation_eos_determinism_and_reuse(tiny_config, monkeypatch, tmp_path):
+    import datasets
+    import huggingface_hub
+    import transformers
+
+    class API:
+        def dataset_info(self, *args, **kwargs):
+            return SimpleNamespace(sha="fixture-dataset")
+
+        def model_info(self, *args, **kwargs):
+            return SimpleNamespace(sha="fixture-tokenizer")
+
+        def list_repo_files(self, *args, **kwargs):
+            return [
+                "en/c4-train.00000.json.gz",
+                "en/c4-validation.00000.json.gz",
+                "en.noclean/c4-train.00000.json.gz",
+            ]
+
+    class Tokenizer:
+        eos_token_id = 2
+        backend_tokenizer = SimpleNamespace(to_str=lambda: "fixture tokenizer")
+
+        def __len__(self):
+            return 17
+
+        def get_vocab(self):
+            return {str(i): i for i in range(17)}
+
+        def save_pretrained(self, path):
+            path.mkdir()
+            (path / "tokenizer.json").write_text("fixture tokenizer")
+
+        def __call__(self, texts, **kwargs):
+            assert kwargs["add_special_tokens"] is False
+            return {"input_ids": [[int(token) for token in text.split()] for text in texts]}
+
+    class Stream:
+        def shuffle(self, seed, buffer_size):
+            assert seed == 42 and buffer_size == 10000
+            return self
+
+        def iter(self, batch_size):
+            for _ in range(10):
+                yield {"text": ["3 4 5", "", "6 7"]}
+
+    def load(*args, **kwargs):
+        assert kwargs["streaming"] is True
+        assert len(kwargs["data_files"][kwargs["split"]]) == 1
+        return Stream()
+
+    monkeypatch.setattr(huggingface_hub, "HfApi", API)
+    monkeypatch.setattr(transformers.AutoTokenizer, "from_pretrained", lambda *a, **kw: Tokenizer())
+    monkeypatch.setattr(datasets, "load_dataset", load)
+    tiny_config.data.shard_tokens = 7
+    first = prepare(tiny_config)
+    cache = TokenCache(tiny_config.data.cache_dir)
+    np.testing.assert_array_equal(cache.read("train", 0, 8), [3, 4, 5, 2, 2, 6, 7, 2])
+    assert first["splits"]["train"]["tokens"] == 65
+    assert first["splits"]["validation"]["tokens"] == 80
+    assert first["validation_complete"]
+    assert prepare(tiny_config) == first
+    tiny_config.data.cache_dir = tmp_path / "second"
+    assert prepare(tiny_config) == first
+    manifest = json.loads((tiny_config.data.cache_dir / "manifest.json").read_text())
+    assert manifest["dataset_revision"] == "fixture-dataset"
+    tiny_config.data.prepare_train_tokens = 100
+    with pytest.raises(ValueError, match="too small"):
+        prepare(tiny_config)

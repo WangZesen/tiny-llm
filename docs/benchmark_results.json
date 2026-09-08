@@ -1,0 +1,52 @@
+{
+  "date": "2026-09-08",
+  "gpu": "NVIDIA RTX 5000 Ada Generation",
+  "torch": "2.14.0+cu130",
+  "synthetic": true,
+  "effective_batch_tokens": 32768,
+  "context_length": 1024,
+  "selected": [
+    {
+      "preset": "20m",
+      "micro_batch_size": 16,
+      "compile": true,
+      "tokens_per_second": 352067.7821058689,
+      "peak_memory_bytes": 3110031872,
+      "attention_kernels": [
+        "aten::_flash_attention_backward",
+        "aten::_flash_attention_forward",
+        "aten::_scaled_dot_product_flash_attention",
+        "aten::_scaled_dot_product_flash_attention_backward",
+        "aten::scaled_dot_product_attention"
+      ]
+    },
+    {
+      "preset": "50m",
+      "micro_batch_size": 16,
+      "compile": true,
+      "tokens_per_second": 204059.3034399494,
+      "peak_memory_bytes": 5258774016,
+      "attention_kernels": [
+        "aten::_flash_attention_backward",
+        "aten::_flash_attention_forward",
+        "aten::_scaled_dot_product_flash_attention",
+        "aten::_scaled_dot_product_flash_attention_backward",
+        "aten::scaled_dot_product_attention"
+      ]
+    },
+    {
+      "preset": "90m",
+      "micro_batch_size": 8,
+      "compile": true,
+      "tokens_per_second": 114909.36361201691,
+      "peak_memory_bytes": 5157307904,
+      "attention_kernels": [
+        "aten::_flash_attention_backward",
+        "aten::_flash_attention_forward",
+        "aten::_scaled_dot_product_flash_attention",
+        "aten::_scaled_dot_product_flash_attention_backward",
+        "aten::scaled_dot_product_attention"
+      ]
+    }
+  ]
+}
