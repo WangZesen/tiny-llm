@@ -94,6 +94,10 @@ On Arrhenius, submit one GPU using the ARM environment already installed in
 `.venv-aarch64`. The launcher preserves SLURM's device visibility and CPU allocation.
 The 20M, 50M, and 90M default recipes use the measured optimized settings:
 microbatch 32, compilation in `default` mode, automatic SDPA, and eight CPU threads.
+Validation uses a separate batch size of 128 sequences (131,072 targets at context
+1024), with no gradient accumulation. Override `evaluation.batch_size` for devices
+with less memory. Loss remains weighted by valid tokens; batch size can cause small
+floating-point differences.
 For example, train 20M with:
 
 ```bash

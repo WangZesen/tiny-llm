@@ -66,6 +66,13 @@ The 20M, 50M, and 90M recipes default to microbatch 32, `runtime.compile=true`,
 `runtime.compile_mode=default`, automatic SDPA, and eight CPU threads, as measured
 on GH200. The effective batch remains 32,768 targets per optimizer update.
 
+Validation defaults to 128 sequences per forward pass for all three sizes, without
+gradient accumulation. Both subset and full validation sum losses over valid tokens
+and divide by their total count, including partial final batches and excluding
+padding. Changing the batch size preserves this weighting but can introduce small
+floating-point differences. This larger validation batch is a subsequent default
+change; the recorded GH200 performance measurements used evaluation batch size 8.
+
 `deterministic=false` retains seeded initialization, seeded block ordering, and
 saved RNG states while allowing fast kernels. It does not promise bitwise replay.
 `deterministic=true` enables strict PyTorch deterministic algorithms, configures

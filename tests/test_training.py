@@ -35,24 +35,30 @@ def test_schedule(tiny_config):
     assert learning_rate(tiny_config, 1000, 1000) == pytest.approx(tiny_config.optimizer.lr * 0.1)
 
 
-def test_evaluation_state_and_weighting(tiny_config, cache_dir):
+@pytest.mark.parametrize("full", [False, True])
+def test_evaluation_state_and_weighting(tiny_config, cache_dir, full):
+    tiny_config.evaluation.subset_blocks = 8
+    tiny_config.data.buffer_size_mib = 24 / 2**20
     setup_runtime(tiny_config)
     model = Llama(tiny_config.model, "reference")
     cache = TokenCache(cache_dir)
     before = rng_state()
-    result = evaluate(model, cache, tiny_config, torch.device("cpu"), full=True)
+    result = evaluate(model, cache, tiny_config, torch.device("cpu"), full=full)
     after = rng_state()
     assert model.training
     assert before["python"] == after["python"]
     np.testing.assert_array_equal(before["numpy"][1], after["numpy"][1])
     assert torch.equal(before["torch"], after["torch"])
-    assert result["tokens"] == 29
-    tiny_config.evaluation.batch_size = 1
-    repeated = evaluate(model, cache, tiny_config, torch.device("cpu"), full=True)
-    assert repeated["loss"] == pytest.approx(result["loss"], abs=1e-7)
+    # Subset sampling uses complete blocks; full validation includes the padded tail.
+    assert result["tokens"] == (29 if full else 28)
+    for batch_size in (1, 3, 128):
+        tiny_config.evaluation.batch_size = batch_size
+        repeated = evaluate(model, cache, tiny_config, torch.device("cpu"), full=full)
+        assert repeated["tokens"] == result["tokens"]
+        assert repeated["loss"] == pytest.approx(result["loss"], abs=1e-7)
     with pytest.raises(InterruptedError):
         evaluate(
-            model, cache, tiny_config, torch.device("cpu"), full=True, should_stop=lambda: True
+            model, cache, tiny_config, torch.device("cpu"), full=full, should_stop=lambda: True
         )
     assert model.training
     assert torch.equal(before["torch"], rng_state()["torch"])

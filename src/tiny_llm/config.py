@@ -84,7 +84,7 @@ class TrainingConfig(StrictModel):
 
 class EvaluationConfig(StrictModel):
     subset_blocks: int = Field(1024, gt=0)
-    batch_size: int = Field(8, gt=0)
+    batch_size: int = Field(128, gt=0)
     seed: int = Field(12345, ge=0, lt=2**32)
 
 
