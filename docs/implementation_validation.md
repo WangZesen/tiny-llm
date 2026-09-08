@@ -5,7 +5,7 @@ Environment: Python 3.12.14, PyTorch 2.14.0+cu130, NVIDIA RTX 5000 Ada Generatio
 
 ## Correctness and packaging
 
-The test suite passes on this machine, including CUDA checks:
+All 21 tests pass on this machine, including CUDA checks:
 
 - Causality, parameter counts, tied weights, FP64 model/loss/gradient parity.
 - Parameter-level gradcheck, gradgradcheck, and finite-difference Hessian-vector
@@ -27,6 +27,10 @@ The 20M model completed a 262,144-target C4 smoke run with two virtual epochs.
 Its subset validation loss declined from 9.41180 to 9.15760. Final loss on the
 **truncated smoke validation cache** was 9.1655853; reloading `final.pt` and
 evaluating again reproduced this value.
+
+Loading the trained epoch-2 safetensors weights directly into the reference
+attention model gave loss 9.1655901 on the same 32,768 targets, a difference of
+approximately 0.0000048 nats under BF16 AMP.
 
 A compiled run with 261,120 targets and an uneven 133,120-target first epoch also
 completed. Its smoke validation loss was 9.03376. These runs have different
