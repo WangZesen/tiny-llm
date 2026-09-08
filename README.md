@@ -153,6 +153,11 @@ See [GH200 measurements and analysis](docs/gh200_performance.md).
 
 ## Run the complete tuning campaign
 
+The completed search in `runs/campaign` selected LR 0.001 and weight decay 0.1
+for all sizes, with beta2 0.95 for 20M and 0.99 for 50M/90M. These settings are
+now in the default presets. See [campaign results](docs/campaign_results.md) for
+the comparisons and the limits of the 90M selection.
+
 ```bash
 uv run tiny-llm sweep --config configs/20m.yaml \
   --benchmarks runs/benchmarks --output runs/campaign-buffered --gpus 0,1

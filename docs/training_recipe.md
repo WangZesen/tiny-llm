@@ -2,8 +2,9 @@
 
 This repository targets validation loss for 20M–92M Llama-style models on English
 C4, trained from scratch for 20 prediction targets per **unique trainable
-parameter**. The configuration is an initial recipe and a bounded search space,
-not a claim of optimality. Empirical selections live in the campaign report.
+parameter**. The default presets adopt the best recipes from a bounded,
+single-seed search; see [campaign results](campaign_results.md). These selections
+do not establish optimality outside the tested settings.
 
 ## Published precedents
 
@@ -20,11 +21,12 @@ dimensions, context 1024, initialization std 0.02 with residual projection
 scaling, and a 32,768-target effective batch are engineering choices. They are
 not directly established as optimal by these papers.
 
-## Initial recipe
+## Selected recipe
 
 - BF16 autocast for CUDA operations; FP32 parameters, gradients, optimizer moments,
   normalization reductions, and cross-entropy. No FP16 gradient scaler.
-- AdamW: LR 0.001, betas (0.9, 0.95), epsilon 1e-8, weight decay 0.1.
+- AdamW: LR 0.001, beta1 0.9, beta2 0.95 for 20M and 0.99 for 50M/90M,
+  epsilon 1e-8, weight decay 0.1.
   Matrix weights, including tied embeddings, receive decay; norm scales do not.
 - Global raw-gradient clipping at norm 1.0, after accumulation and before AdamW.
 - Linear token-based warmup for 5% of training, then cosine decay to 10% of peak.
@@ -41,8 +43,8 @@ Training order uses loader v1: sequence-aligned 64 MiB ranges shuffled by seed,
 then independently shuffled sequence indices within each resident range. One
 prefetched range overlaps I/O with model computation. The training prefix and
 virtual epoch boundaries are unchanged; the sequence order differs from the
-previous global permutation, so the buffered campaign starts from scratch under
-`runs/campaign-buffered`. Previous results remain under `runs/campaign`.
+previous global permutation. The audited campaign now in `runs/campaign` used
+loader v1 for all twelve runs.
 
 ## Twelve complete runs
 
