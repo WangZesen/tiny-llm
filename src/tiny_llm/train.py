@@ -20,6 +20,8 @@ from tiny_llm.data import (
     training_boundaries,
 )
 from tiny_llm.model import Llama, token_losses
+from tiny_llm.packed import PackedLlama, local_mean_losses
+from tiny_llm.packed_optimizer import PackedAdamW
 from tiny_llm.runtime import (
     actual_backend,
     append_metric,
@@ -36,7 +38,9 @@ from tiny_llm.runtime import (
 )
 
 
-def make_optimizer(model: Llama, config: Config, device: torch.device):
+def make_optimizer(model: Llama | PackedLlama, config: Config, device: torch.device):
+    if isinstance(model, PackedLlama):
+        return PackedAdamW(model, config)
     cfg = config.optimizer
     decay = [p for p in model.parameters() if p.ndim >= 2]
     no_decay = [p for p in model.parameters() if p.ndim < 2]
@@ -79,14 +83,18 @@ def learning_rate(config: Config, consumed: int, total: int) -> float:
 def loss_function(model, config: Config, device: torch.device):
     def loss(inputs, targets):
         with autocast(config, device):
+            if isinstance(model, PackedLlama):
+                return local_mean_losses(model(inputs), targets)
             return token_losses(model(inputs), targets).sum()
 
     if config.runtime.compile and not config.runtime.deterministic:
         compiled = torch.compile(loss, mode=config.runtime.compile_mode)
 
+        batch_axis = 1 if isinstance(model, PackedLlama) else 0
+
         def dispatched(inputs, targets):
             # Rare epoch-ending shapes do not amortize another compilation.
-            if inputs.shape[0] != config.training.micro_batch_size:
+            if inputs.shape[batch_axis] != config.training.micro_batch_size:
                 return loss(inputs, targets)
             return compiled(inputs, targets)
 
@@ -193,6 +201,8 @@ def evaluate(
 
 def recipe_identity(config: Config, cache: TokenCache) -> str:
     value = config.model_dump(mode="json")
+    if value["decentralized"] is None:
+        value.pop("decentralized")  # Keep pre-feature single-model recipe identities.
     # Default execution controls retain the identity of existing v2 checkpoints.
     for name, default in (("compile_mode", "default"), ("sdpa_backend", "auto")):
         if value["runtime"][name] == default:
@@ -218,7 +228,7 @@ def save_weights(model: Llama, path: Path):
 def train(config: Config, resume: Path | None = None) -> dict:
     import fcntl
 
-    config = config.model_copy(deep=True)
+    config = Config.model_validate(config.model_dump())
     output = config.runtime.output_dir
     output.mkdir(parents=True, exist_ok=True)
     with (output / ".lock").open("a") as lock:
@@ -237,10 +247,31 @@ def _train(config: Config, resume: Path | None) -> dict:
     cache.verify()
     config.data.revision = cache.manifest["dataset_revision"]
     config.data.tokenizer_revision = cache.manifest["tokenizer_revision"]
-    model = Llama(config.model, actual_backend(config)).to(device)
+    decentralized = config.decentralized
+    num_models = decentralized.num_models if decentralized else 1
+    boundaries = training_boundaries(config, config.model.parameter_count)
+    if decentralized and any(boundary % num_models for boundary in boundaries):
+        raise ValueError(
+            "decentralized epoch boundaries must contain a multiple of num_models blocks"
+        )
+    model = (
+        PackedLlama(config.model, num_models, actual_backend(config))
+        if decentralized
+        else Llama(config.model, actual_backend(config))
+    ).to(device)
     kernels = attention_kernels(model, config, device)
-    assert model.parameter_count == config.model.parameter_count
-    boundaries = training_boundaries(config, model.parameter_count)
+    assert model.parameter_count == num_models * config.model.parameter_count
+    averaged = None
+    if decentralized:
+        with preserve_rng():
+            averaged = Llama(config.model, actual_backend(config)).to(device)
+
+    def evaluation_model():
+        if averaged is not None:
+            model.copy_average_to(averaged)
+            return averaged
+        return model
+
     blocks, length = boundaries[-1], config.model.context_length
     if blocks > cache.blocks("train", length):
         raise ValueError(f"cache too small: need {blocks * length + 1:,} training tokens")
@@ -253,16 +284,19 @@ def _train(config: Config, resume: Path | None) -> dict:
     if resume:
         # Resume checkpoints are trusted local pickle artifacts, not untrusted model downloads.
         state = torch.load(resume, map_location="cpu", weights_only=False)
-        if state.get("version") == 1:
+        if state.get("version") == 1 or (state.get("version") == 2 and "loader" not in state):
             raise ValueError(
                 "legacy checkpoint uses global memmap shuffling; start a new buffered "
                 "training run (weights remain usable for evaluation)"
             )
-        if state.get("version") != 2:
-            raise ValueError(f"unsupported training checkpoint version: {state.get('version')}")
+        if state.get("version") != (3 if decentralized else 2):
+            raise ValueError(f"incompatible training checkpoint version: {state.get('version')}")
         if state["recipe_identity"] != identity:
             raise ValueError("resume checkpoint is incompatible with this recipe or token cache")
-        model.load_state_dict(state["model"], strict=True)
+        if decentralized:
+            model.load_packed_state_dict(state["model"])
+        else:
+            model.load_state_dict(state["model"], strict=True)
         optimizer.load_state_dict(state["optimizer"])
         cursor, step, completed_epochs = state["cursor"], state["step"], state["completed_epochs"]
         best_loss, best_epoch = state["best_loss"], state["best_epoch"]
@@ -288,8 +322,8 @@ def _train(config: Config, resume: Path | None) -> dict:
     save_config(config, output / "resolved.yaml")
     metadata = environment()
     metadata.update(
-        parameters=model.parameter_count,
-        non_embedding_parameters=model.parameter_count
+        parameters=config.model.parameter_count,
+        non_embedding_parameters=config.model.parameter_count
         - config.model.vocab_size * config.model.width,
         cache_identity=cache.manifest["identity"],
         recipe_identity=identity,
@@ -301,6 +335,13 @@ def _train(config: Config, resume: Path | None) -> dict:
         deterministic=config.runtime.deterministic,
         loader=loader.identity,
     )
+    if decentralized:
+        metadata.update(
+            num_models=num_models,
+            total_parameters=model.parameter_count,
+            topology=decentralized.topology,
+            storage_numel=model.storage_numel,
+        )
     atomic_json(output / ("environment-resume.json" if resume else "environment.json"), metadata)
     logger.info(
         "Training {:,} parameters for {:,} targets in {} virtual epochs",
@@ -324,10 +365,10 @@ def _train(config: Config, resume: Path | None) -> dict:
         atomic_checkpoint(
             output / name,
             dict(
-                version=2,
+                version=3 if decentralized else 2,
                 recipe_identity=identity,
                 config=config.model_dump(mode="json"),
-                model=model.state_dict(),
+                model=model.packed_state_dict() if decentralized else model.state_dict(),
                 optimizer=optimizer.state_dict(),
                 rng=rng_state(),
                 cursor=cursor,
@@ -360,9 +401,35 @@ def _train(config: Config, resume: Path | None) -> dict:
                 lr = learning_rate(config, (cursor + step_blocks) * length, blocks * length)
                 for group in optimizer.param_groups:
                     group["lr"] = lr
-                step_loss, grad_norm = optimizer_update(
-                    model, optimizer, compute_loss, loader.next_batch, config, device, step_blocks
-                )
+                if decentralized:
+                    optimizer.zero_grad(set_to_none=True)
+                    local_batch = step_blocks // num_models
+                    x, y = loader.next_batch(step_blocks, device)
+                    # Assign every Nth sample in the buffered stream to one worker.
+                    # Both epoch boundaries and committed cursors are multiples of N.
+                    x, y = (
+                        tensor.view(local_batch, num_models, length).transpose(0, 1).contiguous()
+                        for tensor in (x, y)
+                    )
+                    means = compute_loss(x, y)
+                    means.sum().backward()
+                    step_loss = means.detach().sum() * (local_batch * length)
+                    local_grad_norms = optimizer.clip_grad_norm_(config.optimizer.grad_clip)
+                    grad_norm = local_grad_norms.max()
+                    if not torch.isfinite(step_loss).item():
+                        raise FloatingPointError(f"nonfinite training loss at step {step}")
+                    model.mix_(decentralized.topology, step)
+                    optimizer.step()
+                else:
+                    step_loss, grad_norm = optimizer_update(
+                        model,
+                        optimizer,
+                        compute_loss,
+                        loader.next_batch,
+                        config,
+                        device,
+                        step_blocks,
+                    )
                 cursor += step_blocks
                 step += 1
                 window_loss += step_loss.item()
@@ -389,6 +456,13 @@ def _train(config: Config, resume: Path | None) -> dict:
                         if device.type == "cuda"
                         else 0,
                     )
+                    if decentralized:
+                        row.update(
+                            local_losses=means.detach().tolist(),
+                            local_grad_norms=local_grad_norms.tolist(),
+                            tokens_per_model=cursor * length // num_models,
+                            mixing_step=step - 1,
+                        )
                     append_metric(metrics_path, row)
                     logger.info(
                         "Epoch {}/{} | step {} | tokens {:,} | loss {:.4f} | lr {:.3g} | {:,.0f} tok/s",
@@ -411,7 +485,7 @@ def _train(config: Config, resume: Path | None) -> dict:
                     atomic_json(output / "status.json", result)
                     return result
             evaluation = evaluate(
-                model, cache, config, device, full=False, should_stop=lambda: stopped
+                evaluation_model(), cache, config, device, full=False, should_stop=lambda: stopped
             )
             append_metric(
                 metrics_path,
@@ -430,7 +504,24 @@ def _train(config: Config, resume: Path | None) -> dict:
                 evaluation["loss"],
                 evaluation["perplexity"],
             )
-            save_weights(model, output / f"epoch-{epoch_index + 1:03d}.safetensors")
+            save_weights(
+                averaged if decentralized else model,
+                output / f"epoch-{epoch_index + 1:03d}.safetensors",
+            )
+            if decentralized:
+                for worker in range(num_models):
+                    directory = output / f"node-{worker:03d}"
+                    directory.mkdir(exist_ok=True)
+                    path = directory / f"epoch-{epoch_index + 1:03d}.safetensors"
+                    temporary = path.with_suffix(".tmp")
+                    save_file(
+                        {
+                            key: value.cpu().contiguous()
+                            for key, value in model.local_state_dict(worker).items()
+                        },
+                        str(temporary),
+                    )
+                    temporary.replace(path)
             if evaluation["loss"] < best_loss:
                 best_loss, best_epoch = evaluation["loss"], epoch_index + 1
                 atomic_json(
@@ -452,10 +543,12 @@ def _train(config: Config, resume: Path | None) -> dict:
         checkpoint("final.pt")
         training_elapsed_seconds = time.monotonic() - training_start
         loader.close()  # Release training buffers before allocating validation buffers.
-        final_eval = evaluate(model, cache, config, device, full=True, should_stop=lambda: stopped)
+        final_eval = evaluate(
+            evaluation_model(), cache, config, device, full=True, should_stop=lambda: stopped
+        )
         result = dict(
             status="complete",
-            parameters=model.parameter_count,
+            parameters=config.model.parameter_count,
             tokens=cursor * length,
             step=step,
             epochs=completed_epochs,
@@ -475,6 +568,13 @@ def _train(config: Config, resume: Path | None) -> dict:
             else 0,
             recipe_identity=identity,
         )
+        if decentralized:
+            result.update(
+                num_models=num_models,
+                total_parameters=model.parameter_count,
+                tokens_per_model=cursor * length // num_models,
+                topology=decentralized.topology,
+            )
         append_metric(
             metrics_path,
             {
@@ -517,9 +617,22 @@ def evaluate_checkpoint(config: Config, checkpoint: Path, full: bool) -> dict:
     if checkpoint.suffix == ".safetensors":
         model.load_state_dict(load_file(str(checkpoint)), strict=True)
     else:
-        model.load_state_dict(
-            torch.load(checkpoint, map_location="cpu", weights_only=False)["model"], strict=True
-        )
+        state = torch.load(checkpoint, map_location="cpu", weights_only=False)
+        # Version 2 is shared by legacy packed and current ordinary checkpoints.
+        # Inspect the payload so both remain usable for evaluation.
+        if "parameter_storage" in state["model"]:
+            saved = Config.model_validate(state["config"])
+            if saved.model != config.model or saved.decentralized is None:
+                raise ValueError("checkpoint model configuration mismatch")
+            with preserve_rng():
+                packed = PackedLlama(
+                    config.model, saved.decentralized.num_models, actual_backend(config)
+                )
+            packed.load_packed_state_dict(state["model"])
+            packed.copy_average_to(model)
+            del packed
+        else:
+            model.load_state_dict(state["model"], strict=True)
     cache = TokenCache(config.data.cache_dir)
     cache.validate_config(config)
     result = evaluate(model, cache, config, device, full)

@@ -118,13 +118,15 @@ def test_bf16_backend_parity():
         ),
     ],
 )
-def test_rotary_cache_dtype_device_and_state_dict(device):
+@pytest.mark.parametrize("packed", [False, True])
+def test_rotary_cache_dtype_device_and_state_dict(device, packed):
     from tiny_llm.model import rotary
+    from tiny_llm.packed import PackedLlama
 
     config = ModelConfig(
         vocab_size=17, layers=1, width=64, heads=2, ffn_width=128, context_length=32
     )
-    model = Llama(config).to(device)
+    model = (PackedLlama(config, 4) if packed else Llama(config)).to(device)
     canonical = set(model.state_dict())
     assert not any("rope" in key for key in canonical)
     for dtype in (torch.float32, torch.bfloat16, torch.float32, torch.float64):
@@ -140,8 +142,12 @@ def test_rotary_cache_dtype_device_and_state_dict(device):
             b = torch.autograd.grad(expected.square().sum(), x, create_graph=True)[0]
             torch.testing.assert_close(a, b, rtol=0, atol=0)
         assert set(model.state_dict()) == canonical
-    reference = Llama(config, "reference").to(device).double()
+    reference = (
+        (PackedLlama(config, 4, "reference") if packed else Llama(config, "reference"))
+        .to(device)
+        .double()
+    )
     reference.load_state_dict(model.state_dict(), strict=True)
-    x = torch.ones((2, 7), device=device, dtype=torch.long)
+    x = torch.ones((4, 2, 7) if packed else (2, 7), device=device, dtype=torch.long)
     with sdpa_kernel(SDPBackend.MATH):
         torch.testing.assert_close(model(x), reference(x), rtol=1e-10, atol=1e-12)

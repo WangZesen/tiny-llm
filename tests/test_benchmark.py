@@ -16,6 +16,7 @@ from tiny_llm.train import loss_function, make_optimizer, optimizer_update, reci
 def test_execution_config_and_legacy_identity(tiny_config, cache_dir):
     cache = TokenCache(cache_dir)
     old = tiny_config.model_dump(mode="json")
+    old.pop("decentralized")
     for key in ("output_dir", "device", "cpu_threads", "compile_mode", "sdpa_backend"):
         old["runtime"].pop(key)
     old["data"].pop("cache_dir")
@@ -186,8 +187,10 @@ def test_tuning_timeout_kills_worker_group(tiny_config, cache_dir, tmp_path, mon
     assert all(row["status"] == "timeout" for row in progress)
 
 
-def test_compile_dispatch_keeps_partial_batches_eager(tiny_config, monkeypatch):
+@pytest.mark.parametrize("num_models", [None, 1, 2, 4])
+def test_compile_dispatch_keeps_partial_batches_eager(tiny_config, monkeypatch, num_models):
     from tiny_llm.model import token_losses
+    from tiny_llm.packed import PackedLlama, local_mean_losses
 
     seen = []
 
@@ -195,16 +198,27 @@ def test_compile_dispatch_keeps_partial_batches_eager(tiny_config, monkeypatch):
         assert mode == "default"
 
         def compiled(x, y):
-            seen.append(x.shape[0])
+            seen.append(tuple(x.shape))
             return function(x, y)
 
         return compiled
 
     monkeypatch.setattr(torch, "compile", compile_function)
     tiny_config.runtime.compile = True
-    model = Llama(tiny_config.model, "reference")
+    model = (
+        Llama(tiny_config.model, "reference")
+        if num_models is None
+        else PackedLlama(tiny_config.model, num_models, "reference")
+    )
     compute = loss_function(model, tiny_config, torch.device("cpu"))
     for count in (2, 1, 2):
-        x = torch.ones((count, 4), dtype=torch.long)
-        torch.testing.assert_close(compute(x, x), token_losses(model(x), x).sum())
-    assert seen == [2, 2]
+        shape = (count, 4) if num_models is None else (num_models, count, 4)
+        x = torch.ones(shape, dtype=torch.long)
+        expected = (
+            token_losses(model(x), x).sum()
+            if num_models is None
+            else local_mean_losses(model(x), x)
+        )
+        torch.testing.assert_close(compute(x, x), expected)
+    full_shape = (2, 4) if num_models is None else (num_models, 2, 4)
+    assert seen == [full_shape, full_shape]

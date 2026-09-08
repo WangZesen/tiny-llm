@@ -88,10 +88,29 @@ The fixed epoch-validation subset is collected during one sequential validation
 scan at startup and retained in RAM for subsequent epochs (about 2 MiB by default).
 Startup also retains the existing cache checksum verification.
 
+## SLURM jobs
+
+Submit from the repository root using `scripts/slurm.sh` for ordinary training,
+packed training, evaluation, and benchmarks. The launcher sources `~/.bashrc` to
+select the compute node's architecture-specific UV environment, synchronizes
+locked dependencies, and starts the command with `srun`.
+
+Create `runs/` before submitting: SLURM opens the console log before the script
+starts. Combined stdout and stderr are written to `./runs/slurm-<job-id>.log`.
+The defaults request account `naiss2026-3-205-gpu`, partition `gpu`, one GPU,
+one task, and two hours. CPU counts are allocated automatically by SLURM;
+the launcher preserves its device visibility and CPU allocation.
+
+```bash
+mkdir -p runs
+sbatch scripts/slurm.sh train --config configs/20m.yaml
+# Standard sbatch options override resource defaults:
+sbatch --time=00:30:00 scripts/slurm.sh train --config configs/packed-20m.yaml
+```
+
 ## GH200 execution and profiling
 
-On Arrhenius, submit one GPU using the ARM environment already installed in
-`.venv-aarch64`. The launcher preserves SLURM's device visibility and CPU allocation.
+Use the [SLURM launcher](#slurm-jobs) on Arrhenius.
 The 20M, 50M, and 90M default recipes use the measured optimized settings:
 microbatch 32, compilation in `default` mode, automatic SDPA, and eight CPU threads.
 Validation uses a separate batch size of 128 sequences (131,072 targets at context
@@ -101,13 +120,15 @@ floating-point differences.
 For example, train 20M with:
 
 ```bash
-sbatch scripts/slurm-gh200.sh train --config configs/20m.yaml
+mkdir -p runs
+sbatch scripts/slurm.sh train --config configs/20m.yaml
 ```
 
 To repeat the tuning campaign:
 
 ```bash
-sbatch scripts/slurm-gh200.sh benchmark --config configs/20m.yaml \
+mkdir -p runs
+sbatch scripts/slurm.sh benchmark --config configs/20m.yaml \
   --gh200 --budget-minutes 75 --output runs/gh200-tuning
 ```
 
@@ -173,6 +194,92 @@ For unattended use, the process can be launched with a terminal multiplexer or
 `nohup`, with its log redirected to a local file. Send SIGTERM to the sweep PID
 to request checkpoints and graceful interruption of its training children.
 
+## Packed decentralized training
+
+`PackedLlama` executes independent local models together on one GPU. The same
+seed produces exactly the ordinary Llama initialization in every worker. Each
+step uses one local microbatch, one parameter-mixing event, and one local AdamW
+update; decentralized training does not accumulate gradients.
+
+Packed presets use four workers with local microbatch 8. They inherit compilation
+in `default` mode, automatic SDPA, and global evaluation batch size 128. Cached
+RoPE is shared across workers; shortened local batches run eagerly.
+
+```bash
+uv run tiny-llm train --config configs/packed-20m.yaml
+# Eight workers at the same global batch size:
+uv run tiny-llm train --config configs/packed-20m.yaml \
+  --set decentralized.num_models=8 --set training.micro_batch_size=4 \
+  --set runtime.output_dir=runs/packed-20m-n8
+```
+
+The global batch must equal `num_models * micro_batch_size * context_length`.
+Every realized epoch boundary must divide evenly across workers. The packed
+presets round each ordinary total budget down to a multiple of `8 * context_length`,
+so their prepared caches remain sufficient. They use 40 epochs with a shorter
+final epoch (408,068,096 total targets for packed 20M). The ordinary presets retain
+their existing token-budget calculation.
+The buffered loader's shuffled sample stream is partitioned without overlap:
+worker i receives every Nth sample, including across buffer and epoch boundaries.
+
+Each worker computes a mean loss over its own valid tokens. The sum of these
+local means supplies independent gradients, with no division by the worker
+count. Gradients are clipped locally; parameters are then mixed before local
+AdamW updates. Moments remain local. Available `decentralized.topology` values:
+
+- `complete`: globally average parameters each step.
+- `one_peer_ring`: half self, half left/right neighbor, alternating each step.
+- `one_peer_exponential`: half self, half incoming neighbor at cyclic
+  power-of-two offsets modulo N.
+
+Before validation, a separate ordinary Llama receives the global parameter
+average. It evaluates with the global `evaluation.batch_size`; training weights,
+moments, and topology phase stay unchanged. Validation metrics and `best.json`
+refer to this averaged model. Root `epoch-NNN.safetensors` files contain averaged
+weights; `node-000/epoch-NNN.safetensors`, etc. contain local weights. Resume
+checkpoints retain all local parameters and optimizer states.
+
+Parameters and AdamW's `m` and `v` occupy three contiguous `[N, D_padded]` arenas
+with identical offsets and 64-element alignment. Padding is zero and excluded
+from optimization and exports. Place the model on its final device/dtype before
+constructing the optimizer:
+
+```python
+from tiny_llm.packed import PackedLlama, local_mean_losses
+from tiny_llm.packed_optimizer import PackedAdamW
+
+model = PackedLlama(config.model, 4).to(device)
+optimizer = PackedAdamW(model, config)
+parameters = model.parameter_storage
+m, v = optimizer.first_moment_storage, optimizer.second_moment_storage
+layout = model.layout  # name, local shape, start, numel, padded_numel
+```
+
+Local optimizer parameter/moment tensors directly alias these arenas. Arena
+edits should occur under `torch.no_grad()` between updates. Use
+`model.local_state_dict(i)` for ordinary Llama-compatible weights, and the
+training resume checkpoints to preserve arena bindings and optimizer counters.
+
+### SLURM on aarch64
+
+Use the same [SLURM launcher and setup](#slurm-jobs) for packed training on the
+aarch64 compute nodes:
+
+```bash
+mkdir -p runs
+sbatch scripts/slurm.sh train --config configs/packed-20m.yaml
+sbatch scripts/slurm.sh benchmark-packed --config configs/20m.yaml \
+  --num-models 4 8 --output runs/packed-benchmarks
+```
+
+The benchmark compares packed and sequential ordinary workers in
+isolated processes with the same global batch, initialization, and updates.
+It reports throughput, speedup, memory, component timings, and profiler traces.
+Compilation is enabled by default; use `--set runtime.compile=false` for an eager
+comparison. Full validation and data loading are excluded from synthetic benchmark timings.
+See [GH200 validation and benchmark results](docs/packed_benchmarks.md) for the
+measured N=4/8 comparisons and memory costs.
+
 ## Checkpoints and artifacts
 
 Each run contains:
@@ -185,13 +292,14 @@ Each run contains:
 
 Resume using the saved configuration. Device and output-directory changes are
 allowed, as is changing `data.prefetch`. Recipe, precision, data identity, batch,
-seed, and buffer-size changes are rejected. Checkpoint format v2 records loader
-format v1 and a committed sample cursor. Resume reconstructs the current range
-and row position directly, without replaying earlier training ranges or saving
+seed, and buffer-size changes are rejected. Ordinary checkpoint format v2 and
+packed format v3 record loader format v1 and a committed sample cursor. Resume
+reconstructs the current range and row position directly, without replaying earlier training ranges or saving
 buffer contents. The normal startup cache checksum scan still runs.
 
-Old global-permutation checkpoints cannot resume training under this loader;
-start a fresh run. Their model weights remain usable for evaluation and analysis.
+Old global-permutation checkpoints (ordinary v1 and packed v2) cannot resume
+training under this loader; start a fresh run. Their model weights remain usable
+for evaluation and analysis.
 The previous campaign is preserved under `runs/campaign`; fresh buffered runs use
 `runs/campaign-buffered` and reuse the existing model computation benchmarks.
 
@@ -227,6 +335,5 @@ hvp = torch.autograd.grad(directional_gradient, parameters)
 ```
 
 `torch.func.functional_call` is supported for stateless parameter experiments.
-The entire reference computation preserves double precision. Stage one does not
-implement gradient-noise estimators, Hessian eigensolvers, or decentralized
-training algorithms.
+The entire reference computation preserves double precision. Gradient-noise
+estimators and Hessian eigensolvers are not implemented.

@@ -158,10 +158,11 @@ on its single GPU.
 From the repository root:
 
 ```bash
-sbatch scripts/slurm-gh200.sh train --config configs/20m.yaml
-sbatch scripts/slurm-gh200.sh benchmark --gh200 --config configs/20m.yaml \
+mkdir -p runs
+sbatch scripts/slurm.sh train --config configs/20m.yaml
+sbatch scripts/slurm.sh benchmark --gh200 --config configs/20m.yaml \
   --budget-minutes 75 --output runs/gh200-retune
-sbatch scripts/slurm-gh200.sh benchmark-worker --config configs/20m.yaml \
+sbatch scripts/slurm.sh benchmark-worker --config configs/20m.yaml \
   --data-mode real --profile --output runs/gh200-profile.json
 ```
 
