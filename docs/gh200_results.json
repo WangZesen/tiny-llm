@@ -1,0 +1,2616 @@
+{
+  "environment": {
+    "python": "3.12.13 (main, May 10 2026, 19:27:23) [Clang 22.1.3 ]",
+    "platform": "Linux-5.14.0-687.42.1.el9_8.aarch64-aarch64-with-glibc2.34",
+    "hostname": "n208",
+    "versions": {
+      "torch": "2.14.0",
+      "triton": "3.8.0",
+      "numpy": "2.5.3",
+      "pydantic": "2.13.5",
+      "datasets": "5.0.1",
+      "transformers": "5.16.1"
+    },
+    "cuda": "13.0",
+    "git_revision": "f9280080b832fecf439cf2e325123fcaa8989ad2",
+    "git_status": "M README.md\n M src/tiny_llm/cli.py\n M src/tiny_llm/config.py\n M src/tiny_llm/experiments.py\n M src/tiny_llm/model.py\n M src/tiny_llm/runtime.py\n M src/tiny_llm/train.py\n M tests/test_model.py\n M tests/test_training.py\n?? configs/20m-gh200.yaml\n?? docs/gh200_performance.md\n?? docs/gh200_results.json\n?? scripts/\n?? src/tiny_llm/benchmark.py\n?? tests/test_benchmark.py",
+    "gpu": "NVIDIA GH200 120GB",
+    "cuda_visible_devices": "0",
+    "source_hash": "958075330a3f7d2c5789531bfee0c76a45005ddc23efb7a3258c6e31ec48b272",
+    "compiler_cache": {
+      "TORCHINDUCTOR_CACHE_DIR": "/tmp/tiny-llm-gh200-2158374-cold/inductor",
+      "TRITON_CACHE_DIR": "/tmp/tiny-llm-gh200-2158374-cold/triton"
+    },
+    "cpu_affinity": [
+      72,
+      73,
+      74,
+      75,
+      76,
+      77,
+      78,
+      79,
+      80,
+      81,
+      82,
+      83,
+      84,
+      85,
+      86,
+      87,
+      88,
+      89,
+      90,
+      91,
+      92,
+      93,
+      94,
+      95,
+      96,
+      97,
+      98,
+      99,
+      100,
+      101,
+      102,
+      103,
+      104,
+      105,
+      106,
+      107,
+      108,
+      109,
+      110,
+      111,
+      112,
+      113,
+      114,
+      115,
+      116,
+      117,
+      118,
+      119,
+      120,
+      121,
+      122,
+      123,
+      124,
+      125,
+      126,
+      127,
+      128,
+      129,
+      130,
+      131,
+      132,
+      133,
+      134,
+      135,
+      136,
+      137,
+      138,
+      139,
+      140,
+      141,
+      142,
+      143
+    ],
+    "cpu_threads": 8,
+    "cudnn": 92400,
+    "slurm": {
+      "SLURM_STEP_NUM_TASKS": "1",
+      "SLURM_JOB_USER": "zesen",
+      "SLURM_TASKS_PER_NODE": "1",
+      "SLURM_JOB_UID": "4005080",
+      "SLURM_STEP_GPUS": "1",
+      "SLURM_CPU_BIND": "quiet,mask_cpu:0x000000000000000000000000000000000000FFFFFFFFFFFFFFFFFF000000000000000000",
+      "SLURM_TASK_PID": "1083095",
+      "SLURM_LOCALID": "0",
+      "SLURM_CPU_BIND_VERBOSE": "quiet",
+      "SLURM_JOB_START_TIME": "1788877654",
+      "SLURM_STEP_NODELIST": "n208",
+      "SLURM_JOB_END_TIME": "1788884861",
+      "SLURM_CPUS_ON_NODE": "72",
+      "SLURM_UMASK": "0002",
+      "SLURM_JOB_CPUS_PER_NODE": "72",
+      "SLURM_GPUS_ON_NODE": "1",
+      "SLURM_GTIDS": "0",
+      "SLURM_JOB_PARTITION": "gpu",
+      "SLURM_OOM_KILL_STEP": "0",
+      "SLURM_STEPID": "9",
+      "SLURM_CPU_BIND_LIST": "0x000000000000000000000000000000000000FFFFFFFFFFFFFFFFFF000000000000000000",
+      "SLURM_JOBID": "2158374",
+      "SLURM_GPUS": "1",
+      "SLURM_LAUNCH_NODE_IPADDR": "192.168.100.3",
+      "SLURM_CPU_BIND_TYPE": "mask_cpu:",
+      "SLURM_PROCID": "0",
+      "SLURM_NTASKS": "1",
+      "SLURM_TOPOLOGY_ADDR": "global.group6.n208",
+      "SLURM_DISTRIBUTION": "cyclic",
+      "SLURM_TOPOLOGY_ADDR_PATTERN": "switch.switch.node",
+      "SLURM_SRUN_COMM_HOST": "192.168.100.3",
+      "SLURM_SCRIPT_CONTEXT": "prolog_task",
+      "SLURM_NODELIST": "n208",
+      "SLURM_SRUN_COMM_PORT": "41717",
+      "SLURM_STEP_ID": "9",
+      "SLURM_PRIO_PROCESS": "0",
+      "SLURM_NPROCS": "1",
+      "SLURM_NNODES": "1",
+      "SLURM_JOB_ID": "2158374",
+      "SLURM_NODEID": "0",
+      "SLURM_STEP_NUM_NODES": "1",
+      "SLURM_STEP_TASKS_PER_NODE": "1",
+      "SLURM_MPI_TYPE": "pmi2",
+      "SLURM_CONF": "/etc/slurm/slurm.conf",
+      "SLURM_JOB_NAME": "bash",
+      "SLURM_STEP_LAUNCHER_PORT": "41717",
+      "SLURM_JOB_GID": "4005080",
+      "SLURM_JOB_NODELIST": "n208"
+    },
+    "gpu_status": "uuid, name, driver_version, memory.total [MiB], power.limit [W], power.draw [W], clocks.current.sm [MHz], clocks.current.memory [MHz], utilization.gpu [%]\nGPU-ac9d16b9-92b4-f5d0-51fa-af394e621f3c, NVIDIA GH200 120GB, 580.159.04, 97871 MiB, 900.00 W, 87.28 W, 1980 MHz, 2619 MHz, 0 %",
+    "gpu_topology": "\u001b[4mGPU0\tCPU Affinity\tNUMA Affinity\tGPU NUMA ID\u001b[0m\nGPU0\t X \t72-143\t1\t\t12\n\nLegend:\n\n  X    = Self\n  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)\n  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node\n  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)\n  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)\n  PIX  = Connection traversing at most a single PCIe bridge\n  NV#  = Connection traversing a bonded set of # NVLinks",
+    "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+  },
+  "benchmarks": {
+    "final-20m-cold": {
+      "tokens_per_second": 1635536.2741303623,
+      "micro_batch_size": 32,
+      "compile": true,
+      "compile_mode": "default",
+      "sdpa_backend": "auto",
+      "cpu_threads": 8,
+      "warmup_seconds": 17.446009818988387,
+      "first_update_seconds": 17.044527041027322,
+      "peak_memory_bytes": 5782663680,
+      "attention_kernels": [
+        "aten::_cudnn_attention_backward",
+        "aten::_cudnn_attention_forward",
+        "aten::_scaled_dot_product_cudnn_attention",
+        "aten::_scaled_dot_product_cudnn_attention_backward",
+        "cudnn_generated_fort_native_sdpa_sm90_flash_bprop_wgmma_f16_knob_2_64x64x64_1x4x1_cga1x1x1_kernel0_0",
+        "cudnn_generated_fort_native_sdpa_sm90_flash_fprop_wgmma_f16_knob_1_64x128x64_4x1x1_cga1x1x1_kernel0_0"
+      ],
+      "measurements": [
+        {
+          "window": 0,
+          "timestamp": 1788881446.4052172,
+          "seconds": 2.0035018799826503,
+          "tokens_per_second": 1635536.2741303623,
+          "loss": 8.507223629951477,
+          "grad_norm": 0.7832399010658264
+        },
+        {
+          "window": 1,
+          "timestamp": 1788881448.408753,
+          "seconds": 2.0209021309856325,
+          "tokens_per_second": 1621454.0772451174,
+          "loss": 6.530007729530334,
+          "grad_norm": 0.6618828177452087
+        },
+        {
+          "window": 2,
+          "timestamp": 1788881450.429694,
+          "seconds": 1.9997367430478334,
+          "tokens_per_second": 1638615.6884859616,
+          "loss": 5.869993443489075,
+          "grad_norm": 0.6575064659118652
+        }
+      ],
+      "protocol": {
+        "version": 2,
+        "warmup": 20,
+        "steps": 100,
+        "windows": 3,
+        "data_mode": "real",
+        "profile": false,
+        "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+      },
+      "config_identity": "8e91f50e293b113cd9665849c0f9629ea9547384188248ca02fe1732bbd16d94",
+      "status": "ok",
+      "source_hash": "958075330a3f7d2c5789531bfee0c76a45005ddc23efb7a3258c6e31ec48b272",
+      "compiler_cache": {
+        "TORCHINDUCTOR_CACHE_DIR": "/tmp/tiny-llm-gh200-2158374-cold/inductor",
+        "TRITON_CACHE_DIR": "/tmp/tiny-llm-gh200-2158374-cold/triton"
+      }
+    },
+    "final-20m-synthetic": {
+      "tokens_per_second": 1610008.356751175,
+      "micro_batch_size": 32,
+      "compile": true,
+      "compile_mode": "default",
+      "sdpa_backend": "auto",
+      "cpu_threads": 8,
+      "warmup_seconds": 3.005150421988219,
+      "first_update_seconds": 2.6137349610216916,
+      "peak_memory_bytes": 5782008320,
+      "attention_kernels": [
+        "aten::_cudnn_attention_backward",
+        "aten::_cudnn_attention_forward",
+        "aten::_scaled_dot_product_cudnn_attention",
+        "aten::_scaled_dot_product_cudnn_attention_backward",
+        "cudnn_generated_fort_native_sdpa_sm90_flash_bprop_wgmma_f16_knob_2_64x64x64_1x4x1_cga1x1x1_kernel0_0",
+        "cudnn_generated_fort_native_sdpa_sm90_flash_fprop_wgmma_f16_knob_1_64x128x64_4x1x1_cga1x1x1_kernel0_0"
+      ],
+      "measurements": [
+        {
+          "window": 0,
+          "timestamp": 1788881413.469715,
+          "seconds": 2.04159278399311,
+          "tokens_per_second": 1605021.3469068857,
+          "loss": 7.581872744560242,
+          "grad_norm": 5.046919345855713
+        },
+        {
+          "window": 1,
+          "timestamp": 1788881415.5113568,
+          "seconds": 2.0352689389837906,
+          "tokens_per_second": 1610008.356751175,
+          "loss": 2.3690969920158387,
+          "grad_norm": 1.4322477579116821
+        },
+        {
+          "window": 2,
+          "timestamp": 1788881417.546668,
+          "seconds": 2.02478150598472,
+          "tokens_per_second": 1618347.4564117875,
+          "loss": 0.15534632997587322,
+          "grad_norm": 0.05968648940324783
+        }
+      ],
+      "protocol": {
+        "version": 2,
+        "warmup": 20,
+        "steps": 100,
+        "windows": 3,
+        "data_mode": "synthetic",
+        "profile": false
+      },
+      "config_identity": "6bd570f55f6d29ac85c40132177f85970444f35934a31e43db0f47d0035300b0",
+      "status": "ok",
+      "source_hash": "958075330a3f7d2c5789531bfee0c76a45005ddc23efb7a3258c6e31ec48b272",
+      "compiler_cache": {
+        "TORCHINDUCTOR_CACHE_DIR": "/tmp/torchinductor_zesen",
+        "TRITON_CACHE_DIR": null
+      }
+    },
+    "final-20m": {
+      "tokens_per_second": 1636280.5119048213,
+      "micro_batch_size": 32,
+      "compile": true,
+      "compile_mode": "default",
+      "sdpa_backend": "auto",
+      "cpu_threads": 8,
+      "warmup_seconds": 2.8615652570151724,
+      "first_update_seconds": 2.470937719976064,
+      "peak_memory_bytes": 5782008320,
+      "attention_kernels": [
+        "aten::_cudnn_attention_backward",
+        "aten::_cudnn_attention_forward",
+        "aten::_scaled_dot_product_cudnn_attention",
+        "aten::_scaled_dot_product_cudnn_attention_backward",
+        "cudnn_generated_fort_native_sdpa_sm90_flash_bprop_wgmma_f16_knob_2_64x64x64_1x4x1_cga1x1x1_kernel0_0",
+        "cudnn_generated_fort_native_sdpa_sm90_flash_fprop_wgmma_f16_knob_1_64x128x64_4x1x1_cga1x1x1_kernel0_0"
+      ],
+      "measurements": [
+        {
+          "window": 0,
+          "timestamp": 1788879201.4234886,
+          "seconds": 2.002590617048554,
+          "tokens_per_second": 1636280.5119048213,
+          "loss": 8.50721890449524,
+          "grad_norm": 0.7802049517631531
+        },
+        {
+          "window": 1,
+          "timestamp": 1788879203.4261272,
+          "seconds": 2.0024095029802993,
+          "tokens_per_second": 1636428.5103136762,
+          "loss": 6.529913229942322,
+          "grad_norm": 0.6102713942527771
+        },
+        {
+          "window": 2,
+          "timestamp": 1788879205.4285684,
+          "seconds": 2.0161201910232194,
+          "tokens_per_second": 1625299.9273505423,
+          "loss": 5.86741446018219,
+          "grad_norm": 0.6933915615081787
+        }
+      ],
+      "protocol": {
+        "version": 2,
+        "warmup": 20,
+        "steps": 100,
+        "windows": 3,
+        "data_mode": "real",
+        "profile": true,
+        "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+      },
+      "config_identity": "0ac38cbdfe0f5235937c5f21ffd11b5fba449b9bef17fd1a6912f7e5ad082bab",
+      "status": "ok",
+      "source_hash": "f3b862772cfd0bef8b726606f148f203b07c7f3ec68605f7f00c13be06bf1490",
+      "compiler_cache": null
+    },
+    "initial-compiled16": {
+      "tokens_per_second": 1194163.1171287121,
+      "micro_batch_size": 16,
+      "compile": true,
+      "compile_mode": "default",
+      "sdpa_backend": "auto",
+      "cpu_threads": 8,
+      "warmup_seconds": 20.144906707049813,
+      "first_update_seconds": 19.611208045040257,
+      "peak_memory_bytes": 3160889856,
+      "attention_kernels": [
+        "aten::_cudnn_attention_backward",
+        "aten::_cudnn_attention_forward",
+        "aten::_scaled_dot_product_cudnn_attention",
+        "aten::_scaled_dot_product_cudnn_attention_backward"
+      ],
+      "measurements": [
+        {
+          "window": 0,
+          "seconds": 2.7443516210187227,
+          "tokens_per_second": 1194016.0928735614,
+          "loss": 8.507205209732057,
+          "grad_norm": 0.7871349453926086
+        },
+        {
+          "window": 1,
+          "seconds": 2.7433350069914013,
+          "tokens_per_second": 1194458.5665436634,
+          "loss": 6.530186114311218,
+          "grad_norm": 0.6660228967666626
+        },
+        {
+          "window": 2,
+          "seconds": 2.7440137389930896,
+          "tokens_per_second": 1194163.1171287121,
+          "loss": 5.8702300882339475,
+          "grad_norm": 0.6416301131248474
+        }
+      ],
+      "protocol": {
+        "version": 2,
+        "warmup": 20,
+        "steps": 100,
+        "windows": 3,
+        "data_mode": "real",
+        "profile": true,
+        "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+      },
+      "config_identity": "ca61d2fdc7656fdabccac9baa72c6e98dbd6d3b33b94ae8127dbada8c8e97441",
+      "status": "ok",
+      "source_hash": "1b75f57bae95da5ee087d68175a8693cade24f998330a613e3a25f72dc77fe03",
+      "compiler_cache": null
+    },
+    "initial-compiled8": {
+      "tokens_per_second": 713010.0326054149,
+      "micro_batch_size": 8,
+      "compile": true,
+      "compile_mode": "default",
+      "sdpa_backend": "auto",
+      "cpu_threads": 8,
+      "warmup_seconds": 58.01827477198094,
+      "first_update_seconds": 57.14622399001382,
+      "peak_memory_bytes": 1828084224,
+      "attention_kernels": [
+        "aten::_cudnn_attention_backward",
+        "aten::_cudnn_attention_forward",
+        "aten::_scaled_dot_product_cudnn_attention",
+        "aten::_scaled_dot_product_cudnn_attention_backward"
+      ],
+      "measurements": [
+        {
+          "window": 0,
+          "seconds": 4.598008141969331,
+          "tokens_per_second": 712656.415305203,
+          "loss": 8.507210984230042,
+          "grad_norm": 0.7838482856750488
+        },
+        {
+          "window": 1,
+          "seconds": 4.595727759995498,
+          "tokens_per_second": 713010.0326054149,
+          "loss": 6.530310621261597,
+          "grad_norm": 0.6786985397338867
+        },
+        {
+          "window": 2,
+          "seconds": 4.584702354972251,
+          "tokens_per_second": 714724.6966744111,
+          "loss": 5.871295852661133,
+          "grad_norm": 0.6642574667930603
+        }
+      ],
+      "protocol": {
+        "version": 2,
+        "warmup": 20,
+        "steps": 100,
+        "windows": 3,
+        "data_mode": "real",
+        "profile": true,
+        "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+      },
+      "config_identity": "611a24d27e7c9eee8d739715374f02da5417608feb07d110907af7e049b7c5f0",
+      "status": "ok",
+      "source_hash": "1b75f57bae95da5ee087d68175a8693cade24f998330a613e3a25f72dc77fe03",
+      "compiler_cache": null
+    },
+    "initial-eager8": {
+      "tokens_per_second": 245034.77229312368,
+      "micro_batch_size": 8,
+      "compile": false,
+      "compile_mode": "default",
+      "sdpa_backend": "auto",
+      "cpu_threads": 8,
+      "warmup_seconds": 12.724260532006156,
+      "first_update_seconds": 10.172714447951876,
+      "peak_memory_bytes": 4868299264,
+      "attention_kernels": [
+        "aten::_cudnn_attention_backward",
+        "aten::_cudnn_attention_forward",
+        "aten::_scaled_dot_product_cudnn_attention",
+        "aten::_scaled_dot_product_cudnn_attention_backward",
+        "aten::scaled_dot_product_attention"
+      ],
+      "measurements": [
+        {
+          "window": 0,
+          "seconds": 13.58619290299248,
+          "tokens_per_second": 241186.0352194952,
+          "loss": 8.507198796272277,
+          "grad_norm": 0.7836268544197083
+        },
+        {
+          "window": 1,
+          "seconds": 13.372795907023828,
+          "tokens_per_second": 245034.77229312368,
+          "loss": 6.530278153419495,
+          "grad_norm": 0.670157790184021
+        },
+        {
+          "window": 2,
+          "seconds": 13.190513590991031,
+          "tokens_per_second": 248420.9562725455,
+          "loss": 5.871118268966675,
+          "grad_norm": 0.6710807681083679
+        }
+      ],
+      "protocol": {
+        "version": 2,
+        "warmup": 20,
+        "steps": 100,
+        "windows": 3,
+        "data_mode": "real",
+        "profile": true,
+        "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+      },
+      "config_identity": "165d71bce362b730d34eded3eab5e73445b15334df31497c45969cffa7387c34",
+      "status": "ok",
+      "source_hash": "96e87ac38aec8ff51e4ceab2e90cd7bd4c8c9d3ab06dd201cb0bbf37b33ea7c2",
+      "compiler_cache": null
+    },
+    "nocache-a": {
+      "tokens_per_second": 1267516.8562549662,
+      "micro_batch_size": 32,
+      "compile": true,
+      "compile_mode": "default",
+      "sdpa_backend": "auto",
+      "cpu_threads": 8,
+      "warmup_seconds": 3.0315140009624884,
+      "first_update_seconds": 2.5379409269662574,
+      "peak_memory_bytes": 5779911680,
+      "attention_kernels": [
+        "aten::_cudnn_attention_backward",
+        "aten::_cudnn_attention_forward",
+        "aten::_scaled_dot_product_cudnn_attention",
+        "aten::_scaled_dot_product_cudnn_attention_backward"
+      ],
+      "measurements": [
+        {
+          "window": 0,
+          "seconds": 2.5866655959980562,
+          "tokens_per_second": 1266804.6480649377,
+          "loss": 8.507209839820861,
+          "grad_norm": 0.7842827439308167
+        },
+        {
+          "window": 1,
+          "seconds": 2.5738105209893547,
+          "tokens_per_second": 1273131.7916675627,
+          "loss": 6.530107498168945,
+          "grad_norm": 0.6703546047210693
+        },
+        {
+          "window": 2,
+          "seconds": 2.58521216805093,
+          "tokens_per_second": 1267516.8562549662,
+          "loss": 5.871211061477661,
+          "grad_norm": 0.6307669878005981
+        }
+      ],
+      "protocol": {
+        "version": 2,
+        "warmup": 20,
+        "steps": 100,
+        "windows": 3,
+        "data_mode": "real",
+        "profile": true,
+        "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+      },
+      "config_identity": "8c7f0e00350b05eca23bf3806632e17dbeee3822132db9d7da1d5ad899edf910",
+      "status": "ok",
+      "source_hash": "c53f3b0093cc35339de14242e6d9983e539ce0241edb559b67d4aacb836d73d5",
+      "compiler_cache": null
+    },
+    "nocache-b": {
+      "tokens_per_second": 1269555.8652620795,
+      "micro_batch_size": 32,
+      "compile": true,
+      "compile_mode": "default",
+      "sdpa_backend": "auto",
+      "cpu_threads": 8,
+      "warmup_seconds": 3.050843261007685,
+      "first_update_seconds": 2.556222509010695,
+      "peak_memory_bytes": 5779911680,
+      "attention_kernels": [
+        "aten::_cudnn_attention_backward",
+        "aten::_cudnn_attention_forward",
+        "aten::_scaled_dot_product_cudnn_attention",
+        "aten::_scaled_dot_product_cudnn_attention_backward"
+      ],
+      "measurements": [
+        {
+          "window": 0,
+          "seconds": 2.580102377978619,
+          "tokens_per_second": 1270027.1229420006,
+          "loss": 8.50722131729126,
+          "grad_norm": 0.7823262214660645
+        },
+        {
+          "window": 1,
+          "seconds": 2.581060109019745,
+          "tokens_per_second": 1269555.8652620795,
+          "loss": 6.5301096534729,
+          "grad_norm": 0.6819077134132385
+        },
+        {
+          "window": 2,
+          "seconds": 2.589418004034087,
+          "tokens_per_second": 1265458.1048309049,
+          "loss": 5.870510864257812,
+          "grad_norm": 0.672089159488678
+        }
+      ],
+      "protocol": {
+        "version": 2,
+        "warmup": 20,
+        "steps": 100,
+        "windows": 3,
+        "data_mode": "real",
+        "profile": true,
+        "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+      },
+      "config_identity": "8c7f0e00350b05eca23bf3806632e17dbeee3822132db9d7da1d5ad899edf910",
+      "status": "ok",
+      "source_hash": "c53f3b0093cc35339de14242e6d9983e539ce0241edb559b67d4aacb836d73d5",
+      "compiler_cache": null
+    },
+    "old-sync": {
+      "tokens_per_second": 1253879.0735711479,
+      "micro_batch_size": 32,
+      "compile": true,
+      "compile_mode": "default",
+      "sdpa_backend": "auto",
+      "cpu_threads": 8,
+      "warmup_seconds": 3.011141046008561,
+      "first_update_seconds": 2.5123816020204686,
+      "peak_memory_bytes": 5779911168,
+      "attention_kernels": [
+        "aten::_cudnn_attention_backward",
+        "aten::_cudnn_attention_forward",
+        "aten::_scaled_dot_product_cudnn_attention",
+        "aten::_scaled_dot_product_cudnn_attention_backward"
+      ],
+      "measurements": [
+        {
+          "window": 0,
+          "seconds": 2.6040420189965516,
+          "tokens_per_second": 1258351.430620421,
+          "loss": 8.507222533226013,
+          "grad_norm": 0.7801843881607056
+        },
+        {
+          "window": 1,
+          "seconds": 2.6133301600348204,
+          "tokens_per_second": 1253879.0735711479,
+          "loss": 6.529880828857422,
+          "grad_norm": 0.6593584418296814
+        },
+        {
+          "window": 2,
+          "seconds": 2.6172701060422696,
+          "tokens_per_second": 1251991.5282855711,
+          "loss": 5.8674141216278075,
+          "grad_norm": 0.6489830017089844
+        }
+      ],
+      "protocol": {
+        "version": 2,
+        "warmup": 20,
+        "steps": 100,
+        "windows": 3,
+        "data_mode": "real",
+        "profile": true,
+        "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+      },
+      "config_identity": "091481a4c7831a6bf3d2ada9adeb89070aa01e1142007bf8177f79290aa72977",
+      "status": "ok",
+      "source_hash": "01554cd15e00965f15ac23dc010aec0c32ecd9321a73367b5e04d75b1d72274a",
+      "compiler_cache": null
+    },
+    "regression-50m-after": {
+      "tokens_per_second": 219431.4924244898,
+      "micro_batch_size": 8,
+      "compile": false,
+      "compile_mode": "default",
+      "sdpa_backend": "auto",
+      "cpu_threads": 8,
+      "warmup_seconds": 3.45306889800122,
+      "first_update_seconds": 0.5942551590269431,
+      "peak_memory_bytes": 6585715712,
+      "attention_kernels": [
+        "ScaledDotProductCudnnAttentionBackward0",
+        "aten::_cudnn_attention_backward",
+        "aten::_cudnn_attention_forward",
+        "aten::_scaled_dot_product_cudnn_attention",
+        "aten::_scaled_dot_product_cudnn_attention_backward",
+        "aten::scaled_dot_product_attention",
+        "autograd::engine::evaluate_function: ScaledDotProductCudnnAttentionBackward0",
+        "cudnn_generated_fort_native_sdpa_sm90_flash_bprop_wgmma_f16_knob_2_64x64x64_1x4x1_cga1x1x1_kernel0_0",
+        "cudnn_generated_fort_native_sdpa_sm90_flash_fprop_wgmma_f16_knob_1_64x128x64_4x1x1_cga1x1x1_kernel0_0"
+      ],
+      "measurements": [
+        {
+          "window": 0,
+          "timestamp": 1788881090.1477292,
+          "seconds": 15.120426281006075,
+          "tokens_per_second": 216713.46687601256,
+          "loss": 8.536428623199463,
+          "grad_norm": 1.1814911365509033
+        },
+        {
+          "window": 1,
+          "timestamp": 1788881105.2682247,
+          "seconds": 14.933134545979556,
+          "tokens_per_second": 219431.4924244898,
+          "loss": 6.664176750183105,
+          "grad_norm": 0.9331075549125671
+        },
+        {
+          "window": 2,
+          "timestamp": 1788881120.2014048,
+          "seconds": 14.89030259498395,
+          "tokens_per_second": 220062.68704733008,
+          "loss": 5.948818473815918,
+          "grad_norm": 0.955584704875946
+        }
+      ],
+      "protocol": {
+        "version": 2,
+        "warmup": 20,
+        "steps": 100,
+        "windows": 3,
+        "data_mode": "real",
+        "profile": false,
+        "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+      },
+      "config_identity": "39788f6245e6603be1e9f7d978676f8efa48345be8f9d893682a417c5cb7246d",
+      "status": "ok",
+      "source_hash": "958075330a3f7d2c5789531bfee0c76a45005ddc23efb7a3258c6e31ec48b272",
+      "compiler_cache": {
+        "TORCHINDUCTOR_CACHE_DIR": "/tmp/torchinductor_zesen",
+        "TRITON_CACHE_DIR": null
+      }
+    },
+    "regression-50m-before": {
+      "tokens_per_second": 211900.0795192836,
+      "micro_batch_size": 8,
+      "compile": false,
+      "compile_mode": "default",
+      "sdpa_backend": "auto",
+      "cpu_threads": 8,
+      "warmup_seconds": 3.616164622013457,
+      "first_update_seconds": 0.6545737300184555,
+      "peak_memory_bytes": 6583094272,
+      "attention_kernels": [
+        "aten::_cudnn_attention_backward",
+        "aten::_cudnn_attention_forward",
+        "aten::_scaled_dot_product_cudnn_attention",
+        "aten::_scaled_dot_product_cudnn_attention_backward",
+        "aten::scaled_dot_product_attention"
+      ],
+      "measurements": [
+        {
+          "window": 0,
+          "seconds": 15.491418907942716,
+          "tokens_per_second": 211523.55503858515,
+          "loss": 8.536439232826233,
+          "grad_norm": 1.1813780069351196
+        },
+        {
+          "window": 1,
+          "seconds": 15.415819507965352,
+          "tokens_per_second": 212560.86958639324,
+          "loss": 6.664181141853333,
+          "grad_norm": 0.9393383860588074
+        },
+        {
+          "window": 2,
+          "seconds": 15.463892262021545,
+          "tokens_per_second": 211900.0795192836,
+          "loss": 5.948944535255432,
+          "grad_norm": 0.9964681267738342
+        }
+      ],
+      "protocol": {
+        "version": 2,
+        "warmup": 20,
+        "steps": 100,
+        "windows": 3,
+        "data_mode": "real",
+        "profile": false,
+        "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+      },
+      "config_identity": "9d1383e5853650bd480a3527d5346ed6a75f401b7b1fe1f42474cc0b47c16a3c",
+      "status": "ok",
+      "source_hash": "01554cd15e00965f15ac23dc010aec0c32ecd9321a73367b5e04d75b1d72274a",
+      "compiler_cache": null
+    },
+    "regression-50m-compiled": {
+      "tokens_per_second": 871826.2648118912,
+      "micro_batch_size": 32,
+      "compile": true,
+      "compile_mode": "default",
+      "sdpa_backend": "auto",
+      "cpu_threads": 8,
+      "warmup_seconds": 23.70063165097963,
+      "first_update_seconds": 22.996278333012015,
+      "peak_memory_bytes": 9426494464,
+      "attention_kernels": [
+        "aten::_cudnn_attention_backward",
+        "aten::_cudnn_attention_forward",
+        "aten::_scaled_dot_product_cudnn_attention",
+        "aten::_scaled_dot_product_cudnn_attention_backward",
+        "cudnn_generated_fort_native_sdpa_sm90_flash_bprop_wgmma_f16_knob_2_64x64x64_1x4x1_cga1x1x1_kernel0_0",
+        "cudnn_generated_fort_native_sdpa_sm90_flash_fprop_wgmma_f16_knob_1_64x128x64_4x1x1_cga1x1x1_kernel0_0"
+      ],
+      "measurements": [
+        {
+          "window": 0,
+          "timestamp": 1788881176.2360022,
+          "seconds": 3.7461488140397705,
+          "tokens_per_second": 874711.6472573779,
+          "loss": 8.536411824226379,
+          "grad_norm": 1.1837965250015259
+        },
+        {
+          "window": 1,
+          "timestamp": 1788881179.9821985,
+          "seconds": 3.7585470090270974,
+          "tokens_per_second": 871826.2648118912,
+          "loss": 6.664151721000671,
+          "grad_norm": 0.9323885440826416
+        },
+        {
+          "window": 2,
+          "timestamp": 1788881183.7407851,
+          "seconds": 3.7729116390109994,
+          "tokens_per_second": 868506.9552434454,
+          "loss": 5.9489403295516965,
+          "grad_norm": 0.9855756759643555
+        }
+      ],
+      "protocol": {
+        "version": 2,
+        "warmup": 20,
+        "steps": 100,
+        "windows": 3,
+        "data_mode": "real",
+        "profile": false,
+        "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+      },
+      "config_identity": "b4960954e57324cd7e019fa7c04f7ba9e283aa4800158ace1ad924addd83026c",
+      "status": "ok",
+      "source_hash": "958075330a3f7d2c5789531bfee0c76a45005ddc23efb7a3258c6e31ec48b272",
+      "compiler_cache": {
+        "TORCHINDUCTOR_CACHE_DIR": "/tmp/torchinductor_zesen",
+        "TRITON_CACHE_DIR": null
+      }
+    },
+    "regression-90m-after": {
+      "tokens_per_second": 159618.78412550405,
+      "micro_batch_size": 8,
+      "compile": false,
+      "compile_mode": "default",
+      "sdpa_backend": "auto",
+      "cpu_threads": 8,
+      "warmup_seconds": 4.741144576983061,
+      "first_update_seconds": 0.6932871519820765,
+      "peak_memory_bytes": 9263729664,
+      "attention_kernels": [
+        "ScaledDotProductCudnnAttentionBackward0",
+        "aten::_cudnn_attention_backward",
+        "aten::_cudnn_attention_forward",
+        "aten::_scaled_dot_product_cudnn_attention",
+        "aten::_scaled_dot_product_cudnn_attention_backward",
+        "aten::scaled_dot_product_attention",
+        "autograd::engine::evaluate_function: ScaledDotProductCudnnAttentionBackward0",
+        "cudnn_generated_fort_native_sdpa_sm90_flash_bprop_wgmma_f16_knob_2_64x64x64_1x4x1_cga1x1x1_kernel0_0",
+        "cudnn_generated_fort_native_sdpa_sm90_flash_fprop_wgmma_f16_knob_1_64x128x64_4x1x1_cga1x1x1_kernel0_0"
+      ],
+      "measurements": [
+        {
+          "window": 0,
+          "timestamp": 1788881286.1101506,
+          "seconds": 20.59506706899265,
+          "tokens_per_second": 159106.0611273006,
+          "loss": 8.670861926078796,
+          "grad_norm": 1.5864253044128418
+        },
+        {
+          "window": 1,
+          "timestamp": 1788881306.705276,
+          "seconds": 20.522752374992706,
+          "tokens_per_second": 159666.6928551373,
+          "loss": 6.924018054008484,
+          "grad_norm": 1.2209458351135254
+        },
+        {
+          "window": 2,
+          "timestamp": 1788881327.2280757,
+          "seconds": 20.528912170033436,
+          "tokens_per_second": 159618.78412550405,
+          "loss": 6.13146315574646,
+          "grad_norm": 1.0849400758743286
+        }
+      ],
+      "protocol": {
+        "version": 2,
+        "warmup": 20,
+        "steps": 100,
+        "windows": 3,
+        "data_mode": "real",
+        "profile": false,
+        "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+      },
+      "config_identity": "4d1546a40f929af8622011d2074b053203d6079038924028116713d8b46030da",
+      "status": "ok",
+      "source_hash": "958075330a3f7d2c5789531bfee0c76a45005ddc23efb7a3258c6e31ec48b272",
+      "compiler_cache": {
+        "TORCHINDUCTOR_CACHE_DIR": "/tmp/torchinductor_zesen",
+        "TRITON_CACHE_DIR": null
+      }
+    },
+    "regression-90m-before": {
+      "tokens_per_second": 146443.19794759186,
+      "micro_batch_size": 8,
+      "compile": false,
+      "compile_mode": "default",
+      "sdpa_backend": "auto",
+      "cpu_threads": 8,
+      "warmup_seconds": 4.991397882986348,
+      "first_update_seconds": 0.7450452339835465,
+      "peak_memory_bytes": 9260059648,
+      "attention_kernels": [
+        "aten::_cudnn_attention_backward",
+        "aten::_cudnn_attention_forward",
+        "aten::_scaled_dot_product_cudnn_attention",
+        "aten::_scaled_dot_product_cudnn_attention_backward",
+        "aten::scaled_dot_product_attention"
+      ],
+      "measurements": [
+        {
+          "window": 0,
+          "seconds": 22.375911246985197,
+          "tokens_per_second": 146443.19794759186,
+          "loss": 8.670882506370544,
+          "grad_norm": 1.5837345123291016
+        },
+        {
+          "window": 1,
+          "seconds": 22.368172516988125,
+          "tokens_per_second": 146493.86298819646,
+          "loss": 6.924217104911804,
+          "grad_norm": 1.2160696983337402
+        },
+        {
+          "window": 2,
+          "seconds": 22.38005008501932,
+          "tokens_per_second": 146416.1155829322,
+          "loss": 6.131896071434021,
+          "grad_norm": 1.073512315750122
+        }
+      ],
+      "protocol": {
+        "version": 2,
+        "warmup": 20,
+        "steps": 100,
+        "windows": 3,
+        "data_mode": "real",
+        "profile": false,
+        "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+      },
+      "config_identity": "4eddb76df8805854896bd9346f88c96e1ca86e13175f332958007db785c440c5",
+      "status": "ok",
+      "source_hash": "01554cd15e00965f15ac23dc010aec0c32ecd9321a73367b5e04d75b1d72274a",
+      "compiler_cache": null
+    },
+    "regression-90m-compiled": {
+      "tokens_per_second": 508929.7088951448,
+      "micro_batch_size": 32,
+      "compile": true,
+      "compile_mode": "default",
+      "sdpa_backend": "auto",
+      "cpu_threads": 8,
+      "warmup_seconds": 23.908192501985468,
+      "first_update_seconds": 22.70378688396886,
+      "peak_memory_bytes": 15003134464,
+      "attention_kernels": [
+        "aten::_cudnn_attention_backward",
+        "aten::_cudnn_attention_forward",
+        "aten::_scaled_dot_product_cudnn_attention",
+        "aten::_scaled_dot_product_cudnn_attention_backward",
+        "cudnn_generated_fort_native_sdpa_sm90_flash_bprop_wgmma_f16_knob_2_64x64x64_1x4x1_cga1x1x1_kernel0_0",
+        "cudnn_generated_fort_native_sdpa_sm90_flash_fprop_wgmma_f16_knob_1_64x128x64_4x1x1_cga1x1x1_kernel0_0"
+      ],
+      "measurements": [
+        {
+          "window": 0,
+          "timestamp": 1788881384.266109,
+          "seconds": 6.411242436035536,
+          "tokens_per_second": 511102.1822513151,
+          "loss": 8.670835709571838,
+          "grad_norm": 1.5823012590408325
+        },
+        {
+          "window": 1,
+          "timestamp": 1788881390.677407,
+          "seconds": 6.438610170967877,
+          "tokens_per_second": 508929.7088951448,
+          "loss": 6.9243195104599,
+          "grad_norm": 1.2102031707763672
+        },
+        {
+          "window": 2,
+          "timestamp": 1788881397.1160562,
+          "seconds": 6.4576824069954455,
+          "tokens_per_second": 507426.6266873584,
+          "loss": 6.1321518611907955,
+          "grad_norm": 1.088658094406128
+        }
+      ],
+      "protocol": {
+        "version": 2,
+        "warmup": 20,
+        "steps": 100,
+        "windows": 3,
+        "data_mode": "real",
+        "profile": false,
+        "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+      },
+      "config_identity": "add34ac5edeb208ee56cfd75ab117f83cea8675d4878ebf02427bd01a7bcc18e",
+      "status": "ok",
+      "source_hash": "958075330a3f7d2c5789531bfee0c76a45005ddc23efb7a3258c6e31ec48b272",
+      "compiler_cache": {
+        "TORCHINDUCTOR_CACHE_DIR": "/tmp/torchinductor_zesen",
+        "TRITON_CACHE_DIR": null
+      }
+    },
+    "rope-a": {
+      "tokens_per_second": 1628365.0238498596,
+      "micro_batch_size": 32,
+      "compile": true,
+      "compile_mode": "default",
+      "sdpa_backend": "auto",
+      "cpu_threads": 8,
+      "warmup_seconds": 16.895631172985304,
+      "first_update_seconds": 16.506331493961625,
+      "peak_memory_bytes": 5782008832,
+      "attention_kernels": [
+        "aten::_cudnn_attention_backward",
+        "aten::_cudnn_attention_forward",
+        "aten::_scaled_dot_product_cudnn_attention",
+        "aten::_scaled_dot_product_cudnn_attention_backward"
+      ],
+      "measurements": [
+        {
+          "window": 0,
+          "seconds": 2.00492994801607,
+          "tokens_per_second": 1634371.3171836645,
+          "loss": 8.50720968723297,
+          "grad_norm": 0.7819077372550964
+        },
+        {
+          "window": 1,
+          "seconds": 2.0123252170160413,
+          "tokens_per_second": 1628365.0238498596,
+          "loss": 6.529961032867432,
+          "grad_norm": 0.658333957195282
+        },
+        {
+          "window": 2,
+          "seconds": 2.0246172689949162,
+          "tokens_per_second": 1618478.7367869813,
+          "loss": 5.867504014968872,
+          "grad_norm": 0.6952440738677979
+        }
+      ],
+      "protocol": {
+        "version": 2,
+        "warmup": 20,
+        "steps": 100,
+        "windows": 3,
+        "data_mode": "real",
+        "profile": true,
+        "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+      },
+      "config_identity": "cf513265ed7720857689906eeb3e8db8763826a6e2435acc724e905572c8bf8e",
+      "status": "ok",
+      "source_hash": "46779df7b53232ffdd7d88ad508fa7633e4170197863ea319a4228905d94d422",
+      "compiler_cache": null
+    },
+    "rope-b": {
+      "tokens_per_second": 1620981.0133950447,
+      "micro_batch_size": 32,
+      "compile": true,
+      "compile_mode": "default",
+      "sdpa_backend": "auto",
+      "cpu_threads": 8,
+      "warmup_seconds": 2.8748836489976384,
+      "first_update_seconds": 2.4785725249676034,
+      "peak_memory_bytes": 5782008832,
+      "attention_kernels": [
+        "aten::_cudnn_attention_backward",
+        "aten::_cudnn_attention_forward",
+        "aten::_scaled_dot_product_cudnn_attention",
+        "aten::_scaled_dot_product_cudnn_attention_backward"
+      ],
+      "measurements": [
+        {
+          "window": 0,
+          "seconds": 2.0192819569492713,
+          "tokens_per_second": 1622755.053459986,
+          "loss": 8.507214260101318,
+          "grad_norm": 0.7856578230857849
+        },
+        {
+          "window": 1,
+          "seconds": 2.0227337250253186,
+          "tokens_per_second": 1619985.8436428574,
+          "loss": 6.5300961065292356,
+          "grad_norm": 0.6692879796028137
+        },
+        {
+          "window": 2,
+          "seconds": 2.0214919070131145,
+          "tokens_per_second": 1620981.0133950447,
+          "loss": 5.870151386260987,
+          "grad_norm": 0.6978887319564819
+        }
+      ],
+      "protocol": {
+        "version": 2,
+        "warmup": 20,
+        "steps": 100,
+        "windows": 3,
+        "data_mode": "real",
+        "profile": true,
+        "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+      },
+      "config_identity": "cf513265ed7720857689906eeb3e8db8763826a6e2435acc724e905572c8bf8e",
+      "status": "ok",
+      "source_hash": "46779df7b53232ffdd7d88ad508fa7633e4170197863ea319a4228905d94d422",
+      "compiler_cache": null
+    }
+  },
+  "tuning": {
+    "selected": {
+      "status": "ok",
+      "synthetic": false,
+      "tokens_per_second": 1279245.205347925,
+      "seconds_per_step": 0.025615104800090195,
+      "first_update_seconds": 2.815945231996011,
+      "warmup_seconds": 3.364232116029598,
+      "peak_memory_bytes": 249763840,
+      "total_memory_bytes": 102005473280,
+      "micro_batch_size": 32,
+      "compile": true,
+      "compile_mode": "max-autotune",
+      "sdpa_backend": "flash",
+      "cpu_threads": 1,
+      "attention_kernels": [],
+      "environment": {
+        "python": "3.12.13 (main, May 10 2026, 19:27:23) [Clang 22.1.3 ]",
+        "platform": "Linux-5.14.0-687.42.1.el9_8.aarch64-aarch64-with-glibc2.34",
+        "hostname": "n208",
+        "versions": {
+          "torch": "2.14.0",
+          "numpy": "2.5.3",
+          "pydantic": "2.13.5",
+          "datasets": "5.0.1",
+          "transformers": "5.16.1"
+        },
+        "cuda": "13.0",
+        "git_revision": "f9280080b832fecf439cf2e325123fcaa8989ad2",
+        "git_status": "M README.md\n M src/tiny_llm/cli.py\n M src/tiny_llm/config.py\n M src/tiny_llm/experiments.py\n M src/tiny_llm/runtime.py\n M src/tiny_llm/train.py\n M tests/test_training.py\n?? scripts/\n?? src/tiny_llm/benchmark.py\n?? tests/test_benchmark.py",
+        "gpu": "NVIDIA GH200 120GB",
+        "cuda_visible_devices": "0",
+        "source_hash": "c53f3b0093cc35339de14242e6d9983e539ce0241edb559b67d4aacb836d73d5",
+        "cpu_affinity": [
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83,
+          84,
+          85,
+          86,
+          87,
+          88,
+          89,
+          90,
+          91,
+          92,
+          93,
+          94,
+          95,
+          96,
+          97,
+          98,
+          99,
+          100,
+          101,
+          102,
+          103,
+          104,
+          105,
+          106,
+          107,
+          108,
+          109,
+          110,
+          111,
+          112,
+          113,
+          114,
+          115,
+          116,
+          117,
+          118,
+          119,
+          120,
+          121,
+          122,
+          123,
+          124,
+          125,
+          126,
+          127,
+          128,
+          129,
+          130,
+          131,
+          132,
+          133,
+          134,
+          135,
+          136,
+          137,
+          138,
+          139,
+          140,
+          141,
+          142,
+          143
+        ],
+        "cpu_threads": 1,
+        "cudnn": 92400,
+        "slurm": {
+          "SLURM_STEP_NUM_TASKS": "1",
+          "SLURM_JOB_USER": "zesen",
+          "SLURM_TASKS_PER_NODE": "1",
+          "SLURM_JOB_UID": "4005080",
+          "SLURM_STEP_GPUS": "1",
+          "SLURM_CPU_BIND": "quiet,mask_cpu:0x000000000000000000000000000000000000FFFFFFFFFFFFFFFFFF000000000000000000",
+          "SLURM_TASK_PID": "1051884",
+          "SLURM_LOCALID": "0",
+          "SLURM_CPU_BIND_VERBOSE": "quiet",
+          "SLURM_JOB_START_TIME": "1788877654",
+          "SLURM_STEP_NODELIST": "n208",
+          "SLURM_JOB_END_TIME": "1788884861",
+          "SLURM_CPUS_ON_NODE": "72",
+          "SLURM_UMASK": "0002",
+          "SLURM_JOB_CPUS_PER_NODE": "72",
+          "SLURM_GPUS_ON_NODE": "1",
+          "SLURM_GTIDS": "0",
+          "SLURM_JOB_PARTITION": "gpu",
+          "SLURM_OOM_KILL_STEP": "0",
+          "SLURM_STEPID": "3",
+          "SLURM_CPU_BIND_LIST": "0x000000000000000000000000000000000000FFFFFFFFFFFFFFFFFF000000000000000000",
+          "SLURM_JOBID": "2158374",
+          "SLURM_GPUS": "1",
+          "SLURM_LAUNCH_NODE_IPADDR": "192.168.100.3",
+          "SLURM_CPU_BIND_TYPE": "mask_cpu:",
+          "SLURM_PROCID": "0",
+          "SLURM_NTASKS": "1",
+          "SLURM_TOPOLOGY_ADDR": "global.group6.n208",
+          "SLURM_DISTRIBUTION": "cyclic",
+          "SLURM_TOPOLOGY_ADDR_PATTERN": "switch.switch.node",
+          "SLURM_SRUN_COMM_HOST": "192.168.100.3",
+          "SLURM_SCRIPT_CONTEXT": "prolog_task",
+          "SLURM_NODELIST": "n208",
+          "SLURM_SRUN_COMM_PORT": "36703",
+          "SLURM_STEP_ID": "3",
+          "SLURM_PRIO_PROCESS": "0",
+          "SLURM_NPROCS": "1",
+          "SLURM_NNODES": "1",
+          "SLURM_JOB_ID": "2158374",
+          "SLURM_NODEID": "0",
+          "SLURM_STEP_NUM_NODES": "1",
+          "SLURM_STEP_TASKS_PER_NODE": "1",
+          "SLURM_MPI_TYPE": "pmi2",
+          "SLURM_CONF": "/etc/slurm/slurm.conf",
+          "SLURM_JOB_NAME": "bash",
+          "SLURM_STEP_LAUNCHER_PORT": "36703",
+          "SLURM_JOB_GID": "4005080",
+          "SLURM_JOB_NODELIST": "n208"
+        },
+        "gpu_status": "uuid, name, driver_version, memory.total [MiB], power.limit [W], power.draw [W], clocks.current.sm [MHz], clocks.current.memory [MHz], utilization.gpu [%]\nGPU-ac9d16b9-92b4-f5d0-51fa-af394e621f3c, NVIDIA GH200 120GB, 580.159.04, 97871 MiB, 900.00 W, 131.78 W, 1980 MHz, 2619 MHz, 0 %",
+        "gpu_topology": "\u001b[4mGPU0\tCPU Affinity\tNUMA Affinity\tGPU NUMA ID\u001b[0m\nGPU0\t X \t72-143\t1\t\t12\n\nLegend:\n\n  X    = Self\n  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)\n  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node\n  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)\n  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)\n  PIX  = Connection traversing at most a single PCIe bridge\n  NV#  = Connection traversing a bonded set of # NVLinks",
+        "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+      },
+      "protocol": {
+        "version": 2,
+        "warmup": 20,
+        "steps": 100,
+        "windows": 3,
+        "data_mode": "real",
+        "profile": false,
+        "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+      },
+      "measurements": [
+        {
+          "window": 0,
+          "seconds": 2.5607885470381007,
+          "tokens_per_second": 1279605.8478901212,
+          "loss": 8.507218670845031,
+          "grad_norm": 0.780534565448761
+        },
+        {
+          "window": 1,
+          "seconds": 2.5615104800090194,
+          "tokens_per_second": 1279245.205347925,
+          "loss": 6.529993124008179,
+          "grad_norm": 0.6929060816764832
+        },
+        {
+          "window": 2,
+          "seconds": 2.570040268008597,
+          "tokens_per_second": 1274999.4779416579,
+          "loss": 5.867994875907898,
+          "grad_norm": 0.6729984879493713
+        }
+      ],
+      "config_identity": "86ecda3739c102a04fda4eb4abde8563147e59c83bbb372ee7036fcb20818bc1",
+      "config_path": "runs/gh200/tuning/micro-32-compile-1-flash-max-autotune-threads-1.yaml"
+    },
+    "budget_minutes": 45.0,
+    "budget_exhausted": false,
+    "candidates": [
+      {
+        "status": "ok",
+        "synthetic": false,
+        "tokens_per_second": 262313.1086441692,
+        "seconds_per_step": 0.12491941470012534,
+        "first_update_seconds": 0.6194458190002479,
+        "warmup_seconds": 3.0524051220272668,
+        "peak_memory_bytes": 4868299264,
+        "total_memory_bytes": 102005473280,
+        "micro_batch_size": 8,
+        "compile": false,
+        "compile_mode": "default",
+        "sdpa_backend": "auto",
+        "cpu_threads": 8,
+        "attention_kernels": [
+          "aten::_cudnn_attention_backward",
+          "aten::_cudnn_attention_forward",
+          "aten::_scaled_dot_product_cudnn_attention",
+          "aten::_scaled_dot_product_cudnn_attention_backward",
+          "aten::scaled_dot_product_attention"
+        ],
+        "protocol": {
+          "version": 2,
+          "warmup": 20,
+          "steps": 100,
+          "windows": 3,
+          "data_mode": "real",
+          "profile": false,
+          "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+        },
+        "measurements": [
+          {
+            "window": 0,
+            "seconds": 12.386168516008183,
+            "tokens_per_second": 264553.15828821354,
+            "loss": 8.507210431098938,
+            "grad_norm": 0.7785831093788147
+          },
+          {
+            "window": 1,
+            "seconds": 12.929250388988294,
+            "tokens_per_second": 253440.8338777951,
+            "loss": 6.529956259727478,
+            "grad_norm": 0.6046457886695862
+          },
+          {
+            "window": 2,
+            "seconds": 12.491941470012534,
+            "tokens_per_second": 262313.1086441692,
+            "loss": 5.868088827133179,
+            "grad_norm": 0.6667041778564453
+          }
+        ],
+        "config_identity": "a3f2c49caf2ed53ee8c90253cb957426ad514e6cee85738a00f313c0465f51b3",
+        "config_path": "runs/gh200/tuning/micro-8-compile-0-auto-default-threads-8.yaml"
+      },
+      {
+        "status": "ok",
+        "synthetic": false,
+        "tokens_per_second": 736291.5850542107,
+        "seconds_per_step": 0.04450410770019516,
+        "first_update_seconds": 3.313594422012102,
+        "warmup_seconds": 4.199038388964254,
+        "peak_memory_bytes": 1831524864,
+        "total_memory_bytes": 102005473280,
+        "micro_batch_size": 8,
+        "compile": true,
+        "compile_mode": "default",
+        "sdpa_backend": "auto",
+        "cpu_threads": 8,
+        "attention_kernels": [
+          "aten::_cudnn_attention_backward",
+          "aten::_cudnn_attention_forward",
+          "aten::_scaled_dot_product_cudnn_attention",
+          "aten::_scaled_dot_product_cudnn_attention_backward"
+        ],
+        "protocol": {
+          "version": 2,
+          "warmup": 20,
+          "steps": 100,
+          "windows": 3,
+          "data_mode": "real",
+          "profile": false,
+          "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+        },
+        "measurements": [
+          {
+            "window": 0,
+            "seconds": 4.541158691048622,
+            "tokens_per_second": 721577.9546438482,
+            "loss": 8.507204852104188,
+            "grad_norm": 0.7876102924346924
+          },
+          {
+            "window": 1,
+            "seconds": 4.450410770019516,
+            "tokens_per_second": 736291.5850542107,
+            "loss": 6.53008339881897,
+            "grad_norm": 0.6669259667396545
+          },
+          {
+            "window": 2,
+            "seconds": 4.377119325043168,
+            "tokens_per_second": 748620.2126709634,
+            "loss": 5.871489481925964,
+            "grad_norm": 0.6731878519058228
+          }
+        ],
+        "config_identity": "a39b74856ed4ea377dced2d294a47ce9514052bc82cd90d09d42bd01e2283706",
+        "config_path": "runs/gh200/tuning/micro-8-compile-1-auto-default-threads-8.yaml"
+      },
+      {
+        "status": "ok",
+        "synthetic": false,
+        "tokens_per_second": 1187323.1677801036,
+        "seconds_per_step": 0.027598214950412512,
+        "first_update_seconds": 3.2867821319960058,
+        "warmup_seconds": 3.8081006999709643,
+        "peak_memory_bytes": 3159611904,
+        "total_memory_bytes": 102005473280,
+        "micro_batch_size": 16,
+        "compile": true,
+        "compile_mode": "default",
+        "sdpa_backend": "auto",
+        "cpu_threads": 8,
+        "attention_kernels": [
+          "aten::_cudnn_attention_backward",
+          "aten::_cudnn_attention_forward",
+          "aten::_scaled_dot_product_cudnn_attention",
+          "aten::_scaled_dot_product_cudnn_attention_backward"
+        ],
+        "protocol": {
+          "version": 2,
+          "warmup": 20,
+          "steps": 100,
+          "windows": 3,
+          "data_mode": "real",
+          "profile": false,
+          "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+        },
+        "measurements": [
+          {
+            "window": 0,
+            "seconds": 2.759821495041251,
+            "tokens_per_second": 1187323.1677801036,
+            "loss": 8.507213711738586,
+            "grad_norm": 0.7819103598594666
+          },
+          {
+            "window": 1,
+            "seconds": 2.7251284300000407,
+            "tokens_per_second": 1202438.741575182,
+            "loss": 6.529975337982178,
+            "grad_norm": 0.6265571713447571
+          },
+          {
+            "window": 2,
+            "seconds": 2.7830659119645134,
+            "tokens_per_second": 1177406.5378447934,
+            "loss": 5.868638348579407,
+            "grad_norm": 0.6558533310890198
+          }
+        ],
+        "config_identity": "668c1a2c10f24f2d402c48be677f9ce5d7e19ec71edaed55cf227b999a84aaa9",
+        "config_path": "runs/gh200/tuning/micro-16-compile-1-auto-default-threads-8.yaml"
+      },
+      {
+        "status": "ok",
+        "synthetic": false,
+        "tokens_per_second": 126571.91005775052,
+        "seconds_per_step": 0.2588884056900861,
+        "first_update_seconds": 0.7046554340049624,
+        "warmup_seconds": 5.743413130985573,
+        "peak_memory_bytes": 2660211200,
+        "total_memory_bytes": 102005473280,
+        "micro_batch_size": 4,
+        "compile": false,
+        "compile_mode": "default",
+        "sdpa_backend": "auto",
+        "cpu_threads": 8,
+        "attention_kernels": [
+          "aten::_cudnn_attention_backward",
+          "aten::_cudnn_attention_forward",
+          "aten::_scaled_dot_product_cudnn_attention",
+          "aten::_scaled_dot_product_cudnn_attention_backward",
+          "aten::scaled_dot_product_attention"
+        ],
+        "protocol": {
+          "version": 2,
+          "warmup": 20,
+          "steps": 100,
+          "windows": 3,
+          "data_mode": "real",
+          "profile": false,
+          "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+        },
+        "measurements": [
+          {
+            "window": 0,
+            "seconds": 26.685372827982064,
+            "tokens_per_second": 122793.86243252986,
+            "loss": 8.507198987007142,
+            "grad_norm": 0.788081705570221
+          },
+          {
+            "window": 1,
+            "seconds": 25.888840569008607,
+            "tokens_per_second": 126571.91005775052,
+            "loss": 6.530239744186401,
+            "grad_norm": 0.672255277633667
+          },
+          {
+            "window": 2,
+            "seconds": 25.554987070034258,
+            "tokens_per_second": 128225.46108201209,
+            "loss": 5.870020051002502,
+            "grad_norm": 0.6369100213050842
+          }
+        ],
+        "config_identity": "7d9c6ce1ab15f6d087f8b642366615a9cf6d3136a5b402639c64ba88100a27d0",
+        "config_path": "runs/gh200/tuning/micro-4-compile-0-auto-default-threads-8.yaml"
+      },
+      {
+        "status": "ok",
+        "synthetic": false,
+        "tokens_per_second": 369208.9601922817,
+        "seconds_per_step": 0.08875190889986698,
+        "first_update_seconds": 18.11788327601971,
+        "warmup_seconds": 19.81698275503004,
+        "peak_memory_bytes": 1148688896,
+        "total_memory_bytes": 102005473280,
+        "micro_batch_size": 4,
+        "compile": true,
+        "compile_mode": "default",
+        "sdpa_backend": "auto",
+        "cpu_threads": 8,
+        "attention_kernels": [
+          "aten::_cudnn_attention_backward",
+          "aten::_cudnn_attention_forward",
+          "aten::_scaled_dot_product_cudnn_attention",
+          "aten::_scaled_dot_product_cudnn_attention_backward"
+        ],
+        "protocol": {
+          "version": 2,
+          "warmup": 20,
+          "steps": 100,
+          "windows": 3,
+          "data_mode": "real",
+          "profile": false,
+          "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+        },
+        "measurements": [
+          {
+            "window": 0,
+            "seconds": 8.907120331015904,
+            "tokens_per_second": 367885.453235621,
+            "loss": 8.50718433380127,
+            "grad_norm": 0.7813777327537537
+          },
+          {
+            "window": 1,
+            "seconds": 8.86202547402354,
+            "tokens_per_second": 369757.4566452094,
+            "loss": 6.530061793327332,
+            "grad_norm": 0.6513262987136841
+          },
+          {
+            "window": 2,
+            "seconds": 8.875190889986698,
+            "tokens_per_second": 369208.9601922817,
+            "loss": 5.8701075839996335,
+            "grad_norm": 0.6361281275749207
+          }
+        ],
+        "config_identity": "655d87f7627bd8e92aca508142a36c87a27ff7d5c9231e0e6a24df975b0ef192",
+        "config_path": "runs/gh200/tuning/micro-4-compile-1-auto-default-threads-8.yaml"
+      },
+      {
+        "status": "ok",
+        "synthetic": false,
+        "tokens_per_second": 494537.0527834281,
+        "seconds_per_step": 0.06625994921021629,
+        "first_update_seconds": 0.55961691000266,
+        "warmup_seconds": 1.8194384319940582,
+        "peak_memory_bytes": 9236503040,
+        "total_memory_bytes": 102005473280,
+        "micro_batch_size": 16,
+        "compile": false,
+        "compile_mode": "default",
+        "sdpa_backend": "auto",
+        "cpu_threads": 8,
+        "attention_kernels": [
+          "aten::_cudnn_attention_backward",
+          "aten::_cudnn_attention_forward",
+          "aten::_scaled_dot_product_cudnn_attention",
+          "aten::_scaled_dot_product_cudnn_attention_backward",
+          "aten::scaled_dot_product_attention"
+        ],
+        "protocol": {
+          "version": 2,
+          "warmup": 20,
+          "steps": 100,
+          "windows": 3,
+          "data_mode": "real",
+          "profile": false,
+          "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+        },
+        "measurements": [
+          {
+            "window": 0,
+            "seconds": 6.550867577025201,
+            "tokens_per_second": 500208.5542825184,
+            "loss": 8.5072172832489,
+            "grad_norm": 0.7812772989273071
+          },
+          {
+            "window": 1,
+            "seconds": 6.715110694989562,
+            "tokens_per_second": 487974.08543763304,
+            "loss": 6.530053887367249,
+            "grad_norm": 0.6781433820724487
+          },
+          {
+            "window": 2,
+            "seconds": 6.625994921021629,
+            "tokens_per_second": 494537.0527834281,
+            "loss": 5.870710415840149,
+            "grad_norm": 0.6743789315223694
+          }
+        ],
+        "config_identity": "bbcfbf37fe6932dfc35d92c57f7332286ebe89c5234c0264c7ae0bddcd7cb43d",
+        "config_path": "runs/gh200/tuning/micro-16-compile-0-auto-default-threads-8.yaml"
+      },
+      {
+        "status": "ok",
+        "synthetic": false,
+        "tokens_per_second": 621547.9844409472,
+        "seconds_per_step": 0.05271998432988767,
+        "first_update_seconds": 0.5845906669856049,
+        "warmup_seconds": 1.6564985439763404,
+        "peak_memory_bytes": 17953715200,
+        "total_memory_bytes": 102005473280,
+        "micro_batch_size": 32,
+        "compile": false,
+        "compile_mode": "default",
+        "sdpa_backend": "auto",
+        "cpu_threads": 8,
+        "attention_kernels": [
+          "aten::_cudnn_attention_backward",
+          "aten::_cudnn_attention_forward",
+          "aten::_scaled_dot_product_cudnn_attention",
+          "aten::_scaled_dot_product_cudnn_attention_backward",
+          "aten::scaled_dot_product_attention"
+        ],
+        "protocol": {
+          "version": 2,
+          "warmup": 20,
+          "steps": 100,
+          "windows": 3,
+          "data_mode": "real",
+          "profile": false,
+          "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+        },
+        "measurements": [
+          {
+            "window": 0,
+            "seconds": 5.344700406014454,
+            "tokens_per_second": 613093.2982347483,
+            "loss": 8.507234625816345,
+            "grad_norm": 0.7786964178085327
+          },
+          {
+            "window": 1,
+            "seconds": 5.271998432988767,
+            "tokens_per_second": 621547.9844409472,
+            "loss": 6.529935250282287,
+            "grad_norm": 0.6025497913360596
+          },
+          {
+            "window": 2,
+            "seconds": 5.257479798980057,
+            "tokens_per_second": 623264.4014411038,
+            "loss": 5.868758006095886,
+            "grad_norm": 0.6484807133674622
+          }
+        ],
+        "config_identity": "bd889b270e562a8cfa106f6c2a3291ba285b0da6e4e7ff3e6996572e3bad68a4",
+        "config_path": "runs/gh200/tuning/micro-32-compile-0-auto-default-threads-8.yaml"
+      },
+      {
+        "status": "ok",
+        "synthetic": false,
+        "tokens_per_second": 1262529.2981061847,
+        "seconds_per_step": 0.025954249179922045,
+        "first_update_seconds": 18.310607858002186,
+        "warmup_seconds": 18.805828222015407,
+        "peak_memory_bytes": 5779911680,
+        "total_memory_bytes": 102005473280,
+        "micro_batch_size": 32,
+        "compile": true,
+        "compile_mode": "default",
+        "sdpa_backend": "auto",
+        "cpu_threads": 8,
+        "attention_kernels": [
+          "aten::_cudnn_attention_backward",
+          "aten::_cudnn_attention_forward",
+          "aten::_scaled_dot_product_cudnn_attention",
+          "aten::_scaled_dot_product_cudnn_attention_backward"
+        ],
+        "protocol": {
+          "version": 2,
+          "warmup": 20,
+          "steps": 100,
+          "windows": 3,
+          "data_mode": "real",
+          "profile": false,
+          "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+        },
+        "measurements": [
+          {
+            "window": 0,
+            "seconds": 2.5973020769888535,
+            "tokens_per_second": 1261616.8250244164,
+            "loss": 8.507219161987305,
+            "grad_norm": 0.7804208397865295
+          },
+          {
+            "window": 1,
+            "seconds": 2.5938242619740777,
+            "tokens_per_second": 1263308.408375412,
+            "loss": 6.529996762275696,
+            "grad_norm": 0.6317613124847412
+          },
+          {
+            "window": 2,
+            "seconds": 2.5954249179922044,
+            "tokens_per_second": 1262529.2981061847,
+            "loss": 5.865303812026977,
+            "grad_norm": 0.6163831353187561
+          }
+        ],
+        "config_identity": "6840322a5608ca2e4d6bb7a31484410df7c8ac41619bccb2685685c771166ac8",
+        "config_path": "runs/gh200/tuning/micro-32-compile-1-auto-default-threads-8.yaml"
+      },
+      {
+        "status": "ok",
+        "synthetic": false,
+        "tokens_per_second": 1263664.1397966812,
+        "seconds_per_step": 0.025930940799880772,
+        "first_update_seconds": 3.629207271966152,
+        "warmup_seconds": 4.122248527011834,
+        "peak_memory_bytes": 5779911680,
+        "total_memory_bytes": 102005473280,
+        "micro_batch_size": 32,
+        "compile": true,
+        "compile_mode": "default",
+        "sdpa_backend": "flash",
+        "cpu_threads": 8,
+        "attention_kernels": [
+          "aten::_cudnn_attention_backward",
+          "aten::_cudnn_attention_forward",
+          "aten::_scaled_dot_product_cudnn_attention",
+          "aten::_scaled_dot_product_cudnn_attention_backward"
+        ],
+        "protocol": {
+          "version": 2,
+          "warmup": 20,
+          "steps": 100,
+          "windows": 3,
+          "data_mode": "real",
+          "profile": false,
+          "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+        },
+        "measurements": [
+          {
+            "window": 0,
+            "seconds": 2.5930940799880773,
+            "tokens_per_second": 1263664.1397966812,
+            "loss": 8.507210454940797,
+            "grad_norm": 0.7841594815254211
+          },
+          {
+            "window": 1,
+            "seconds": 2.592228057968896,
+            "tokens_per_second": 1264086.3098162324,
+            "loss": 6.530080013275146,
+            "grad_norm": 0.6628909111022949
+          },
+          {
+            "window": 2,
+            "seconds": 2.612646053021308,
+            "tokens_per_second": 1254207.3949169859,
+            "loss": 5.868990015983582,
+            "grad_norm": 0.6733908653259277
+          }
+        ],
+        "config_identity": "ef495b0a489dd1b7deb89c2dc340e3a9f2d1decdf3c0cfdb22ed5e5d59984569",
+        "config_path": "runs/gh200/tuning/micro-32-compile-1-flash-default-threads-8.yaml"
+      },
+      {
+        "status": "ok",
+        "synthetic": false,
+        "tokens_per_second": 1262467.6131599692,
+        "seconds_per_step": 0.025955517320544456,
+        "first_update_seconds": 3.249951310979668,
+        "warmup_seconds": 3.7471549339825287,
+        "peak_memory_bytes": 5779911680,
+        "total_memory_bytes": 102005473280,
+        "micro_batch_size": 32,
+        "compile": true,
+        "compile_mode": "default",
+        "sdpa_backend": "cudnn",
+        "cpu_threads": 8,
+        "attention_kernels": [
+          "aten::_cudnn_attention_backward",
+          "aten::_cudnn_attention_forward",
+          "aten::_scaled_dot_product_cudnn_attention",
+          "aten::_scaled_dot_product_cudnn_attention_backward"
+        ],
+        "protocol": {
+          "version": 2,
+          "warmup": 20,
+          "steps": 100,
+          "windows": 3,
+          "data_mode": "real",
+          "profile": false,
+          "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+        },
+        "measurements": [
+          {
+            "window": 0,
+            "seconds": 2.592282167985104,
+            "tokens_per_second": 1264059.9239036348,
+            "loss": 8.50722270488739,
+            "grad_norm": 0.7833279371261597
+          },
+          {
+            "window": 1,
+            "seconds": 2.598797584010754,
+            "tokens_per_second": 1260890.8135672796,
+            "loss": 6.530054397583008,
+            "grad_norm": 0.6836622357368469
+          },
+          {
+            "window": 2,
+            "seconds": 2.595551732054446,
+            "tokens_per_second": 1262467.6131599692,
+            "loss": 5.870695238113403,
+            "grad_norm": 0.6639447212219238
+          }
+        ],
+        "config_identity": "6044c0ab3b495a5c8d4f4c5e26beef04a6b8b4174d17d2657151b02e89203bcb",
+        "config_path": "runs/gh200/tuning/micro-32-compile-1-cudnn-default-threads-8.yaml"
+      },
+      {
+        "status": "ok",
+        "synthetic": false,
+        "tokens_per_second": 1192462.3405756687,
+        "seconds_per_step": 0.027479274510405955,
+        "first_update_seconds": 3.4151987949735485,
+        "warmup_seconds": 3.941204217961058,
+        "peak_memory_bytes": 3159611904,
+        "total_memory_bytes": 102005473280,
+        "micro_batch_size": 16,
+        "compile": true,
+        "compile_mode": "default",
+        "sdpa_backend": "flash",
+        "cpu_threads": 8,
+        "attention_kernels": [
+          "aten::_cudnn_attention_backward",
+          "aten::_cudnn_attention_forward",
+          "aten::_scaled_dot_product_cudnn_attention",
+          "aten::_scaled_dot_product_cudnn_attention_backward"
+        ],
+        "protocol": {
+          "version": 2,
+          "warmup": 20,
+          "steps": 100,
+          "windows": 3,
+          "data_mode": "real",
+          "profile": false,
+          "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+        },
+        "measurements": [
+          {
+            "window": 0,
+            "seconds": 2.7479274510405958,
+            "tokens_per_second": 1192462.3405756687,
+            "loss": 8.50719757080078,
+            "grad_norm": 0.7779633402824402
+          },
+          {
+            "window": 1,
+            "seconds": 2.7362311729812063,
+            "tokens_per_second": 1197559.6332490533,
+            "loss": 6.529918365478515,
+            "grad_norm": 0.7292013168334961
+          },
+          {
+            "window": 2,
+            "seconds": 2.7618238879949786,
+            "tokens_per_second": 1186462.3281171205,
+            "loss": 5.8677483701705935,
+            "grad_norm": 0.6772377490997314
+          }
+        ],
+        "config_identity": "662e62a8c6612372b93032b933ed35233d73477fe3bfa7a896b7a83871ff23d8",
+        "config_path": "runs/gh200/tuning/micro-16-compile-1-flash-default-threads-8.yaml"
+      },
+      {
+        "status": "ok",
+        "synthetic": false,
+        "tokens_per_second": 1198838.3088683009,
+        "seconds_per_step": 0.027333127209567466,
+        "first_update_seconds": 2.8775146470288746,
+        "warmup_seconds": 3.3916661540279165,
+        "peak_memory_bytes": 3159611904,
+        "total_memory_bytes": 102005473280,
+        "micro_batch_size": 16,
+        "compile": true,
+        "compile_mode": "default",
+        "sdpa_backend": "cudnn",
+        "cpu_threads": 8,
+        "attention_kernels": [
+          "aten::_cudnn_attention_backward",
+          "aten::_cudnn_attention_forward",
+          "aten::_scaled_dot_product_cudnn_attention",
+          "aten::_scaled_dot_product_cudnn_attention_backward"
+        ],
+        "protocol": {
+          "version": 2,
+          "warmup": 20,
+          "steps": 100,
+          "windows": 3,
+          "data_mode": "real",
+          "profile": false,
+          "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+        },
+        "measurements": [
+          {
+            "window": 0,
+            "seconds": 2.7299067770363763,
+            "tokens_per_second": 1200334.0288261925,
+            "loss": 8.507219395637513,
+            "grad_norm": 0.782336950302124
+          },
+          {
+            "window": 1,
+            "seconds": 2.7333127209567465,
+            "tokens_per_second": 1198838.3088683009,
+            "loss": 6.529975662231445,
+            "grad_norm": 0.6652670502662659
+          },
+          {
+            "window": 2,
+            "seconds": 2.75397282501217,
+            "tokens_per_second": 1189844.7109715107,
+            "loss": 5.869035215377807,
+            "grad_norm": 0.6479825377464294
+          }
+        ],
+        "config_identity": "0457ea624d706a0c2d6a71df78bc1f661b78bfc8635fb10f8d4be7c403639f84",
+        "config_path": "runs/gh200/tuning/micro-16-compile-1-cudnn-default-threads-8.yaml"
+      },
+      {
+        "status": "ok",
+        "synthetic": false,
+        "tokens_per_second": 1224295.5784476362,
+        "seconds_per_step": 0.026764778519864193,
+        "first_update_seconds": 15.026774068013765,
+        "warmup_seconds": 15.696585774014238,
+        "peak_memory_bytes": 249763840,
+        "total_memory_bytes": 102005473280,
+        "micro_batch_size": 32,
+        "compile": true,
+        "compile_mode": "reduce-overhead",
+        "sdpa_backend": "flash",
+        "cpu_threads": 8,
+        "attention_kernels": [],
+        "protocol": {
+          "version": 2,
+          "warmup": 20,
+          "steps": 100,
+          "windows": 3,
+          "data_mode": "real",
+          "profile": false,
+          "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+        },
+        "measurements": [
+          {
+            "window": 0,
+            "seconds": 2.662440457032062,
+            "tokens_per_second": 1230750.528653246,
+            "loss": 8.507234716415406,
+            "grad_norm": 0.7800118923187256
+          },
+          {
+            "window": 1,
+            "seconds": 2.6816460780100897,
+            "tokens_per_second": 1221936.0440105293,
+            "loss": 6.529963073730468,
+            "grad_norm": 0.6529755592346191
+          },
+          {
+            "window": 2,
+            "seconds": 2.6764778519864194,
+            "tokens_per_second": 1224295.5784476362,
+            "loss": 5.867330112457275,
+            "grad_norm": 0.6342682838439941
+          }
+        ],
+        "config_identity": "dc1c6c2cad3f10f14730660d238d629127904c52549f50e177a10d961123fc91",
+        "config_path": "runs/gh200/tuning/micro-32-compile-1-flash-reduce-overhead-threads-8.yaml"
+      },
+      {
+        "status": "ok",
+        "synthetic": false,
+        "tokens_per_second": 1273333.9074698917,
+        "seconds_per_step": 0.02573401981033385,
+        "first_update_seconds": 129.0935521160136,
+        "warmup_seconds": 129.66457633202663,
+        "peak_memory_bytes": 248256512,
+        "total_memory_bytes": 102005473280,
+        "micro_batch_size": 32,
+        "compile": true,
+        "compile_mode": "max-autotune",
+        "sdpa_backend": "flash",
+        "cpu_threads": 8,
+        "attention_kernels": [],
+        "protocol": {
+          "version": 2,
+          "warmup": 20,
+          "steps": 100,
+          "windows": 3,
+          "data_mode": "real",
+          "profile": false,
+          "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+        },
+        "measurements": [
+          {
+            "window": 0,
+            "seconds": 2.547904090024531,
+            "tokens_per_second": 1286076.66702574,
+            "loss": 8.507225494384766,
+            "grad_norm": 0.7836102247238159
+          },
+          {
+            "window": 1,
+            "seconds": 2.573401981033385,
+            "tokens_per_second": 1273333.9074698917,
+            "loss": 6.53011474609375,
+            "grad_norm": 0.6645277738571167
+          },
+          {
+            "window": 2,
+            "seconds": 2.5892700819531456,
+            "tokens_per_second": 1265530.3990259042,
+            "loss": 5.870873565673828,
+            "grad_norm": 0.6425525546073914
+          }
+        ],
+        "config_identity": "21d5771bb6fa8284e7d105076932d82a513e58907a3410afd4b50fe127cda5ad",
+        "config_path": "runs/gh200/tuning/micro-32-compile-1-flash-max-autotune-threads-8.yaml"
+      },
+      {
+        "status": "ok",
+        "synthetic": false,
+        "tokens_per_second": 1279245.205347925,
+        "seconds_per_step": 0.025615104800090195,
+        "first_update_seconds": 2.815945231996011,
+        "warmup_seconds": 3.364232116029598,
+        "peak_memory_bytes": 249763840,
+        "total_memory_bytes": 102005473280,
+        "micro_batch_size": 32,
+        "compile": true,
+        "compile_mode": "max-autotune",
+        "sdpa_backend": "flash",
+        "cpu_threads": 1,
+        "attention_kernels": [],
+        "protocol": {
+          "version": 2,
+          "warmup": 20,
+          "steps": 100,
+          "windows": 3,
+          "data_mode": "real",
+          "profile": false,
+          "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+        },
+        "measurements": [
+          {
+            "window": 0,
+            "seconds": 2.5607885470381007,
+            "tokens_per_second": 1279605.8478901212,
+            "loss": 8.507218670845031,
+            "grad_norm": 0.780534565448761
+          },
+          {
+            "window": 1,
+            "seconds": 2.5615104800090194,
+            "tokens_per_second": 1279245.205347925,
+            "loss": 6.529993124008179,
+            "grad_norm": 0.6929060816764832
+          },
+          {
+            "window": 2,
+            "seconds": 2.570040268008597,
+            "tokens_per_second": 1274999.4779416579,
+            "loss": 5.867994875907898,
+            "grad_norm": 0.6729984879493713
+          }
+        ],
+        "config_identity": "86ecda3739c102a04fda4eb4abde8563147e59c83bbb372ee7036fcb20818bc1",
+        "config_path": "runs/gh200/tuning/micro-32-compile-1-flash-max-autotune-threads-1.yaml"
+      },
+      {
+        "status": "ok",
+        "synthetic": false,
+        "tokens_per_second": 1273972.9885745377,
+        "seconds_per_step": 0.025721110489685086,
+        "first_update_seconds": 2.799526469956618,
+        "warmup_seconds": 3.345001011970453,
+        "peak_memory_bytes": 249763840,
+        "total_memory_bytes": 102005473280,
+        "micro_batch_size": 32,
+        "compile": true,
+        "compile_mode": "max-autotune",
+        "sdpa_backend": "flash",
+        "cpu_threads": 4,
+        "attention_kernels": [],
+        "protocol": {
+          "version": 2,
+          "warmup": 20,
+          "steps": 100,
+          "windows": 3,
+          "data_mode": "real",
+          "profile": false,
+          "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151"
+        },
+        "measurements": [
+          {
+            "window": 0,
+            "seconds": 2.562342132034246,
+            "tokens_per_second": 1278830.004406377,
+            "loss": 8.507212042808533,
+            "grad_norm": 0.7796135544776917
+          },
+          {
+            "window": 1,
+            "seconds": 2.572111048968509,
+            "tokens_per_second": 1273972.9885745377,
+            "loss": 6.529925785064697,
+            "grad_norm": 0.6537966728210449
+          },
+          {
+            "window": 2,
+            "seconds": 2.5749141330015846,
+            "tokens_per_second": 1272586.1254954645,
+            "loss": 5.866275005340576,
+            "grad_norm": 0.6720508337020874
+          }
+        ],
+        "config_identity": "4aa081cfe54f15efddc7582223d0f461406d2ab593963987927d86e8fbf28a63",
+        "config_path": "runs/gh200/tuning/micro-32-compile-1-flash-max-autotune-threads-4.yaml"
+      }
+    ]
+  },
+  "profiles": {
+    "initial-eager8": {
+      "profiled_updates": 3,
+      "kernel_count": 17079,
+      "kernel_ms": 152.3297350000021,
+      "kernel_ms_by_name": {
+        "other": 88.21504800000055,
+        "cross_entropy": 25.51135099999999,
+        "matmul": 29.784909000000017,
+        "attention": 8.074387000000005,
+        "rotary_trigonometry_fused": 0.74404
+      }
+    },
+    "initial-compiled8": {
+      "profiled_updates": 3,
+      "kernel_count": 6987,
+      "kernel_ms": 83.19481900000008,
+      "kernel_ms_by_name": {
+        "other": 18.614173000000033,
+        "cross_entropy": 8.350249000000002,
+        "matmul": 29.677964999999922,
+        "attention": 8.128562000000011,
+        "rotary_trigonometry_fused": 18.423869999999997
+      }
+    },
+    "initial-compiled16": {
+      "profiled_updates": 3,
+      "kernel_count": 3417,
+      "kernel_ms": 72.52124500000006,
+      "kernel_ms_by_name": {
+        "other": 14.727923000000049,
+        "cross_entropy": 8.152394000000001,
+        "matmul": 23.95498400000003,
+        "attention": 7.270749,
+        "rotary_trigonometry_fused": 18.415194999999986
+      }
+    },
+    "nocache-a": {
+      "profiled_updates": 3,
+      "kernel_count": 1635,
+      "kernel_ms": 68.477947,
+      "kernel_ms_by_name": {
+        "other": 13.015154999999996,
+        "cross_entropy": 8.168111,
+        "matmul": 22.310492999999994,
+        "attention": 6.656633999999998,
+        "rotary_trigonometry_fused": 18.327554000000006
+      }
+    },
+    "rope-a": {
+      "profiled_updates": 3,
+      "kernel_count": 1539,
+      "kernel_ms": 50.896716000000076,
+      "kernel_ms_by_name": {
+        "other": 13.66074600000002,
+        "cross_entropy": 8.140878999999998,
+        "matmul": 22.343508999999987,
+        "attention": 6.751582
+      }
+    }
+  },
+  "matched-baseline": {
+    "status": "complete",
+    "parameters": 20403520,
+    "tokens": 100000768,
+    "step": 3058,
+    "epochs": 10,
+    "best_subset_loss": 3.983668899834863,
+    "best_epoch": 10,
+    "final_validation": {
+      "loss": 3.9782521253805574,
+      "perplexity": 53.4235748630763,
+      "tokens": 197411295,
+      "seconds": 326.4358035119949,
+      "split": "full",
+      "validation_complete": true
+    },
+    "seconds_this_session": 750.2737968600122,
+    "peak_memory_bytes": 4861285888,
+    "recipe_identity": "7275671f5db9c56ddefd69edc218fc7569365fae61a2fcb5cf59008adc2ee53e"
+  },
+  "matched-optimized": {
+    "status": "complete",
+    "parameters": 20403520,
+    "tokens": 100000768,
+    "step": 3058,
+    "epochs": 10,
+    "best_subset_loss": 3.9846702088820334,
+    "best_epoch": 10,
+    "final_validation": {
+      "loss": 3.97858467260314,
+      "perplexity": 53.44134367883886,
+      "tokens": 197411295,
+      "seconds": 272.82257291302085,
+      "split": "full",
+      "validation_complete": true
+    },
+    "seconds_this_session": 402.3370895650005,
+    "training_seconds": 102.9975891012582,
+    "training_elapsed_seconds": 129.46134830301162,
+    "training_tokens_per_second": 970903.9684578249,
+    "elapsed_tokens_per_second": 772437.2510468726,
+    "peak_memory_bytes": 5781680640,
+    "recipe_identity": "cd2c6895b61c4a1ecdbfd373ef053292a005e4d42dc2756f8ad08a29fc685d8a"
+  },
+  "matched-optimized-partial": {
+    "status": "complete",
+    "parameters": 20403520,
+    "tokens": 100000768,
+    "step": 3058,
+    "epochs": 10,
+    "best_subset_loss": 3.982626676615311,
+    "best_epoch": 10,
+    "final_validation": {
+      "loss": 3.9770210170578215,
+      "perplexity": 53.35784512394833,
+      "tokens": 197411295,
+      "seconds": 278.826779866009,
+      "split": "full",
+      "validation_complete": true
+    },
+    "seconds_this_session": 369.9789764599991,
+    "training_seconds": 65.2171518849209,
+    "training_elapsed_seconds": 91.10182484897086,
+    "training_tokens_per_second": 1533350.738413978,
+    "elapsed_tokens_per_second": 1097681.2831771686,
+    "peak_memory_bytes": 14109950464,
+    "recipe_identity": "cd2c6895b61c4a1ecdbfd373ef053292a005e4d42dc2756f8ad08a29fc685d8a"
+  },
+  "trained-parity": [
+    {
+      "preset": "20m",
+      "trained": true,
+      "tokens": 2048,
+      "loss": 4.318609714508057,
+      "reference_loss": 4.3192267417907715,
+      "relative_gradient_error": 0.014529522508382797
+    },
+    {
+      "preset": "50m",
+      "trained": false,
+      "tokens": 2048,
+      "loss": 10.51513671875,
+      "reference_loss": 10.51520824432373,
+      "relative_gradient_error": 0.00438459450379014
+    },
+    {
+      "preset": "90m",
+      "trained": false,
+      "tokens": 2048,
+      "loss": 10.50678539276123,
+      "reference_loss": 10.506784439086914,
+      "relative_gradient_error": 0.005357263144105673
+    }
+  ],
+  "allocation-usage": {
+    "job_id": "2158374",
+    "account": "naiss2026-3-205-gpu",
+    "gpus": 1,
+    "start_local": "2026-09-08T16:27:34",
+    "end_local": "2026-09-08T17:34:06",
+    "timezone": "Europe/Stockholm",
+    "elapsed_seconds": 3992,
+    "gpu_hours": 1.1088888888888888,
+    "allocated_tres": "billing=1,cpu=72,gres/gpu:nvidia_gh200_120gb=1,gres/gpu=1,mem=105048M,node=1",
+    "state": "CANCELLED by 4005080",
+    "allocation_released": true
+  },
+  "matched-comparison": {
+    "matched-baseline": {
+      "median_training_tokens_per_second": 254483.20919764863,
+      "validation_curve": [
+        {
+          "tokens": 10202112,
+          "loss": 5.326349974567537,
+          "seconds": 1.8059587290044874
+        },
+        {
+          "tokens": 20404224,
+          "loss": 4.877716766653627,
+          "seconds": 1.7324260979657993
+        },
+        {
+          "tokens": 30605312,
+          "loss": 4.623771344473361,
+          "seconds": 1.8157170959748328
+        },
+        {
+          "tokens": 40807424,
+          "loss": 4.393253478771055,
+          "seconds": 1.8624376980005763
+        },
+        {
+          "tokens": 51009536,
+          "loss": 4.253974717602357,
+          "seconds": 2.134346569015179
+        },
+        {
+          "tokens": 61210624,
+          "loss": 4.153005813803774,
+          "seconds": 1.7676099290256388
+        },
+        {
+          "tokens": 71412736,
+          "loss": 4.087799529150495,
+          "seconds": 1.7934902870329097
+        },
+        {
+          "tokens": 81614848,
+          "loss": 4.033170367167172,
+          "seconds": 1.751242823957
+        },
+        {
+          "tokens": 91815936,
+          "loss": 4.00029753458936,
+          "seconds": 1.793993989995215
+        },
+        {
+          "tokens": 100000768,
+          "loss": 3.983668899834863,
+          "seconds": 1.8127324260422029
+        }
+      ],
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 100000768,
+        "step": 3058,
+        "epochs": 10,
+        "best_subset_loss": 3.983668899834863,
+        "best_epoch": 10,
+        "final_validation": {
+          "loss": 3.9782521253805574,
+          "perplexity": 53.4235748630763,
+          "tokens": 197411295,
+          "seconds": 326.4358035119949,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 750.2737968600122,
+        "peak_memory_bytes": 4861285888,
+        "recipe_identity": "7275671f5db9c56ddefd69edc218fc7569365fae61a2fcb5cf59008adc2ee53e"
+      }
+    },
+    "matched-optimized": {
+      "median_training_tokens_per_second": 1598621.5946032244,
+      "validation_curve": [
+        {
+          "tokens": 10202112,
+          "loss": 5.326987198859811,
+          "seconds": 1.5920973120373674
+        },
+        {
+          "tokens": 20404224,
+          "loss": 4.8734093029897565,
+          "seconds": 1.51997088000644
+        },
+        {
+          "tokens": 30605312,
+          "loss": 4.608563403239923,
+          "seconds": 1.518239345983602
+        },
+        {
+          "tokens": 40807424,
+          "loss": 4.382180497780467,
+          "seconds": 1.4801060649915598
+        },
+        {
+          "tokens": 51009536,
+          "loss": 4.248022609696129,
+          "seconds": 1.4849540469585918
+        },
+        {
+          "tokens": 61210624,
+          "loss": 4.151744369033259,
+          "seconds": 1.4512928850017488
+        },
+        {
+          "tokens": 71412736,
+          "loss": 4.085146432517248,
+          "seconds": 1.4946273409877904
+        },
+        {
+          "tokens": 81614848,
+          "loss": 4.033898597017223,
+          "seconds": 1.5036206380464137
+        },
+        {
+          "tokens": 91815936,
+          "loss": 4.000706879576389,
+          "seconds": 1.5445283339940943
+        },
+        {
+          "tokens": 100000768,
+          "loss": 3.9846702088820334,
+          "seconds": 1.4532922969665378
+        }
+      ],
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 100000768,
+        "step": 3058,
+        "epochs": 10,
+        "best_subset_loss": 3.9846702088820334,
+        "best_epoch": 10,
+        "final_validation": {
+          "loss": 3.97858467260314,
+          "perplexity": 53.44134367883886,
+          "tokens": 197411295,
+          "seconds": 272.82257291302085,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 402.3370895650005,
+        "training_seconds": 102.9975891012582,
+        "training_elapsed_seconds": 129.46134830301162,
+        "training_tokens_per_second": 970903.9684578249,
+        "elapsed_tokens_per_second": 772437.2510468726,
+        "peak_memory_bytes": 5781680640,
+        "recipe_identity": "cd2c6895b61c4a1ecdbfd373ef053292a005e4d42dc2756f8ad08a29fc685d8a"
+      }
+    },
+    "matched-optimized-partial": {
+      "median_training_tokens_per_second": 1599462.8601844446,
+      "validation_curve": [
+        {
+          "tokens": 10202112,
+          "loss": 5.324161334275752,
+          "seconds": 1.5726235329639167
+        },
+        {
+          "tokens": 20404224,
+          "loss": 4.8764937469991185,
+          "seconds": 1.5312800829997286
+        },
+        {
+          "tokens": 30605312,
+          "loss": 4.619337205881376,
+          "seconds": 1.5483382269740105
+        },
+        {
+          "tokens": 40807424,
+          "loss": 4.391803490886659,
+          "seconds": 1.5520582160097547
+        },
+        {
+          "tokens": 51009536,
+          "loss": 4.252522895973419,
+          "seconds": 1.5934207289828919
+        },
+        {
+          "tokens": 61210624,
+          "loss": 4.153519426444209,
+          "seconds": 1.5506228969898075
+        },
+        {
+          "tokens": 71412736,
+          "loss": 4.086613547383359,
+          "seconds": 1.5964752399595454
+        },
+        {
+          "tokens": 81614848,
+          "loss": 4.0320906494975475,
+          "seconds": 1.568534298974555
+        },
+        {
+          "tokens": 91815936,
+          "loss": 3.9995115062802555,
+          "seconds": 1.5950116309686564
+        },
+        {
+          "tokens": 100000768,
+          "loss": 3.982626676615311,
+          "seconds": 1.5300879150163382
+        }
+      ],
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 100000768,
+        "step": 3058,
+        "epochs": 10,
+        "best_subset_loss": 3.982626676615311,
+        "best_epoch": 10,
+        "final_validation": {
+          "loss": 3.9770210170578215,
+          "perplexity": 53.35784512394833,
+          "tokens": 197411295,
+          "seconds": 278.826779866009,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 369.9789764599991,
+        "training_seconds": 65.2171518849209,
+        "training_elapsed_seconds": 91.10182484897086,
+        "training_tokens_per_second": 1533350.738413978,
+        "elapsed_tokens_per_second": 1097681.2831771686,
+        "peak_memory_bytes": 14109950464,
+        "recipe_identity": "cd2c6895b61c4a1ecdbfd373ef053292a005e4d42dc2756f8ad08a29fc685d8a"
+      }
+    },
+    "recipe_equal_except_execution": true
+  },
+  "partial-probe": [
+    {
+      "blocks": 32,
+      "seconds": 3.0138499359600246,
+      "loss": 10.430928230285645
+    },
+    {
+      "blocks": 32,
+      "seconds": 0.03262340399669483,
+      "loss": 10.058706283569336
+    },
+    {
+      "blocks": 11,
+      "seconds": 1.6264201599988155,
+      "loss": 9.706504128196023
+    },
+    {
+      "blocks": 25,
+      "seconds": 1.4412431670352817,
+      "loss": 9.414326782226562
+    },
+    {
+      "blocks": 32,
+      "seconds": 0.019019651983398944,
+      "loss": 9.170331001281738
+    }
+  ]
+}

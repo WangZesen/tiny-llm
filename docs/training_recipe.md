@@ -62,6 +62,10 @@ Validation data is explicitly used for recipe selection.
 
 ## Precision, reproducibility, and performance
 
+The 20M, 50M, and 90M recipes default to microbatch 32, `runtime.compile=true`,
+`runtime.compile_mode=default`, automatic SDPA, and eight CPU threads, as measured
+on GH200. The effective batch remains 32,768 targets per optimizer update.
+
 `deterministic=false` retains seeded initialization, seeded block ordering, and
 saved RNG states while allowing fast kernels. It does not promise bitwise replay.
 `deterministic=true` enables strict PyTorch deterministic algorithms, configures
@@ -72,11 +76,15 @@ raise errors. Cross-hardware or cross-version bitwise equality is not guaranteed
 The benchmark runs each candidate in a separate process, using full optimizer
 updates at the same effective batch size. It measures compiled/uncompiled paths
 and microbatches 4, 8, 16, and 32, rejecting candidates above 90% GPU memory usage.
-The selected configuration is saved rather than recomputed during training.
+Candidates warm up for 20 updates and measure three 100-update windows. The
+selected configuration is saved rather than recomputed during training. Real-C4
+benchmarks and a bounded GH200 tuner are also available; see
+[GH200 measurements](gh200_performance.md).
 Synthetic throughput estimates exclude data loading, validation, compilation,
 and checkpoint overhead; training JSONL records observed throughput.
 
-The fast path uses PyTorch SDPA's FlashAttention kernels when supported. The
+The fast path uses PyTorch SDPA with automatic kernel selection (including
+FlashAttention and cuDNN), or an explicitly requested backend. The
 reference path uses explicit matmul, softmax, and masking and retains FP64 for
 second-order analysis. Copy weights with strict `load_state_dict`; disable AMP
 and compilation for derivative calculations. These tests validate derivatives

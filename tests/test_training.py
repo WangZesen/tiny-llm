@@ -128,3 +128,60 @@ def test_offline_train_and_resume(tiny_config, cache_dir, monkeypatch, device):
     changed.optimizer.lr *= 2
     with pytest.raises(ValueError, match="incompatible"):
         train(changed, tiny_config.runtime.output_dir / "latest.pt")
+
+
+def test_throughput_excludes_startup_evaluation_and_checkpoints(
+    tiny_config, cache_dir, monkeypatch
+):
+    import time
+    from types import SimpleNamespace
+
+    import tiny_llm.train as module
+
+    offset = 0.0
+    real_time = time.monotonic
+    monkeypatch.setattr(module, "time", SimpleNamespace(monotonic=lambda: real_time() + offset))
+    original_checkpoint = module.atomic_checkpoint
+    original_evaluate = module.evaluate
+    original_subset = TokenCache.validation_subset
+
+    def checkpoint(*args, **kwargs):
+        nonlocal offset
+        result = original_checkpoint(*args, **kwargs)
+        offset += 10
+        return result
+
+    def evaluate(*args, **kwargs):
+        nonlocal offset
+        result = original_evaluate(*args, **kwargs)
+        offset += 20
+        return result
+
+    def subset(*args, **kwargs):
+        nonlocal offset
+        result = original_subset(*args, **kwargs)
+        offset += 30
+        return result
+
+    monkeypatch.setattr(module, "atomic_checkpoint", checkpoint)
+    monkeypatch.setattr(module, "evaluate", evaluate)
+    monkeypatch.setattr(TokenCache, "validation_subset", subset)
+    result = train(tiny_config)
+    assert result["training_seconds"] < 10
+    assert result["training_elapsed_seconds"] >= 80
+    assert result["seconds_this_session"] > result["training_elapsed_seconds"]
+    assert result["training_tokens_per_second"] > result["elapsed_tokens_per_second"]
+    rows = [
+        json.loads(line)
+        for line in (tiny_config.runtime.output_dir / "metrics.jsonl").read_text().splitlines()
+    ]
+    assert all(row["training_seconds"] < 10 for row in rows if row["event"] == "train")
+
+
+@pytest.mark.cuda
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA required")
+def test_compiled_partial_epoch_resume(tiny_config, cache_dir, monkeypatch):
+    tiny_config.runtime.compile = True
+    # Nine blocks in epoch one exercise one-block and uneven accumulated updates.
+    tiny_config.training.epoch_tokens = 36
+    test_offline_train_and_resume(tiny_config, cache_dir, monkeypatch, "cuda:0")

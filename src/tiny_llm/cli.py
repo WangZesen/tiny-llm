@@ -28,8 +28,15 @@ def main():
             child.add_argument("--full", action="store_true")
         if name in ("benchmark", "benchmark-worker"):
             child.add_argument("--output", required=True, type=Path)
+            child.add_argument("--data-mode", choices=("synthetic", "real"), default="synthetic")
+            child.add_argument("--warmup", type=int, default=20)
+            child.add_argument("--steps", type=int, default=100)
+            child.add_argument("--windows", type=int, default=3)
+            child.add_argument("--profile", action="store_true")
         if name == "benchmark":
             child.add_argument("--all-presets", action="store_true")
+            child.add_argument("--gh200", action="store_true")
+            child.add_argument("--budget-minutes", type=float, default=75)
         if name == "sweep":
             child.add_argument("--output", type=Path, default=Path("runs/campaign"))
             child.add_argument("--benchmarks", type=Path, default=Path("runs/benchmarks"))
@@ -57,17 +64,47 @@ def main():
         case "benchmark":
             from tiny_llm.experiments import benchmark
 
-            if args.all_presets:
+            if args.gh200:
+                if args.all_presets:
+                    parser.error("--gh200 tunes one preset at a time")
+                from tiny_llm.benchmark import tune_gh200
+
+                tune_gh200(config, args.output, args.budget_minutes)
+            elif args.all_presets:
                 for preset in PRESETS:
                     candidate = config.model_copy(deep=True)
                     candidate.model = ModelConfig(**(config.model.model_dump() | PRESETS[preset]))
-                    benchmark(candidate, args.output / preset)
+                    benchmark(
+                        candidate,
+                        args.output / preset,
+                        args.data_mode,
+                        args.warmup,
+                        args.steps,
+                        args.windows,
+                        args.profile,
+                    )
             else:
-                benchmark(config, args.output)
+                benchmark(
+                    config,
+                    args.output,
+                    args.data_mode,
+                    args.warmup,
+                    args.steps,
+                    args.windows,
+                    args.profile,
+                )
         case "benchmark-worker":
             from tiny_llm.experiments import benchmark_worker
 
-            benchmark_worker(config, args.output)
+            benchmark_worker(
+                config,
+                args.output,
+                args.warmup,
+                args.steps,
+                args.windows,
+                args.data_mode,
+                args.profile,
+            )
         case "sweep":
             from tiny_llm.experiments import sweep
 

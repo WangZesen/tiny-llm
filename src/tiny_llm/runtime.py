@@ -1,5 +1,6 @@
 """Explicit runtime policy, run metadata, and atomic artifacts."""
 
+import hashlib
 import json
 import os
 import platform
@@ -7,7 +8,7 @@ import random
 import subprocess
 import sys
 from contextlib import contextmanager
-from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 import numpy as np
@@ -47,6 +48,13 @@ def setup_runtime(config: Config) -> torch.device:
             raise ValueError("BF16 AMP requested on a GPU without BF16 support")
     elif cfg.amp:
         raise ValueError("training AMP requires CUDA; set runtime.amp=false for CPU runs")
+    backend = cfg.sdpa_backend
+    if backend != "auto" and actual_backend(config) == "sdpa" and device.type != "cuda":
+        raise ValueError("forced SDPA kernels require CUDA")
+    torch.backends.cuda.enable_flash_sdp(backend in ("auto", "flash"))
+    torch.backends.cuda.enable_cudnn_sdp(backend in ("auto", "cudnn"))
+    torch.backends.cuda.enable_math_sdp(backend == "auto")
+    torch.backends.cuda.enable_mem_efficient_sdp(backend == "auto")
     return device
 
 
@@ -130,17 +138,48 @@ def environment() -> dict:
         process = subprocess.run(["git", *args], capture_output=True, text=True)
         return process.stdout.strip() if process.returncode == 0 else None
 
+    def command(*args):
+        try:
+            result = subprocess.run(args, capture_output=True, text=True, timeout=10)
+            return result.stdout.strip() if result.returncode == 0 else None
+        except (OSError, subprocess.TimeoutExpired):
+            return None
+
+    def package_version(name):
+        try:
+            return version(name)
+        except PackageNotFoundError:
+            return None
+
+    source = hashlib.sha256()
+    for path in sorted(Path(__file__).parent.glob("*.py")):
+        source.update(path.name.encode())
+        source.update(path.read_bytes())
     return dict(
         python=sys.version,
         platform=platform.platform(),
         hostname=platform.node(),
         versions={
-            name: version(name)
-            for name in ("torch", "numpy", "pydantic", "datasets", "transformers")
+            name: package_version(name)
+            for name in ("torch", "triton", "numpy", "pydantic", "datasets", "transformers")
         },
         cuda=torch.version.cuda,
         git_revision=git("rev-parse", "HEAD"),
         git_status=git("status", "--short"),
         gpu=torch.cuda.get_device_name() if torch.cuda.is_available() else None,
         cuda_visible_devices=os.environ.get("CUDA_VISIBLE_DEVICES"),
+        source_hash=source.hexdigest(),
+        compiler_cache={
+            key: os.environ.get(key) for key in ("TORCHINDUCTOR_CACHE_DIR", "TRITON_CACHE_DIR")
+        },
+        cpu_affinity=sorted(os.sched_getaffinity(0)),
+        cpu_threads=torch.get_num_threads(),
+        cudnn=torch.backends.cudnn.version(),
+        slurm={key: value for key, value in os.environ.items() if key.startswith("SLURM_")},
+        gpu_status=command(
+            "nvidia-smi",
+            "--query-gpu=uuid,name,driver_version,memory.total,power.limit,power.draw,clocks.sm,clocks.mem,utilization.gpu",
+            "--format=csv",
+        ),
+        gpu_topology=command("nvidia-smi", "topo", "-m"),
     )

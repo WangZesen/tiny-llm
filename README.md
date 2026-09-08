@@ -88,6 +88,65 @@ The fixed epoch-validation subset is collected during one sequential validation
 scan at startup and retained in RAM for subsequent epochs (about 2 MiB by default).
 Startup also retains the existing cache checksum verification.
 
+## GH200 execution and profiling
+
+On Arrhenius, submit one GPU using the ARM environment already installed in
+`.venv-aarch64`. The launcher preserves SLURM's device visibility and CPU allocation.
+The 20M, 50M, and 90M default recipes use the measured optimized settings:
+microbatch 32, compilation in `default` mode, automatic SDPA, and eight CPU threads.
+For example, train 20M with:
+
+```bash
+sbatch scripts/slurm-gh200.sh train --config configs/20m.yaml
+```
+
+To repeat the tuning campaign:
+
+```bash
+sbatch scripts/slurm-gh200.sh benchmark --config configs/20m.yaml \
+  --gh200 --budget-minutes 75 --output runs/gh200-tuning
+```
+
+The staged tuner measures real C4 updates, then varies microbatch size,
+compilation, SDPA kernel selection, and CPU threads. Every candidate runs in a
+separate process with 20 warmup updates and three 100-update timing windows.
+`selected.yaml` records the fastest successful candidate. Compilation and
+warmup are reported separately. Synthetic benchmarks remain available with
+`--data-mode synthetic`; they exclude loading and transfers.
+
+To profile a specific configuration, run this inside an allocation or pass the
+same arguments to the SLURM launcher:
+
+```bash
+.venv-aarch64/bin/python -m tiny_llm benchmark-worker \
+  --config runs/gh200-tuning/selected.yaml --data-mode real --profile \
+  --output runs/gh200-profile.json
+```
+
+The worker writes repeated measurements, hardware/software metadata, and actual
+attention dispatch. `--profile` additionally writes a Chrome CPU/CUDA trace and
+an operator table after timing finishes. Benchmark windows use full optimizer
+batches without validation or checkpoint writes; actual training also handles
+short virtual-epoch boundary updates. Use training results to assess elapsed
+throughput including validation and checkpoints.
+
+`runtime.compile_mode` accepts `default`, `reduce-overhead`, or `max-autotune`;
+`runtime.compile` still controls whether compilation is enabled. Full microbatches
+are compiled; short epoch-ending microbatches run eagerly to avoid recompilation.
+`runtime.sdpa_backend` accepts `auto`, `flash`, or `cudnn`. Forced unsupported
+kernels fail explicitly. The reference path remains available for second-order
+analysis. Default-valued new settings preserve existing checkpoint identities;
+changing execution settings for a resumed run still requires a compatible recipe.
+
+Training metrics report `tokens_per_second` excluding startup, validation, and
+checkpoint writes, and `elapsed_tokens_per_second` including validation and
+checkpoint overhead since the first training update. Compilation is included
+in the first training window. Final results also record aggregate training and
+elapsed seconds; `seconds_this_session` additionally includes validation-subset
+preparation and final full validation, but excludes earlier model/cache setup.
+
+See [GH200 measurements and analysis](docs/gh200_performance.md).
+
 ## Run the complete tuning campaign
 
 ```bash

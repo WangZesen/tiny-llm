@@ -74,7 +74,7 @@ class TrainingConfig(StrictModel):
     tokens_per_parameter: float = Field(20.0, gt=0)
     epoch_tokens_per_parameter: float = Field(0.5, gt=0)
     batch_tokens: int = Field(32768, gt=0)
-    micro_batch_size: int = Field(8, gt=0)
+    micro_batch_size: int = Field(32, gt=0)
     checkpoint_every: int = Field(500, gt=0)
     log_every: int = Field(20, gt=0)
     # Explicit short-run overrides. Stored in configs; never silently applied by sweep.
@@ -93,7 +93,9 @@ class RuntimeConfig(StrictModel):
     deterministic: bool = False
     device: str = "cuda:0"
     amp: bool = True
-    compile: bool = False
+    compile: bool = True
+    compile_mode: Literal["default", "reduce-overhead", "max-autotune"] = "default"
+    sdpa_backend: Literal["auto", "flash", "cudnn"] = "auto"
     fused_optimizer: bool = True
     attention_backend: Literal["sdpa", "reference"] = "sdpa"
     output_dir: Path = Path("runs/default")

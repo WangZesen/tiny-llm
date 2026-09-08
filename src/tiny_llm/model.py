@@ -47,6 +47,39 @@ class Attention(nn.Module):
         self.k_proj = nn.Linear(config.width, config.width, bias=False)
         self.v_proj = nn.Linear(config.width, config.width, bias=False)
         self.out_proj = nn.Linear(config.width, config.width, bias=False)
+        self.context_length = config.context_length
+        self.head_dim = config.width // config.heads
+        self.register_buffer("_rope_cos", torch.empty(0), persistent=False)
+        self.register_buffer("_rope_sin", torch.empty(0), persistent=False)
+        self._refresh_rope()
+
+    def _refresh_rope(self):
+        """Cache constants on the weight device, outside compiled forward graphs."""
+        device = self.q_proj.weight.device
+        frequency = self.theta ** (
+            -torch.arange(0, self.head_dim, 2, device=device, dtype=torch.float32) / self.head_dim
+        )
+        angle = (
+            torch.arange(self.context_length, device=device, dtype=torch.float32)[:, None]
+            * frequency
+        )
+        self._rope_cos, self._rope_sin = angle.cos(), angle.sin()
+
+    def _apply(self, fn, recurse=True):
+        super()._apply(fn, recurse=recurse)
+        # Rebuild after dtype/device changes; casting a BF16 cache back to FP32
+        # would otherwise retain quantized angles. Caches are never serialized.
+        self._refresh_rope()
+        return self
+
+    def _rotary(self, x):
+        if self.backend == "reference" or x.dtype == torch.float64:
+            return rotary(x, self.theta)
+        length = x.shape[-2]
+        cos = self._rope_cos[:length].to(x.dtype)
+        sin = self._rope_sin[:length].to(x.dtype)
+        left, right = x.chunk(2, dim=-1)
+        return torch.cat((left * cos - right * sin, right * cos + left * sin), dim=-1)
 
     def forward(self, x: Tensor) -> Tensor:
         batch, length, width = x.shape
@@ -54,7 +87,7 @@ class Attention(nn.Module):
             projection(x).view(batch, length, self.heads, width // self.heads).transpose(1, 2)
             for projection in (self.q_proj, self.k_proj, self.v_proj)
         ]
-        q, k = rotary(q, self.theta), rotary(k, self.theta)
+        q, k = self._rotary(q), self._rotary(k)
         if self.backend == "sdpa":
             result = F.scaled_dot_product_attention(q, k, v, is_causal=True)
         else:
