@@ -1,4 +1,4 @@
-"""Isolated throughput benchmarks and a resumable, bounded two-GPU sweep."""
+"""Resumable, bounded training campaigns and result reporting."""
 
 import json
 import os
@@ -10,111 +10,9 @@ from pathlib import Path
 
 from loguru import logger
 
-from tiny_llm.benchmark import benchmark_identity
-from tiny_llm.benchmark import benchmark_worker as benchmark_worker
 from tiny_llm.config import PRESETS, Config, ModelConfig, load_config, save_config
 from tiny_llm.data import TokenCache, fingerprint, training_boundaries
-from tiny_llm.runtime import (
-    atomic_json,
-    environment,
-    setup_runtime,
-)
-
-
-def benchmark(
-    config: Config,
-    output: Path,
-    data_mode: str = "synthetic",
-    warmup: int = 20,
-    steps: int = 100,
-    windows: int = 3,
-    profile: bool = False,
-) -> dict:
-    if config.decentralized is not None:
-        raise ValueError("use benchmark-packed for decentralized training")
-    output.mkdir(parents=True, exist_ok=True)
-    setup_runtime(config)
-    metadata = environment()
-    protocol = dict(
-        version=2, warmup=warmup, steps=steps, windows=windows, data_mode=data_mode, profile=profile
-    )
-    if data_mode == "real":
-        protocol["cache_identity"] = TokenCache(config.data.cache_dir).manifest["identity"]
-    results = []
-    for batch in (4, 8, 16, 32):
-        if batch * config.model.context_length > config.training.batch_tokens:
-            continue
-        for compiled in (False,) if config.runtime.deterministic else (False, True):
-            name = f"micro-{batch}-compile-{int(compiled)}"
-            candidate = config.model_copy(deep=True)
-            candidate.training.micro_batch_size = batch
-            candidate.runtime.compile = compiled
-            path = output / f"{name}.yaml"
-            save_config(candidate, path)
-            result_path = output / f"{name}.json"
-            identity = benchmark_identity(
-                candidate, metadata | {"cpu_threads": candidate.runtime.cpu_threads}, protocol
-            )
-            if result_path.exists():
-                cached = json.loads(result_path.read_text())
-                if cached.get("config_identity") == identity and cached.get("status") == "ok":
-                    results.append(cached)
-                    continue
-            logger.info("Benchmark {} on {}", name, candidate.runtime.device)
-            with (output / f"{name}.log").open("w") as log:
-                process = subprocess.run(
-                    [
-                        sys.executable,
-                        "-m",
-                        "tiny_llm",
-                        "benchmark-worker",
-                        "--config",
-                        str(path),
-                        "--output",
-                        str(result_path),
-                        "--data-mode",
-                        data_mode,
-                        "--warmup",
-                        str(warmup),
-                        "--steps",
-                        str(steps),
-                        "--windows",
-                        str(windows),
-                        *(["--profile"] if profile else []),
-                    ],
-                    stdout=log,
-                    stderr=subprocess.STDOUT,
-                )
-            if process.returncode == 0:
-                result = json.loads(result_path.read_text())
-            else:
-                result = dict(
-                    status="failed",
-                    returncode=process.returncode,
-                    micro_batch_size=batch,
-                    compile=compiled,
-                    log=str(output / f"{name}.log"),
-                )
-            result["config_identity"] = identity
-            atomic_json(result_path, result)
-            results.append(result)
-    successful = [row for row in results if row["status"] == "ok"]
-    if not successful:
-        raise RuntimeError(f"all benchmarks failed; see {output}")
-    best = max(successful, key=lambda row: row["tokens_per_second"])
-    selected = config.model_copy(deep=True)
-    selected.training.micro_batch_size = best["micro_batch_size"]
-    selected.runtime.compile = best["compile"]
-    save_config(selected, output / "selected.yaml")
-    summary = dict(candidates=results, selected=best)
-    atomic_json(output / "summary.json", summary)
-    logger.success(
-        "Selected microbatch={}, compile={}: {:,.0f} tokens/s",
-        best["micro_batch_size"],
-        best["compile"],
-        best["tokens_per_second"],
-    )
-    return summary
+from tiny_llm.runtime import atomic_json
 
 
 def rank_results(runs: list[Path]) -> list[Path]:

@@ -140,8 +140,7 @@ The snapshot uses FP32 averaging and the global evaluation batch size. It never
 changes local training states. Selection and reported validation losses concern
 this averaged model, whose ordinary-format weights are exported each epoch.
 
-The target execution platform is an aarch64 SLURM GPU node using account
-`naiss2026-3-205-gpu` and `--gpus 1`. `scripts/slurm-packed.sh` sources `~/.bashrc`
-before resolving the architecture-specific environment. `benchmark-packed`
+See the [SLURM launcher setup](../README.md#slurm-jobs) for submission on the
+aarch64 GPU nodes, automatic CPU allocation, and console logs. `benchmark-packed`
 compares N=4/8 packed and sequential workers with matched global batches,
 reports end-to-end and separate component timings, and saves profiler traces.

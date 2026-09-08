@@ -67,9 +67,10 @@ end-to-end throughput. Compute includes zeroing gradients, forward, loss, and ba
 Submit from the repository root:
 
 ```bash
-sbatch scripts/slurm-packed.sh benchmark-packed --config configs/20m.yaml \
+mkdir -p runs
+sbatch scripts/slurm.sh benchmark-packed --config configs/20m.yaml \
   --num-models 4 8 --warmup 10 --steps 50 --output runs/packed-benchmarks-gh200
-sbatch scripts/slurm-packed.sh benchmark-packed --config configs/20m.yaml \
+sbatch scripts/slurm.sh benchmark-packed --config configs/20m.yaml \
   --num-models 4 8 --warmup 10 --steps 50 --set runtime.compile=true \
   --output runs/packed-benchmarks-gh200-compiled
 ```

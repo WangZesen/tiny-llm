@@ -88,10 +88,29 @@ The fixed epoch-validation subset is collected during one sequential validation
 scan at startup and retained in RAM for subsequent epochs (about 2 MiB by default).
 Startup also retains the existing cache checksum verification.
 
+## SLURM jobs
+
+Submit from the repository root using `scripts/slurm.sh` for ordinary training,
+packed training, evaluation, and benchmarks. The launcher sources `~/.bashrc` to
+select the compute node's architecture-specific UV environment, synchronizes
+locked dependencies, and starts the command with `srun`.
+
+Create `runs/` before submitting: SLURM opens the console log before the script
+starts. Combined stdout and stderr are written to `./runs/slurm-<job-id>.log`.
+The defaults request account `naiss2026-3-205-gpu`, partition `gpu`, one GPU,
+one task, and two hours. CPU counts are allocated automatically by SLURM;
+the launcher preserves its device visibility and CPU allocation.
+
+```bash
+mkdir -p runs
+sbatch scripts/slurm.sh train --config configs/20m.yaml
+# Standard sbatch options override resource defaults:
+sbatch --time=00:30:00 scripts/slurm.sh train --config configs/packed-20m.yaml
+```
+
 ## GH200 execution and profiling
 
-On Arrhenius, submit one GPU using the ARM environment already installed in
-`.venv-aarch64`. The launcher preserves SLURM's device visibility and CPU allocation.
+Use the [SLURM launcher](#slurm-jobs) on Arrhenius.
 The 20M, 50M, and 90M default recipes use the measured optimized settings:
 microbatch 32, compilation in `default` mode, automatic SDPA, and eight CPU threads.
 Validation uses a separate batch size of 128 sequences (131,072 targets at context
@@ -101,13 +120,15 @@ floating-point differences.
 For example, train 20M with:
 
 ```bash
-sbatch scripts/slurm-gh200.sh train --config configs/20m.yaml
+mkdir -p runs
+sbatch scripts/slurm.sh train --config configs/20m.yaml
 ```
 
 To repeat the tuning campaign:
 
 ```bash
-sbatch scripts/slurm-gh200.sh benchmark --config configs/20m.yaml \
+mkdir -p runs
+sbatch scripts/slurm.sh benchmark --config configs/20m.yaml \
   --gh200 --budget-minutes 75 --output runs/gh200-tuning
 ```
 
@@ -241,18 +262,17 @@ training resume checkpoints to preserve arena bindings and optimizer counters.
 
 ### SLURM on aarch64
 
-The target platform is an aarch64 GPU compute node. Submit from the repository;
-the script sources `~/.bashrc` before selecting the architecture-specific UV
-environment and running training:
+Use the same [SLURM launcher and setup](#slurm-jobs) for packed training on the
+aarch64 compute nodes:
 
 ```bash
-sbatch scripts/slurm-packed.sh train --config configs/packed-20m.yaml
-sbatch scripts/slurm-packed.sh benchmark-packed --config configs/20m.yaml \
+mkdir -p runs
+sbatch scripts/slurm.sh train --config configs/packed-20m.yaml
+sbatch scripts/slurm.sh benchmark-packed --config configs/20m.yaml \
   --num-models 4 8 --output runs/packed-benchmarks
 ```
 
-The script requests account `naiss2026-3-205-gpu` and `--gpus 1` on the GPU
-partition. The benchmark compares packed and sequential ordinary workers in
+The benchmark compares packed and sequential ordinary workers in
 isolated processes with the same global batch, initialization, and updates.
 It reports throughput, speedup, memory, component timings, and profiler traces.
 Compilation is enabled by default; use `--set runtime.compile=false` for an eager
