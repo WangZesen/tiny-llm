@@ -133,7 +133,7 @@ class Llama(nn.Module):
 def token_losses(logits: Tensor, targets: Tensor) -> Tensor:
     """Unreduced next-token CE; -100 marks padding. Keeps double precision intact."""
     return F.cross_entropy(
-        logits.to(stable_dtype(logits)).flatten(0, 1),
+        logits.to(stable_dtype(logits)).reshape(-1, logits.shape[-1]),
         targets.flatten(),
         reduction="none",
         ignore_index=-100,

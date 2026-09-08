@@ -15,6 +15,8 @@ def main():
         "evaluate",
         "benchmark",
         "benchmark-worker",
+        "benchmark-packed",
+        "benchmark-packed-worker",
         "sweep",
         "report",
     ):
@@ -26,8 +28,15 @@ def main():
         if name == "evaluate":
             child.add_argument("--checkpoint", required=True, type=Path)
             child.add_argument("--full", action="store_true")
-        if name in ("benchmark", "benchmark-worker"):
+        if name in ("benchmark", "benchmark-worker", "benchmark-packed", "benchmark-packed-worker"):
             child.add_argument("--output", required=True, type=Path)
+        if name in ("benchmark-packed", "benchmark-packed-worker"):
+            child.add_argument("--warmup", type=int, default=3)
+            child.add_argument("--steps", type=int, default=8)
+        if name == "benchmark-packed":
+            child.add_argument("--num-models", type=int, nargs="+", default=[4, 8])
+        if name == "benchmark-packed-worker":
+            child.add_argument("--execution", choices=("packed", "sequential"), required=True)
         if name == "benchmark":
             child.add_argument("--all-presets", action="store_true")
         if name == "sweep":
@@ -68,6 +77,14 @@ def main():
             from tiny_llm.experiments import benchmark_worker
 
             benchmark_worker(config, args.output)
+        case "benchmark-packed":
+            from tiny_llm.packed_benchmark import benchmark_packed
+
+            benchmark_packed(config, args.output, args.num_models, args.warmup, args.steps)
+        case "benchmark-packed-worker":
+            from tiny_llm.packed_benchmark import benchmark_packed_worker
+
+            benchmark_packed_worker(config, args.output, args.execution, args.warmup, args.steps)
         case "sweep":
             from tiny_llm.experiments import sweep
 

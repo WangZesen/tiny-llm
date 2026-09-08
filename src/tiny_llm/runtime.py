@@ -68,6 +68,8 @@ def attention_kernels(model, config: Config, device: torch.device) -> list[str]:
     ):
         with autocast(config, device):
             inputs = torch.zeros((1, config.model.context_length), device=device, dtype=torch.long)
+            if hasattr(model, "num_models"):
+                inputs = inputs.unsqueeze(0).expand(model.num_models, -1, -1)
             model(inputs).sum().backward()
     model.zero_grad(set_to_none=True)
     return sorted({event.key for event in profile.key_averages() if "attention" in event.key})

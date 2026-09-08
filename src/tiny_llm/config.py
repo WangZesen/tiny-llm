@@ -100,6 +100,11 @@ class RuntimeConfig(StrictModel):
     cpu_threads: int = Field(8, gt=0)
 
 
+class DecentralizedConfig(StrictModel):
+    num_models: int = Field(..., gt=0)
+    topology: Literal["complete", "one_peer_ring", "one_peer_exponential"] = "complete"
+
+
 class Config(StrictModel):
     model: ModelConfig = Field(default_factory=ModelConfig)
     data: DataConfig = Field(default_factory=DataConfig)
@@ -107,6 +112,7 @@ class Config(StrictModel):
     training: TrainingConfig = Field(default_factory=TrainingConfig)
     evaluation: EvaluationConfig = Field(default_factory=EvaluationConfig)
     runtime: RuntimeConfig = Field(default_factory=RuntimeConfig)
+    decentralized: DecentralizedConfig | None = None
 
     @model_validator(mode="after")
     def batch_shape(self):
@@ -117,6 +123,13 @@ class Config(StrictModel):
             raise ValueError("micro_batch_size exceeds effective batch size")
         if int(self.data.buffer_size_mib * 2**20) < 2 * length:
             raise ValueError("data.buffer_size_mib must hold at least one uint16 sequence")
+        if self.decentralized is not None:
+            expected = self.decentralized.num_models * self.training.micro_batch_size * length
+            if self.training.batch_tokens != expected:
+                raise ValueError(
+                    "decentralized training requires batch_tokens = "
+                    "num_models * micro_batch_size * context_length (no accumulation)"
+                )
         return self
 
 

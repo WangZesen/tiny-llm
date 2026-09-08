@@ -25,6 +25,8 @@ from tiny_llm.train import loss_function, make_optimizer
 
 
 def benchmark_worker(config: Config, destination: Path, warmup: int = 3, steps: int = 8):
+    if config.decentralized is not None:
+        raise ValueError("use benchmark-packed for decentralized training")
     device = setup_runtime(config)
     model = Llama(config.model, actual_backend(config)).to(device)
     optimizer = make_optimizer(model, config, device)
@@ -85,6 +87,8 @@ def benchmark_worker(config: Config, destination: Path, warmup: int = 3, steps: 
 
 
 def benchmark(config: Config, output: Path) -> dict:
+    if config.decentralized is not None:
+        raise ValueError("use benchmark-packed for decentralized training")
     output.mkdir(parents=True, exist_ok=True)
     results = []
     for batch in (4, 8, 16, 32):
@@ -243,6 +247,8 @@ def run_stage(configs: list[Config], gpus: list[str], stage_dir: Path):
 
 
 def sweep(base: Config, root: Path, benchmarks: Path, gpus: list[str]):
+    if base.decentralized is not None:
+        raise ValueError("the tuning campaign supports ordinary training only")
     import fcntl
 
     if not gpus or len(set(gpus)) != len(gpus):

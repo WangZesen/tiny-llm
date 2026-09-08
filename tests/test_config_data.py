@@ -1,5 +1,6 @@
 import json
 import math
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -52,6 +53,34 @@ def test_boundary_rounding(tiny_config):
     tiny_config.training.max_tokens = 67
     tiny_config.training.epoch_tokens = 23
     assert training_boundaries(tiny_config, 100) == [6, 12, 17]
+
+
+@pytest.mark.parametrize("preset", ["20m", "50m", "90m"])
+@pytest.mark.parametrize("workers", [4, 8])
+def test_packed_presets_fit_ordinary_cache(preset, workers):
+    directory = Path(__file__).resolve().parents[1] / "configs"
+    ordinary = load_config(directory / f"{preset}.yaml")
+    packed = load_config(
+        directory / f"packed-{preset}.yaml",
+        [
+            f"decentralized.num_models={workers}",
+            f"training.micro_batch_size={32 // workers}",
+        ],
+    )
+    assert packed.model == ordinary.model
+    length, parameters = packed.model.context_length, packed.model.parameter_count
+    normal_boundaries = training_boundaries(ordinary, parameters)
+    packed_boundaries = training_boundaries(packed, parameters)
+    # A cache prepared for the ordinary preset must also cover the packed preset.
+    assert packed_boundaries[-1] * length + 1 <= normal_boundaries[-1] * length + 1
+    ordinary_budget = parameters * ordinary.training.tokens_per_parameter
+    assert 0 <= ordinary_budget - packed.training.max_tokens < 8 * length
+    assert len(packed_boundaries) == 40
+    assert all(boundary % workers == 0 for boundary in packed_boundaries)
+    assert packed_boundaries[-1] * length == packed.training.max_tokens
+    assert (
+        0 < (packed_boundaries[-1] - packed_boundaries[-2]) * length <= packed.training.epoch_tokens
+    )
 
 
 def test_cross_shard_shift_and_partial(cache_dir, tiny_config):

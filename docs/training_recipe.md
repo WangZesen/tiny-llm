@@ -81,3 +81,50 @@ reference path uses explicit matmul, softmax, and masking and retains FP64 for
 second-order analysis. Copy weights with strict `load_state_dict`; disable AMP
 and compilation for derivative calculations. These tests validate derivatives
 of model losses, not differentiation through the optimizer's training history.
+
+## Packed decentralized simulation
+
+The opt-in decentralized path keeps the global token budget based on one local
+model's parameter count. It executes N workers together and assigns every Nth
+sample from the buffered loader's shuffled stream to each worker. This preserves
+disjoint worker partitions across buffer and epoch boundaries, without separate
+per-worker file reads. The same seed initializes every worker exactly
+as the ordinary Llama path, without consuming additional initialization RNG.
+
+There is no gradient accumulation: `batch_tokens = N * micro_batch_size *
+context_length`. For worker i, the gradient is the derivative of its local
+microbatch's mean valid-token loss. Backpropagating the sum of worker means
+preserves this normalization. Each step clips gradients independently, mixes
+parameters, and applies local AdamW updates using gradients evaluated at the
+pre-mixing parameters. Weight decay acts on mixed weights; first/second moments
+and counters stay local. Shortened epoch-ending steps use equal smaller local
+batches and their actual token counts. Incompatible epoch boundaries are rejected.
+
+Parameters, first moments, and second moments each occupy an aligned contiguous
+`[N, D_padded]` arena. Local AdamW tensors alias these arenas, and checkpoints
+serialize the three blocks once plus counters and layout metadata. Alignment
+padding is excluded from parameters and optimization. The moment arenas are
+exposed for future experiments but are not mixed by the trainer.
+Packed buffered checkpoints use format v3 and preserve loader v1's committed
+cursor; ordinary buffered checkpoints retain upstream format v2. Prefetch may
+change on resume, but buffer size may not. Earlier packed v2 checkpoints remain
+evaluable but cannot resume under the new sample ordering.
+
+Every training step performs one topology event: complete averaging, alternating
+left/right one-peer ring averaging, or one-peer exponential averaging with
+offsets 1, 2, 4, ... below N. Peers are incoming, so row i receives row
+`(i - offset) % N`. One-peer weights are half self and half peer. For exponential
+graphs, powers of two admit exact cycle averaging; arbitrary N remains supported
+without that guarantee. See the
+[exponential-graph paper](https://proceedings.neurips.cc/paper/2021/file/74e1ed8b55ea44fd7dbb685c412568a4-Paper.pdf).
+
+Evaluation first snapshots the global parameter mean into an ordinary Llama.
+The snapshot uses FP32 averaging and the global evaluation batch size. It never
+changes local training states. Selection and reported validation losses concern
+this averaged model, whose ordinary-format weights are exported each epoch.
+
+The target execution platform is an aarch64 SLURM GPU node using account
+`naiss2026-3-205-gpu` and `--gpus 1`. `scripts/slurm-packed.sh` sources `~/.bashrc`
+before resolving the architecture-specific environment. `benchmark-packed`
+compares N=4/8 packed and sequential workers with matched global batches,
+reports end-to-end and separate component timings, and saves profiler traces.

@@ -1,0 +1,18 @@
+# Defaults supply the C4 cache, AdamW, and runtime settings.
+model:
+  layers: 14
+  width: 640
+  heads: 10
+  ffn_width: 1792
+decentralized:
+  num_models: 4
+  topology: one_peer_exponential
+training:
+  batch_tokens: 32768
+  micro_batch_size: 8
+  # Explicit equal-worker boundaries, divisible by 8 * context_length as well.
+  epoch_tokens: 45809664
+  # Round the ordinary total budget down to 8 * context_length; final epoch is shorter.
+  max_tokens: 1832099840
+runtime:
+  output_dir: runs/packed-90m
