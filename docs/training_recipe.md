@@ -2,8 +2,9 @@
 
 This repository targets validation loss for 20M–92M Llama-style models on English
 C4, trained from scratch for 20 prediction targets per **unique trainable
-parameter**. The configuration is an initial recipe and a bounded search space,
-not a claim of optimality. Empirical selections live in the campaign report.
+parameter**. The default presets adopt the best recipes from a bounded,
+single-seed search; see [campaign results](campaign_results.md). These selections
+do not establish optimality outside the tested settings.
 
 ## Published precedents
 
@@ -20,11 +21,12 @@ dimensions, context 1024, initialization std 0.02 with residual projection
 scaling, and a 32,768-target effective batch are engineering choices. They are
 not directly established as optimal by these papers.
 
-## Initial recipe
+## Selected recipe
 
 - BF16 autocast for CUDA operations; FP32 parameters, gradients, optimizer moments,
   normalization reductions, and cross-entropy. No FP16 gradient scaler.
-- AdamW: LR 0.001, betas (0.9, 0.95), epsilon 1e-8, weight decay 0.1.
+- AdamW: LR 0.001, beta1 0.9, beta2 0.95 for 20M and 0.99 for 50M/90M,
+  epsilon 1e-8, weight decay 0.1.
   Matrix weights, including tied embeddings, receive decay; norm scales do not.
 - Global raw-gradient clipping at norm 1.0, after accumulation and before AdamW.
 - Linear token-based warmup for 5% of training, then cosine decay to 10% of peak.
@@ -41,8 +43,8 @@ Training order uses loader v1: sequence-aligned 64 MiB ranges shuffled by seed,
 then independently shuffled sequence indices within each resident range. One
 prefetched range overlaps I/O with model computation. The training prefix and
 virtual epoch boundaries are unchanged; the sequence order differs from the
-previous global permutation, so the buffered campaign starts from scratch under
-`runs/campaign-buffered`. Previous results remain under `runs/campaign`.
+previous global permutation. The audited campaign now in `runs/campaign` used
+loader v1 for all twelve runs.
 
 ## Twelve complete runs
 
@@ -62,6 +64,17 @@ Validation data is explicitly used for recipe selection.
 
 ## Precision, reproducibility, and performance
 
+The 20M, 50M, and 90M recipes default to microbatch 32, `runtime.compile=true`,
+`runtime.compile_mode=default`, automatic SDPA, and eight CPU threads, as measured
+on GH200. The effective batch remains 32,768 targets per optimizer update.
+
+Validation defaults to 128 sequences per forward pass for all three sizes, without
+gradient accumulation. Both subset and full validation sum losses over valid tokens
+and divide by their total count, including partial final batches and excluding
+padding. Changing the batch size preserves this weighting but can introduce small
+floating-point differences. This larger validation batch is a subsequent default
+change; the recorded GH200 performance measurements used evaluation batch size 8.
+
 `deterministic=false` retains seeded initialization, seeded block ordering, and
 saved RNG states while allowing fast kernels. It does not promise bitwise replay.
 `deterministic=true` enables strict PyTorch deterministic algorithms, configures
@@ -72,11 +85,15 @@ raise errors. Cross-hardware or cross-version bitwise equality is not guaranteed
 The benchmark runs each candidate in a separate process, using full optimizer
 updates at the same effective batch size. It measures compiled/uncompiled paths
 and microbatches 4, 8, 16, and 32, rejecting candidates above 90% GPU memory usage.
-The selected configuration is saved rather than recomputed during training.
+Candidates warm up for 20 updates and measure three 100-update windows. The
+selected configuration is saved rather than recomputed during training. Real-C4
+benchmarks and a bounded GH200 tuner are also available; see
+[GH200 measurements](gh200_performance.md).
 Synthetic throughput estimates exclude data loading, validation, compilation,
 and checkpoint overhead; training JSONL records observed throughput.
 
-The fast path uses PyTorch SDPA's FlashAttention kernels when supported. The
+The fast path uses PyTorch SDPA with automatic kernel selection (including
+FlashAttention and cuDNN), or an explicitly requested backend. The
 reference path uses explicit matmul, softmax, and masking and retains FP64 for
 second-order analysis. Copy weights with strict `load_state_dict`; disable AMP
 and compilation for derivative calculations. These tests validate derivatives

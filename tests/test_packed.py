@@ -357,7 +357,7 @@ def test_config_and_buffered_identity(tiny_config, cache_dir):
         train(config)
     value = tiny_config.model_dump(mode="json")
     value.pop("decentralized")
-    for key in ("device", "output_dir", "cpu_threads"):
+    for key in ("device", "output_dir", "cpu_threads", "compile_mode", "sdpa_backend"):
         value["runtime"].pop(key)
     value["data"].pop("cache_dir")
     value["data"].pop("prefetch")

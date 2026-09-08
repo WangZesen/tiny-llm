@@ -25,7 +25,7 @@ data:
 optimizer:
   lr: 0.001
   beta1: 0.9
-  beta2: 0.95
+  beta2: 0.99
   eps: 1.0e-08
   weight_decay: 0.1
   grad_clip: 1.0
@@ -35,21 +35,23 @@ training:
   tokens_per_parameter: 20.0
   epoch_tokens_per_parameter: 0.5
   batch_tokens: 32768
-  micro_batch_size: 8
+  micro_batch_size: 32
   checkpoint_every: 500
   log_every: 20
   max_tokens: null
   epoch_tokens: null
 evaluation:
   subset_blocks: 1024
-  batch_size: 8
+  batch_size: 128
   seed: 12345
 runtime:
   seed: 42
   deterministic: false
   device: cuda:0
   amp: true
-  compile: false
+  compile: true
+  compile_mode: default
+  sdpa_backend: auto
   fused_optimizer: true
   attention_backend: sdpa
   output_dir: runs/50m

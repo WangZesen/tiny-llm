@@ -8,88 +8,38 @@ import sys
 import time
 from pathlib import Path
 
-import torch
 from loguru import logger
 
+from tiny_llm.benchmark import benchmark_identity
+from tiny_llm.benchmark import benchmark_worker as benchmark_worker
 from tiny_llm.config import PRESETS, Config, ModelConfig, load_config, save_config
 from tiny_llm.data import TokenCache, fingerprint, training_boundaries
-from tiny_llm.model import Llama
 from tiny_llm.runtime import (
-    actual_backend,
     atomic_json,
-    attention_kernels,
     environment,
     setup_runtime,
 )
-from tiny_llm.train import loss_function, make_optimizer
 
 
-def benchmark_worker(config: Config, destination: Path, warmup: int = 3, steps: int = 8):
-    if config.decentralized is not None:
-        raise ValueError("use benchmark-packed for decentralized training")
-    device = setup_runtime(config)
-    model = Llama(config.model, actual_backend(config)).to(device)
-    optimizer = make_optimizer(model, config, device)
-    kernels = attention_kernels(model, config, device)
-    loss = loss_function(model, config, device)
-    batch = config.training.micro_batch_size
-    x = torch.randint(config.model.vocab_size, (batch, config.model.context_length), device=device)
-    y = torch.randint(config.model.vocab_size, x.shape, device=device)
-    accum = config.training.batch_tokens // (batch * config.model.context_length)
-    if accum < 1 or config.training.batch_tokens % (batch * config.model.context_length):
-        raise ValueError("benchmark microbatch must divide the effective batch")
-
-    def update():
-        optimizer.zero_grad(set_to_none=True)
-        for _ in range(accum):
-            value = loss(x, y) / config.training.batch_tokens
-            value.backward()
-        torch.nn.utils.clip_grad_norm_(
-            model.parameters(), config.optimizer.grad_clip, error_if_nonfinite=True
-        )
-        optimizer.step()
-        return value.detach()
-
-    start = time.monotonic()
-    for _ in range(warmup):
-        update()
-    if device.type == "cuda":
-        torch.cuda.synchronize(device)
-        torch.cuda.reset_peak_memory_stats(device)
-    warmup_seconds = time.monotonic() - start
-    start = time.monotonic()
-    for _ in range(steps):
-        value = update()
-    if device.type == "cuda":
-        torch.cuda.synchronize(device)
-    elapsed = time.monotonic() - start
-    if not torch.isfinite(value).item():
-        raise FloatingPointError("benchmark produced nonfinite loss")
-    memory = torch.cuda.max_memory_allocated(device) if device.type == "cuda" else 0
-    total_memory = (
-        torch.cuda.get_device_properties(device).total_memory if device.type == "cuda" else 1
-    )
-    result = dict(
-        status="ok" if memory < 0.9 * total_memory else "memory_limit",
-        synthetic=True,
-        tokens_per_second=steps * config.training.batch_tokens / elapsed,
-        seconds_per_step=elapsed / steps,
-        warmup_seconds=warmup_seconds,
-        peak_memory_bytes=memory,
-        total_memory_bytes=total_memory,
-        micro_batch_size=batch,
-        compile=config.runtime.compile,
-        attention_kernels=kernels,
-        environment=environment(),
-    )
-    atomic_json(destination, result)
-    return result
-
-
-def benchmark(config: Config, output: Path) -> dict:
+def benchmark(
+    config: Config,
+    output: Path,
+    data_mode: str = "synthetic",
+    warmup: int = 20,
+    steps: int = 100,
+    windows: int = 3,
+    profile: bool = False,
+) -> dict:
     if config.decentralized is not None:
         raise ValueError("use benchmark-packed for decentralized training")
     output.mkdir(parents=True, exist_ok=True)
+    setup_runtime(config)
+    metadata = environment()
+    protocol = dict(
+        version=2, warmup=warmup, steps=steps, windows=windows, data_mode=data_mode, profile=profile
+    )
+    if data_mode == "real":
+        protocol["cache_identity"] = TokenCache(config.data.cache_dir).manifest["identity"]
     results = []
     for batch in (4, 8, 16, 32):
         if batch * config.model.context_length > config.training.batch_tokens:
@@ -102,10 +52,12 @@ def benchmark(config: Config, output: Path) -> dict:
             path = output / f"{name}.yaml"
             save_config(candidate, path)
             result_path = output / f"{name}.json"
-            identity = fingerprint(candidate.model_dump(mode="json"))
+            identity = benchmark_identity(
+                candidate, metadata | {"cpu_threads": candidate.runtime.cpu_threads}, protocol
+            )
             if result_path.exists():
                 cached = json.loads(result_path.read_text())
-                if cached.get("config_identity") == identity:
+                if cached.get("config_identity") == identity and cached.get("status") == "ok":
                     results.append(cached)
                     continue
             logger.info("Benchmark {} on {}", name, candidate.runtime.device)
@@ -120,6 +72,15 @@ def benchmark(config: Config, output: Path) -> dict:
                         str(path),
                         "--output",
                         str(result_path),
+                        "--data-mode",
+                        data_mode,
+                        "--warmup",
+                        str(warmup),
+                        "--steps",
+                        str(steps),
+                        "--windows",
+                        str(windows),
+                        *(["--profile"] if profile else []),
                     ],
                     stdout=log,
                     stderr=subprocess.STDOUT,

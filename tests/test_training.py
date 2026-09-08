@@ -35,24 +35,30 @@ def test_schedule(tiny_config):
     assert learning_rate(tiny_config, 1000, 1000) == pytest.approx(tiny_config.optimizer.lr * 0.1)
 
 
-def test_evaluation_state_and_weighting(tiny_config, cache_dir):
+@pytest.mark.parametrize("full", [False, True])
+def test_evaluation_state_and_weighting(tiny_config, cache_dir, full):
+    tiny_config.evaluation.subset_blocks = 8
+    tiny_config.data.buffer_size_mib = 24 / 2**20
     setup_runtime(tiny_config)
     model = Llama(tiny_config.model, "reference")
     cache = TokenCache(cache_dir)
     before = rng_state()
-    result = evaluate(model, cache, tiny_config, torch.device("cpu"), full=True)
+    result = evaluate(model, cache, tiny_config, torch.device("cpu"), full=full)
     after = rng_state()
     assert model.training
     assert before["python"] == after["python"]
     np.testing.assert_array_equal(before["numpy"][1], after["numpy"][1])
     assert torch.equal(before["torch"], after["torch"])
-    assert result["tokens"] == 29
-    tiny_config.evaluation.batch_size = 1
-    repeated = evaluate(model, cache, tiny_config, torch.device("cpu"), full=True)
-    assert repeated["loss"] == pytest.approx(result["loss"], abs=1e-7)
+    # Subset sampling uses complete blocks; full validation includes the padded tail.
+    assert result["tokens"] == (29 if full else 28)
+    for batch_size in (1, 3, 128):
+        tiny_config.evaluation.batch_size = batch_size
+        repeated = evaluate(model, cache, tiny_config, torch.device("cpu"), full=full)
+        assert repeated["tokens"] == result["tokens"]
+        assert repeated["loss"] == pytest.approx(result["loss"], abs=1e-7)
     with pytest.raises(InterruptedError):
         evaluate(
-            model, cache, tiny_config, torch.device("cpu"), full=True, should_stop=lambda: True
+            model, cache, tiny_config, torch.device("cpu"), full=full, should_stop=lambda: True
         )
     assert model.training
     assert torch.equal(before["torch"], rng_state()["torch"])
@@ -128,3 +134,60 @@ def test_offline_train_and_resume(tiny_config, cache_dir, monkeypatch, device):
     changed.optimizer.lr *= 2
     with pytest.raises(ValueError, match="incompatible"):
         train(changed, tiny_config.runtime.output_dir / "latest.pt")
+
+
+def test_throughput_excludes_startup_evaluation_and_checkpoints(
+    tiny_config, cache_dir, monkeypatch
+):
+    import time
+    from types import SimpleNamespace
+
+    import tiny_llm.train as module
+
+    offset = 0.0
+    real_time = time.monotonic
+    monkeypatch.setattr(module, "time", SimpleNamespace(monotonic=lambda: real_time() + offset))
+    original_checkpoint = module.atomic_checkpoint
+    original_evaluate = module.evaluate
+    original_subset = TokenCache.validation_subset
+
+    def checkpoint(*args, **kwargs):
+        nonlocal offset
+        result = original_checkpoint(*args, **kwargs)
+        offset += 10
+        return result
+
+    def evaluate(*args, **kwargs):
+        nonlocal offset
+        result = original_evaluate(*args, **kwargs)
+        offset += 20
+        return result
+
+    def subset(*args, **kwargs):
+        nonlocal offset
+        result = original_subset(*args, **kwargs)
+        offset += 30
+        return result
+
+    monkeypatch.setattr(module, "atomic_checkpoint", checkpoint)
+    monkeypatch.setattr(module, "evaluate", evaluate)
+    monkeypatch.setattr(TokenCache, "validation_subset", subset)
+    result = train(tiny_config)
+    assert result["training_seconds"] < 10
+    assert result["training_elapsed_seconds"] >= 80
+    assert result["seconds_this_session"] > result["training_elapsed_seconds"]
+    assert result["training_tokens_per_second"] > result["elapsed_tokens_per_second"]
+    rows = [
+        json.loads(line)
+        for line in (tiny_config.runtime.output_dir / "metrics.jsonl").read_text().splitlines()
+    ]
+    assert all(row["training_seconds"] < 10 for row in rows if row["event"] == "train")
+
+
+@pytest.mark.cuda
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA required")
+def test_compiled_partial_epoch_resume(tiny_config, cache_dir, monkeypatch):
+    tiny_config.runtime.compile = True
+    # Nine blocks in epoch one exercise one-block and uneven accumulated updates.
+    tiny_config.training.epoch_tokens = 36
+    test_offline_train_and_resume(tiny_config, cache_dir, monkeypatch, "cuda:0")

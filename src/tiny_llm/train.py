@@ -4,6 +4,7 @@ import math
 import signal
 import time
 from collections.abc import Callable
+from contextlib import nullcontext
 from pathlib import Path
 
 import torch
@@ -87,8 +88,48 @@ def loss_function(model, config: Config, device: torch.device):
             return token_losses(model(inputs), targets).sum()
 
     if config.runtime.compile and not config.runtime.deterministic:
-        return torch.compile(loss)
+        compiled = torch.compile(loss, mode=config.runtime.compile_mode)
+
+        batch_axis = 1 if isinstance(model, PackedLlama) else 0
+
+        def dispatched(inputs, targets):
+            # Rare epoch-ending shapes do not amortize another compilation.
+            if inputs.shape[batch_axis] != config.training.micro_batch_size:
+                return loss(inputs, targets)
+            return compiled(inputs, targets)
+
+        return dispatched
     return loss
+
+
+def optimizer_update(
+    model, optimizer, compute_loss, next_batch, config, device, step_blocks, profile=False
+):
+    """The production update, also used by synthetic and real-data benchmarks."""
+
+    def region(name):
+        return torch.profiler.record_function(name) if profile else nullcontext()
+
+    optimizer.zero_grad(set_to_none=True)
+    step_loss = torch.zeros((), device=device)
+    for offset in range(0, step_blocks, config.training.micro_batch_size):
+        count = min(config.training.micro_batch_size, step_blocks - offset)
+        with region("data_and_transfer"):
+            x, y = next_batch(count, device)
+        with region("forward_and_loss"):
+            summed_loss = compute_loss(x, y)
+        with region("backward"):
+            (summed_loss / (step_blocks * config.model.context_length)).backward()
+        step_loss += summed_loss.detach()
+    with region("clipping_and_finite_check"):
+        grad_norm = torch.nn.utils.clip_grad_norm_(
+            model.parameters(), config.optimizer.grad_clip, error_if_nonfinite=True
+        )
+        if not torch.isfinite(step_loss).item():
+            raise FloatingPointError("nonfinite training loss")
+    with region("optimizer"):
+        optimizer.step()
+    return step_loss, grad_norm
 
 
 @torch.no_grad()
@@ -162,6 +203,10 @@ def recipe_identity(config: Config, cache: TokenCache) -> str:
     value = config.model_dump(mode="json")
     if value["decentralized"] is None:
         value.pop("decentralized")  # Keep pre-feature single-model recipe identities.
+    # Default execution controls retain the identity of existing v2 checkpoints.
+    for name, default in (("compile_mode", "default"), ("sdpa_backend", "auto")):
+        if value["runtime"][name] == default:
+            value["runtime"].pop(name)
     for name in ("output_dir", "device", "cpu_threads"):
         value["runtime"].pop(name)
     value["data"].pop("cache_dir")
@@ -336,13 +381,19 @@ def _train(config: Config, resume: Path | None) -> dict:
         )
 
     start = time.monotonic()
-    window_start, window_tokens, window_loss = start, 0, 0.0
+    session_initial_tokens = cursor * length
+    training_seconds = 0.0
+    window_start, window_tokens = start, 0
+    window_loss = 0.0
     if device.type == "cuda":
         torch.cuda.reset_peak_memory_stats(device)
     try:
         logger.info("Collecting fixed validation subset with a sequential scan")
         cache.validation_subset(config, should_stop=lambda: stopped)
         model.train()
+        if device.type == "cuda":
+            torch.cuda.synchronize(device)
+        training_start = window_start = time.monotonic()
         for epoch_index in range(completed_epochs, len(boundaries)):
             boundary = boundaries[epoch_index]
             while cursor < boundary:
@@ -350,9 +401,8 @@ def _train(config: Config, resume: Path | None) -> dict:
                 lr = learning_rate(config, (cursor + step_blocks) * length, blocks * length)
                 for group in optimizer.param_groups:
                     group["lr"] = lr
-                optimizer.zero_grad(set_to_none=True)
-                step_loss = torch.zeros((), device=device)
                 if decentralized:
+                    optimizer.zero_grad(set_to_none=True)
                     local_batch = step_blocks // num_models
                     x, y = loader.next_batch(step_blocks, device)
                     # Assign every Nth sample in the buffered stream to one worker.
@@ -366,27 +416,30 @@ def _train(config: Config, resume: Path | None) -> dict:
                     step_loss = means.detach().sum() * (local_batch * length)
                     local_grad_norms = optimizer.clip_grad_norm_(config.optimizer.grad_clip)
                     grad_norm = local_grad_norms.max()
-                else:
-                    for offset in range(0, step_blocks, config.training.micro_batch_size):
-                        count = min(config.training.micro_batch_size, step_blocks - offset)
-                        x, y = loader.next_batch(count, device)
-                        summed_loss = compute_loss(x, y)
-                        (summed_loss / (step_blocks * length)).backward()
-                        step_loss += summed_loss.detach()
-                    grad_norm = torch.nn.utils.clip_grad_norm_(
-                        model.parameters(), config.optimizer.grad_clip, error_if_nonfinite=True
-                    )
-                if not torch.isfinite(step_loss).item():
-                    raise FloatingPointError(f"nonfinite training loss at step {step}")
-                if decentralized:
+                    if not torch.isfinite(step_loss).item():
+                        raise FloatingPointError(f"nonfinite training loss at step {step}")
                     model.mix_(decentralized.topology, step)
-                optimizer.step()
+                    optimizer.step()
+                else:
+                    step_loss, grad_norm = optimizer_update(
+                        model,
+                        optimizer,
+                        compute_loss,
+                        loader.next_batch,
+                        config,
+                        device,
+                        step_blocks,
+                    )
                 cursor += step_blocks
                 step += 1
                 window_loss += step_loss.item()
                 window_tokens += step_blocks * length
                 if step % config.training.log_every == 0 or cursor == boundary:
+                    if device.type == "cuda":
+                        torch.cuda.synchronize(device)
                     now = time.monotonic()
+                    window_seconds = now - window_start
+                    training_seconds += window_seconds
                     row = dict(
                         event="train",
                         step=step,
@@ -395,7 +448,10 @@ def _train(config: Config, resume: Path | None) -> dict:
                         loss=window_loss / window_tokens,
                         lr=lr,
                         grad_norm=grad_norm.item(),
-                        tokens_per_second=window_tokens / (now - window_start),
+                        tokens_per_second=window_tokens / window_seconds,
+                        training_seconds=window_seconds,
+                        elapsed_tokens_per_second=(cursor * length - session_initial_tokens)
+                        / (now - training_start),
                         peak_memory_bytes=torch.cuda.max_memory_allocated(device)
                         if device.type == "cuda"
                         else 0,
@@ -418,9 +474,12 @@ def _train(config: Config, resume: Path | None) -> dict:
                         lr,
                         row["tokens_per_second"],
                     )
-                    window_start, window_tokens, window_loss = now, 0, 0.0
+                    window_loss = 0.0
+                    window_start, window_tokens = time.monotonic(), 0
                 if step % config.training.checkpoint_every == 0 or stopped:
+                    checkpoint_start = time.monotonic()
                     checkpoint()
+                    window_start += time.monotonic() - checkpoint_start
                 if stopped:
                     result = dict(status="interrupted", step=step, tokens=cursor * length)
                     atomic_json(output / "status.json", result)
@@ -482,6 +541,7 @@ def _train(config: Config, resume: Path | None) -> dict:
             # Exclude evaluation/checkpoint time from the next throughput window.
             window_start = time.monotonic()
         checkpoint("final.pt")
+        training_elapsed_seconds = time.monotonic() - training_start
         loader.close()  # Release training buffers before allocating validation buffers.
         final_eval = evaluate(
             evaluation_model(), cache, config, device, full=True, should_stop=lambda: stopped
@@ -496,6 +556,13 @@ def _train(config: Config, resume: Path | None) -> dict:
             best_epoch=best_epoch,
             final_validation=final_eval,
             seconds_this_session=time.monotonic() - start,
+            training_seconds=training_seconds,
+            training_elapsed_seconds=training_elapsed_seconds,
+            training_tokens_per_second=(cursor * length - session_initial_tokens) / training_seconds
+            if training_seconds
+            else 0.0,
+            elapsed_tokens_per_second=(cursor * length - session_initial_tokens)
+            / training_elapsed_seconds,
             peak_memory_bytes=torch.cuda.max_memory_allocated(device)
             if device.type == "cuda"
             else 0,

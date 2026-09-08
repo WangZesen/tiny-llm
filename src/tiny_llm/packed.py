@@ -8,7 +8,7 @@ from torch import Tensor, nn
 from torch.nn import functional as F
 
 from tiny_llm.config import ModelConfig
-from tiny_llm.model import Llama, rotary, stable_dtype, token_losses
+from tiny_llm.model import Llama, stable_dtype, token_losses
 
 
 @dataclass(frozen=True)
@@ -151,7 +151,7 @@ class PackedLlama(nn.Module):
                     block.attention.v_proj,
                 )
             ]
-            q, k = rotary(q, cfg.rope_theta), rotary(k, cfg.rope_theta)
+            q, k = block.attention._rotary(q), block.attention._rotary(k)
             if self.backend == "sdpa":
                 result = F.scaled_dot_product_attention(q, k, v, is_causal=True)
             else:

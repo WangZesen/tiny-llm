@@ -25,6 +25,7 @@ def tiny_config(tmp_path):
     )
     config.runtime.device = "cpu"
     config.runtime.amp = False
+    config.runtime.compile = False
     config.runtime.cpu_threads = 1
     config.runtime.output_dir = tmp_path / "run"
     config.data.cache_dir = tmp_path / "cache"
