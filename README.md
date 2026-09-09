@@ -34,9 +34,12 @@ uv run tiny-llm train --config configs/50m.yaml \
   --set optimizer.lr=0.0003 --set runtime.output_dir=runs/50m-low-lr
 ```
 
-Each run saves `resolved.yaml`, logs (`run.log`, `metrics.jsonl`), epoch weights
-(`epoch-NNN.safetensors`), resume states (`latest.pt`, `final.pt`), and final
-metrics (`result.json`). Resume with the saved configuration:
+Each run saves `resolved.yaml`, logs (`run.log`, `metrics.jsonl`), final state
+(`final.pt`), best subset statistics (`best.json`), and final metrics (`result.json`).
+`training.checkpoint_policy` defaults to `final`: no periodic, epoch, or interruption
+checkpoints are written. Interrupted training must restart unless `final.pt` exists.
+To retain epoch weights and rolling recovery states, train with
+`--set training.checkpoint_policy=all`. Resume those runs with the saved configuration:
 
 ```bash
 uv run tiny-llm train --config runs/20m/resolved.yaml \
@@ -68,12 +71,15 @@ uv run tiny-llm train --config configs/packed-20m.yaml \
 ```
 
 The global batch must equal `num_models * micro_batch_size * context_length`,
-and epoch boundaries must divide evenly across workers. Root epoch checkpoints
-contain averaged weights; worker weights live under `node-NNN/`.
+and epoch boundaries must divide evenly across workers. With checkpoint policy
+`all`, root epoch checkpoints contain averaged weights and worker weights live
+under `node-NNN/`. The default `final.pt` retains all local training states.
 [Packed implementation details](doc/training_details.md#packed-decentralized-training)
 cover topologies and optimizer behavior.
 
 ## Evaluation
+
+Epoch-weight examples below require training with `--set training.checkpoint_policy=all`.
 
 Evaluate a saved checkpoint using the run's resolved configuration. `--full`
 selects the full cached validation split; omit it to use the fixed subset.
@@ -93,6 +99,7 @@ at completion. For less GPU memory, pass `--set evaluation.batch_size=32`
 
 ## Analysis
 
+For epoch-by-epoch analysis, train with `--set training.checkpoint_policy=all`.
 Analyze all checkpoints or select filenames relative to the run directory.
 Use a prepared cache with enough data for both seen and unseen cases; the tool
 checks capacity before computing. Packed runs use root, averaged checkpoints.
@@ -229,6 +236,8 @@ normal exit, failure, or catchable termination.
 - [Benchmarking, profiling, and sweeps](doc/benchmarking.md)
 - Measurements: [training](doc/gh200_performance.md),
   [packed training](doc/packed_benchmarks.md), [analysis](doc/analysis_performance.md)
+- [Three-seed 20M recipe benchmark](doc/recipe_sweep_20m.md): synchronous and
+  packed training results across 324 runs.
 - [Campaign results](doc/campaign_results.md) and
   [implementation validation](doc/implementation_validation.md)
 

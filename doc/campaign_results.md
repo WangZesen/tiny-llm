@@ -1,5 +1,9 @@
 # C4 campaign recipe selection
 
+This earlier single-seed campaign covers three model sizes. The later
+[three-seed 20M benchmark](recipe_sweep_20m.md) records 324 synchronous and packed
+training runs; its selected recipes are documented without changing the presets.
+
 All twelve runs in `runs/campaign` completed 40 virtual epochs and their full
 20-targets-per-parameter training budgets. Each final checkpoint was evaluated
 on the same complete C4 validation split: 197,411,295 prediction targets.
@@ -20,7 +24,8 @@ were finite. Exact results and provenance are in [campaign_results.json](campaig
 
 At 20M, LR 0.001 beats 0.003 by only 0.003827 nats at weight decay 0.1.
 Weight decay 0.1 beats zero decay at every tested learning rate. LR 0.0003
-finishes substantially worse, so the existing 20M settings remain the best tested.
+finishes substantially worse, so the existing 20M settings are the best tested
+within this earlier grid.
 
 At 50M, beta2=0.99 lowers loss from 3.293054 to 3.257811 at LR 0.001:
 a 0.035243-nat reduction, or approximately 3.46% lower perplexity. It also wins

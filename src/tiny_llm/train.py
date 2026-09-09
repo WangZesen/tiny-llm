@@ -201,6 +201,7 @@ def evaluate(
 
 def recipe_identity(config: Config, cache: TokenCache) -> str:
     value = config.model_dump(mode="json")
+    value["training"].pop("checkpoint_policy")
     if value["decentralized"] is None:
         value.pop("decentralized")  # Keep pre-feature single-model recipe identities.
     # Default execution controls retain the identity of existing v2 checkpoints.
@@ -356,12 +357,16 @@ def _train(config: Config, resume: Path | None) -> dict:
         nonlocal stopped
         stopped = True
         logger.warning(
-            "Signal {} received; checkpointing after the current optimizer update", signum
+            "Signal {} received; stopping with checkpoint policy {}",
+            signum,
+            config.training.checkpoint_policy,
         )
 
     previous_handlers = {sig: signal.signal(sig, stop) for sig in (signal.SIGINT, signal.SIGTERM)}
 
     def checkpoint(name="latest.pt"):
+        if config.training.checkpoint_policy == "final" and name != "final.pt":
+            return
         atomic_checkpoint(
             output / name,
             dict(
@@ -504,11 +509,12 @@ def _train(config: Config, resume: Path | None) -> dict:
                 evaluation["loss"],
                 evaluation["perplexity"],
             )
-            save_weights(
-                averaged if decentralized else model,
-                output / f"epoch-{epoch_index + 1:03d}.safetensors",
-            )
-            if decentralized:
+            if config.training.checkpoint_policy == "all":
+                save_weights(
+                    averaged if decentralized else model,
+                    output / f"epoch-{epoch_index + 1:03d}.safetensors",
+                )
+            if decentralized and config.training.checkpoint_policy == "all":
                 for worker in range(num_models):
                     directory = output / f"node-{worker:03d}"
                     directory.mkdir(exist_ok=True)
@@ -529,7 +535,11 @@ def _train(config: Config, resume: Path | None) -> dict:
                     dict(
                         epoch=best_epoch,
                         loss=best_loss,
-                        weights=f"epoch-{best_epoch:03d}.safetensors",
+                        weights=(
+                            f"epoch-{best_epoch:03d}.safetensors"
+                            if config.training.checkpoint_policy == "all"
+                            else None
+                        ),
                     ),
                 )
             completed_epochs = epoch_index + 1

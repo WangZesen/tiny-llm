@@ -80,6 +80,7 @@ def test_evaluation_state_and_weighting(tiny_config, cache_dir, full):
 def test_offline_train_and_resume(tiny_config, cache_dir, monkeypatch, device):
     import tiny_llm.train as module
 
+    tiny_config.training.checkpoint_policy = "all"
     tiny_config.data.buffer_size_mib = 24 / 2**20
     tiny_config.runtime.device = device
     tiny_config.runtime.amp = device != "cpu"
@@ -144,6 +145,7 @@ def test_throughput_excludes_startup_evaluation_and_checkpoints(
 
     import tiny_llm.train as module
 
+    tiny_config.training.checkpoint_policy = "all"
     offset = 0.0
     real_time = time.monotonic
     monkeypatch.setattr(module, "time", SimpleNamespace(monotonic=lambda: real_time() + offset))
@@ -191,3 +193,53 @@ def test_compiled_partial_epoch_resume(tiny_config, cache_dir, monkeypatch):
     # Nine blocks in epoch one exercise one-block and uneven accumulated updates.
     tiny_config.training.epoch_tokens = 36
     test_offline_train_and_resume(tiny_config, cache_dir, monkeypatch, "cuda:0")
+
+
+@pytest.mark.parametrize("workers", [1, 4, 8])
+@pytest.mark.parametrize("interrupt", [False, True])
+def test_final_only_policy(tiny_config, cache_dir, monkeypatch, workers, interrupt):
+    import tiny_llm.train as module
+    from tiny_llm.config import Config
+    from tiny_llm.train import evaluate_checkpoint, recipe_identity
+
+    raw = tiny_config.model_dump()
+    raw["training"]["batch_tokens"] = 32
+    raw["training"]["micro_batch_size"] = 8 // workers
+    if workers > 1:
+        raw["decentralized"] = dict(num_models=workers, topology="one_peer_ring")
+    config = Config.model_validate(raw)
+    assert config.training.checkpoint_policy == "final"
+    identity = recipe_identity(config, TokenCache(cache_dir))
+    other = config.model_copy(deep=True)
+    other.training.checkpoint_policy = "all"
+    assert recipe_identity(other, TokenCache(cache_dir)) == identity
+    saved = []
+    original = module.atomic_checkpoint
+
+    def checkpoint(path, state):
+        saved.append(path.name)
+        return original(path, state)
+
+    monkeypatch.setattr(module, "atomic_checkpoint", checkpoint)
+    if interrupt:
+        evaluate = module.evaluate
+
+        def interrupted(*args, **kwargs):
+            os.kill(os.getpid(), signal.SIGTERM)
+            return evaluate(*args, **kwargs)
+
+        monkeypatch.setattr(module, "evaluate", interrupted)
+    result = train(config)
+    output = config.runtime.output_dir
+    assert not list(output.rglob("*.safetensors"))
+    assert not (output / "latest.pt").exists()
+    assert saved == ([] if interrupt else ["final.pt"])
+    if interrupt:
+        assert result["status"] == "interrupted"
+    else:
+        assert result["status"] == "complete"
+        assert json.loads((output / "best.json").read_text())["weights"] is None
+        evaluated = evaluate_checkpoint(config, output / "final.pt", full=True)
+        assert evaluated["loss"] == pytest.approx(result["final_validation"]["loss"])
+        resumed = train(config, output / "final.pt")
+        assert resumed["final_validation"]["loss"] == pytest.approx(evaluated["loss"])

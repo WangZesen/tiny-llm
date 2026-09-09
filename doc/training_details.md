@@ -77,7 +77,8 @@ AdamW updates. Moments remain local. Available `decentralized.topology` values:
 Before validation, a separate ordinary Llama receives the global parameter
 average. It evaluates with the global `evaluation.batch_size`; training weights,
 moments, and topology phase stay unchanged. Validation metrics and `best.json`
-refer to this averaged model. Root `epoch-NNN.safetensors` files contain averaged
+refer to this averaged model. With checkpoint policy `all`, root
+`epoch-NNN.safetensors` files contain averaged
 weights; `node-000/epoch-NNN.safetensors`, etc. contain local weights. Resume
 checkpoints retain all local parameters and optimizer states.
 
@@ -104,16 +105,20 @@ training resume checkpoints to preserve arena bindings and optimizer counters.
 
 ## Checkpoints and artifacts
 
+By default, `training.checkpoint_policy: final` saves only the final training
+checkpoint. No periodic, epoch, worker-weight, or interruption checkpoints are
+written. Set `training.checkpoint_policy: all` to enable the previous behavior.
+
 Each run contains:
 
 - `resolved.yaml`, `environment.json`, `run.log`, and `metrics.jsonl`.
-- `epoch-NNN.safetensors`: canonical FP32 model weights after every epoch.
-- `best.json`: best intermediate checkpoint by subset-validation loss.
-- `latest.pt`: model, AdamW state, RNG states, data cursor, and schedule progress.
+- `epoch-NNN.safetensors` (policy `all`): FP32 weights after every epoch.
+- `best.json`: best epoch and subset loss; `weights` is null under policy `final`.
+- `latest.pt` (policy `all`): model, AdamW, RNG states, data cursor, and schedule progress.
 - `final.pt` and `result.json`: final training state and full-validation metrics.
 
 Resume using the saved configuration. Device and output-directory changes are
-allowed, as is changing `data.prefetch`. Recipe, precision, data identity, batch,
+allowed, as are changes to `data.prefetch` and checkpoint retention policy. Recipe, precision, data identity, batch,
 seed, and buffer-size changes are rejected. Ordinary checkpoint format v2 and
 packed format v3 record loader format v1 and a committed sample cursor. Resume
 reconstructs the current range and row position directly, without replaying earlier training ranges or saving
@@ -125,12 +130,14 @@ for evaluation and analysis.
 The previous campaign is preserved under `runs/campaign`; fresh buffered runs use
 `runs/campaign-buffered` and reuse the existing model computation benchmarks.
 
+For a run trained with policy `all`:
+
 ```bash
 uv run tiny-llm train --config runs/baseline/resolved.yaml \
   --resume runs/baseline/latest.pt
 ```
 
 Resume `.pt` files are trusted local pickle artifacts. For exchanging model
-weights, use the `.safetensors` files. Model/data artifacts live in gitignored
+weights, use the `.safetensors` files produced with policy `all`. Model/data artifacts live in gitignored
 `runs/` and `data/`; source, configurations, the UV lockfile, and documentation
 are tracked in Git.

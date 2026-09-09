@@ -285,6 +285,7 @@ def assert_nested_equal(left, right):
 
 
 def test_training_resume(tiny_config, cache_dir, monkeypatch):
+    tiny_config.training.checkpoint_policy = "all"
     topology = "one_peer_exponential"
     config = decentralized_config(tiny_config, n=4, topology=topology)
     config.runtime.deterministic = True
@@ -362,6 +363,7 @@ def test_config_and_buffered_identity(tiny_config, cache_dir):
     with pytest.raises(ValueError, match="epoch boundaries"):
         train(config)
     value = tiny_config.model_dump(mode="json")
+    value["training"].pop("checkpoint_policy")
     value.pop("decentralized")
     for key in ("device", "output_dir", "cpu_threads", "compile_mode", "sdpa_backend"):
         value["runtime"].pop(key)
