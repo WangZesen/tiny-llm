@@ -1,5 +1,7 @@
 import argparse
 import json
+import logging
+import subprocess
 from pathlib import Path
 
 from tiny_llm.config import PRESETS, ModelConfig, load_config
@@ -16,9 +18,43 @@ def _add_benchmark_arguments(parser, *, packed):
         parser.add_argument("--profile", action="store_true")
 
 
+def _add_analysis_arguments(parser):
+    parser.add_argument("--run", required=True, type=Path)
+    parser.add_argument("--checkpoints", nargs="+", default=["all"])
+    parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--data-case", choices=("seen", "unseen", "both"), default="both")
+    parser.add_argument("--noise-samples", default="32")
+    parser.add_argument("--random-samples", type=int, default=32)
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--device")
+    parser.add_argument("--dtype", choices=("float32", "float64"), default="float32")
+    parser.add_argument("--tf32", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument(
+        "--amp",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="BF16 forward autocast with FP32 parameters and gradient accumulation",
+    )
+    parser.add_argument("--compile-hvp", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--hvp-batch-size", type=int)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Small Llama pretraining and research experiments")
     commands = parser.add_subparsers(dest="command", required=True)
+    analysis = commands.add_parser("analyze")
+    _add_analysis_arguments(analysis)
+    analysis.add_argument("--plots", action=argparse.BooleanOptionalAction, default=True)
+    plotting = commands.add_parser("plot-analysis")
+    plotting.add_argument("--output", required=True, type=Path)
+    plotting.add_argument("--training-norms", action="store_true")
+    submission = commands.add_parser("submit-analysis")
+    _add_analysis_arguments(submission)
+    submission.set_defaults(amp=True, hvp_batch_size=64, device="cuda")
+    submission.add_argument("--jobs", required=True, type=int)
+    submission.add_argument("--walltime-hours", type=int)
+    submission.add_argument("--dry-run", action="store_true")
+    submission.add_argument("--resume", action="store_true")
     for name in (
         "prepare",
         "train",
@@ -61,6 +97,51 @@ def main(argv=None):
     parser = build_parser()
     args = parser.parse_args(argv)
     setup_logging()
+    if args.command in ("analyze", "submit-analysis"):
+        from tiny_llm.analysis import AnalysisOptions, analyze
+
+        try:
+            samples = "all" if args.noise_samples == "all" else int(args.noise_samples)
+            options = AnalysisOptions(
+                data_case=args.data_case,
+                noise_samples=samples,
+                random_samples=args.random_samples,
+                seed=args.seed,
+                device=args.device,
+                dtype=args.dtype,
+                tf32=args.tf32,
+                amp=args.amp,
+                compile_hvp=args.compile_hvp,
+                hvp_batch_size=args.hvp_batch_size,
+            )
+        except ValueError as exc:
+            parser.error(str(exc))
+        if args.command == "analyze":
+            analyze(args.run, args.checkpoints, args.output, options, plots=args.plots)
+        else:
+            from tiny_llm.analysis.slurm import orchestrate
+
+            logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+            try:
+                result = orchestrate(
+                    args.run,
+                    args.checkpoints,
+                    args.output,
+                    args.jobs,
+                    options,
+                    dry_run=args.dry_run,
+                    resume=args.resume,
+                    walltime_hours=args.walltime_hours,
+                )
+            except (ValueError, RuntimeError, OSError, subprocess.SubprocessError) as exc:
+                parser.exit(1, f"{exc}\n")
+            print(json.dumps(result, indent=2))
+        return
+    if args.command == "plot-analysis":
+        from tiny_llm.analysis.plot import plot_analysis
+
+        plot_analysis(args.output, args.training_norms)
+        return
     config = load_config(args.config, args.set)
     dispatch(args, config, parser)
 

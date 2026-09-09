@@ -135,6 +135,15 @@ def append_metric(path: Path, value):
         handle.write(json.dumps(value, allow_nan=False) + "\n")
 
 
+def source_digest(package: Path) -> str:
+    """Hash all Python sources, including subpackages, with stable relative paths."""
+    digest = hashlib.sha256()
+    for path in sorted(package.rglob("*.py")):
+        digest.update(path.relative_to(package).as_posix().encode())
+        digest.update(path.read_bytes())
+    return digest.hexdigest()
+
+
 def environment() -> dict:
     def git(*args):
         process = subprocess.run(["git", *args], capture_output=True, text=True)
@@ -153,10 +162,6 @@ def environment() -> dict:
         except PackageNotFoundError:
             return None
 
-    source = hashlib.sha256()
-    for path in sorted(Path(__file__).parent.glob("*.py")):
-        source.update(path.name.encode())
-        source.update(path.read_bytes())
     return dict(
         python=sys.version,
         platform=platform.platform(),
@@ -170,7 +175,7 @@ def environment() -> dict:
         git_status=git("status", "--short"),
         gpu=torch.cuda.get_device_name() if torch.cuda.is_available() else None,
         cuda_visible_devices=os.environ.get("CUDA_VISIBLE_DEVICES"),
-        source_hash=source.hexdigest(),
+        source_hash=source_digest(Path(__file__).parent),
         compiler_cache={
             key: os.environ.get(key) for key in ("TORCHINDUCTOR_CACHE_DIR", "TRITON_CACHE_DIR")
         },

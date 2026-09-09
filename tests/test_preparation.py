@@ -1,4 +1,5 @@
 import json
+import sys
 from types import SimpleNamespace
 
 import numpy as np
@@ -8,9 +9,6 @@ from tiny_llm.data import TokenCache, prepare
 
 
 def test_preparation_eos_determinism_and_reuse(tiny_config, monkeypatch, tmp_path):
-    import datasets
-    import huggingface_hub
-    import transformers
 
     class API:
         def dataset_info(self, *args, **kwargs):
@@ -58,9 +56,15 @@ def test_preparation_eos_determinism_and_reuse(tiny_config, monkeypatch, tmp_pat
         assert len(kwargs["data_files"][kwargs["split"]]) == 1
         return Stream()
 
-    monkeypatch.setattr(huggingface_hub, "HfApi", API)
-    monkeypatch.setattr(transformers.AutoTokenizer, "from_pretrained", lambda *a, **kw: Tokenizer())
-    monkeypatch.setattr(datasets, "load_dataset", load)
+    monkeypatch.setitem(sys.modules, "huggingface_hub", SimpleNamespace(HfApi=API))
+    monkeypatch.setitem(
+        sys.modules,
+        "transformers",
+        SimpleNamespace(
+            AutoTokenizer=SimpleNamespace(from_pretrained=lambda *a, **kw: Tokenizer())
+        ),
+    )
+    monkeypatch.setitem(sys.modules, "datasets", SimpleNamespace(load_dataset=load))
     tiny_config.data.shard_tokens = 7
     first = prepare(tiny_config)
     cache = TokenCache(tiny_config.data.cache_dir)

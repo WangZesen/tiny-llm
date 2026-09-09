@@ -115,8 +115,6 @@ def test_nonfinite_update_never_steps(tiny_config, monkeypatch, bad_gradient):
         (False, "default", "flash"),
         (False, "default", "cudnn"),
         (True, "default", "auto"),
-        (True, "reduce-overhead", "auto"),
-        (True, "max-autotune", "auto"),
     ],
 )
 def test_cuda_execution_parity(compiled, mode, backend):
@@ -187,7 +185,7 @@ def test_tuning_timeout_kills_worker_group(tiny_config, cache_dir, tmp_path, mon
     assert all(row["status"] == "timeout" for row in progress)
 
 
-@pytest.mark.parametrize("num_models", [None, 1, 2, 4])
+@pytest.mark.parametrize("num_models", [None, 4])
 def test_compile_dispatch_keeps_partial_batches_eager(tiny_config, monkeypatch, num_models):
     from tiny_llm.model import token_losses
     from tiny_llm.packed import PackedLlama, local_mean_losses

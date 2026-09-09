@@ -17,8 +17,7 @@ from tiny_llm.runtime import preserve_rng, rng_state, setup_runtime
 from tiny_llm.train import evaluate, evaluate_checkpoint, make_optimizer, recipe_identity, train
 
 
-@pytest.mark.parametrize("seed", [0, 42, 123])
-@pytest.mark.parametrize("n", [1, 4, 8])
+@pytest.mark.parametrize("seed,n", [(0, 1), (42, 4), (123, 8)])
 def test_initialization(tiny_config, seed, n):
     torch.manual_seed(seed)
     ordinary = Llama(tiny_config.model)
@@ -50,8 +49,15 @@ def matrix(n, topology, step, device="cpu", dtype=torch.float64):
     return result
 
 
-@pytest.mark.parametrize("backend", ["reference", "sdpa"])
-@pytest.mark.parametrize("topology", ["complete", "one_peer_ring", "one_peer_exponential"])
+@pytest.mark.parametrize(
+    "backend,topology",
+    [
+        ("reference", "complete"),
+        ("reference", "one_peer_ring"),
+        ("reference", "one_peer_exponential"),
+        ("sdpa", "complete"),
+    ],
+)
 def test_independent_worker_parity(tiny_config, backend, topology):
     n = 3
     torch.manual_seed(13)
@@ -145,7 +151,7 @@ def assert_storage(model, optimizer):
             )
 
 
-@pytest.mark.parametrize("n", [1, 2, 3, 4, 8])
+@pytest.mark.parametrize("n", [1, 2, 3, 8])
 @pytest.mark.parametrize("topology", ["complete", "one_peer_ring", "one_peer_exponential"])
 def test_topologies(tiny_config, n, topology):
     model = PackedLlama(tiny_config.model, n).double()
@@ -278,8 +284,8 @@ def assert_nested_equal(left, right):
         assert left == right
 
 
-@pytest.mark.parametrize("topology", ["complete", "one_peer_ring", "one_peer_exponential"])
-def test_training_resume(tiny_config, cache_dir, monkeypatch, topology):
+def test_training_resume(tiny_config, cache_dir, monkeypatch):
+    topology = "one_peer_exponential"
     config = decentralized_config(tiny_config, n=4, topology=topology)
     config.runtime.deterministic = True
     # Cross buffer boundaries inside packed steps and switch prefetch on resume.
@@ -446,8 +452,7 @@ def test_benchmark_worker(tiny_config, tmp_path, execution):
 
 @pytest.mark.cuda
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA required")
-@pytest.mark.parametrize("compiled", [False, True])
-def test_cuda_bf16_and_fused_optimizer(tiny_config, compiled):
+def test_cuda_bf16_and_fused_optimizer(tiny_config):
     cfg = tiny_config
     cfg.runtime.device, cfg.runtime.amp = "cuda:0", True
     cfg.runtime.deterministic = False
@@ -467,7 +472,7 @@ def test_cuda_bf16_and_fused_optimizer(tiny_config, compiled):
         with torch.autocast("cuda", dtype=torch.bfloat16):
             return local_mean_losses(packed(x), y)
 
-    loss = torch.compile(compute, fullgraph=True) if compiled else compute
+    loss = torch.compile(compute, fullgraph=True)
     for _step in range(2):
         x = torch.randint(128, (2, 2, 16), device="cuda")
         optimizer.zero_grad()

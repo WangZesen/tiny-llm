@@ -1,339 +1,236 @@
 # tiny-llm
 
-Small Llama-style models trained from scratch on English C4, with a fast CUDA
-training path and a twice-differentiable PyTorch reference path for research.
+Train small Llama-style language models from scratch on English C4, evaluate
+checkpoints, and measure gradient-noise alignment with the loss Hessian.
+Presets cover 20M, 50M, and 90M parameters, plus packed decentralized training.
 
-| Preset | Unique trainable parameters | Layers / width / heads / FFN |
-|---|---:|---|
-| 20M | 20,403,520 | 8 / 320 / 5 / 896 |
-| 50M | 48,507,392 | 10 / 512 / 8 / 1408 |
-| 90M | 91,605,120 | 14 / 640 / 10 / 1792 |
+## Setup
 
-All use a shared 32K TinyLlama tokenizer, tied embeddings, RoPE, RMSNorm, SwiGLU,
-zero dropout, and a 1024-token context. The default budget is 20 prediction targets
-per unique trainable parameter, split into 40 virtual epochs. Seeds are saved;
-`deterministic=false` is the default. See [recipe and papers](docs/training_recipe.md).
-
-## Setup and verification
-
-Python 3.12+, UV, and an NVIDIA GPU with BF16 support are required for training.
-The locked PyTorch build uses CUDA 13; the checked local driver is 595.71.05.
-CPU fixtures and second-order checks do not require a GPU.
+Use Python 3.12+, UV, and an NVIDIA GPU with BF16 support for training.
+The locked PyTorch build uses CUDA 13 and requires a compatible driver.
+Run commands from the repository root.
 
 ```bash
 uv sync --locked
-uv run pytest -q
-uv run ruff check .
-uv run ruff format --check .
 ```
 
-## Smoke run
+## Training
 
-This explicitly truncated C4 configuration is for checking the pipeline. Its
-final evaluation is labelled incomplete and is not a full-C4 validation result.
+Prepare the data once using the largest preset; smaller models reuse prefixes
+of the same cache. Preparation needs network access and also caches the official
+English C4 validation split. Training and evaluation use the local cache.
+
+```bash
+uv run tiny-llm prepare --config configs/90m.yaml
+uv run tiny-llm train --config configs/20m.yaml
+```
+
+Use `configs/50m.yaml` or `configs/90m.yaml` for larger models. Override fields
+with repeated `--set dotted.key=value` arguments; unknown fields are rejected.
+Give separate experiments their own output directories:
+
+```bash
+uv run tiny-llm train --config configs/50m.yaml \
+  --set optimizer.lr=0.0003 --set runtime.output_dir=runs/50m-low-lr
+```
+
+Each run saves `resolved.yaml`, logs (`run.log`, `metrics.jsonl`), epoch weights
+(`epoch-NNN.safetensors`), resume states (`latest.pt`, `final.pt`), and final
+metrics (`result.json`). Resume with the saved configuration:
+
+```bash
+uv run tiny-llm train --config runs/20m/resolved.yaml \
+  --resume runs/20m/latest.pt
+```
+
+Resume allows device, output-directory, and prefetch changes; keep the training
+recipe and data settings unchanged. See [checkpoint compatibility](doc/training_details.md#checkpoints-and-artifacts).
+
+For a short pipeline check:
 
 ```bash
 uv run tiny-llm prepare --config configs/smoke.yaml
 uv run tiny-llm train --config configs/smoke.yaml
-uv run tiny-llm evaluate --config runs/smoke/resolved.yaml \
-  --checkpoint runs/smoke/final.pt --full
 ```
 
-## Prepare and train
+The smoke configuration truncates C4, so its evaluation is marked incomplete.
 
-Prepare once for the largest model; the smaller runs reuse prefixes of this
-cache. The command streams only the training data needed, and all official
-English C4 validation data. Model/tokenizer revisions are resolved and recorded
-in the manifest. Network access is only needed during preparation and setup.
+### Packed training
 
-```bash
-uv run tiny-llm prepare --config configs/90m.yaml
-uv run tiny-llm benchmark --config configs/20m.yaml \
-  --all-presets --output runs/benchmarks
-uv run tiny-llm train --config runs/benchmarks/20m/selected.yaml \
-  --set runtime.output_dir=runs/baseline
-```
-
-Configuration is strict Pydantic + YAML. Override any field with repeated
-`--set dotted.key=value` arguments; unknown fields are errors. For example:
-
-```bash
-uv run tiny-llm train --config configs/50m.yaml \
-  --set optimizer.lr=0.0003 --set runtime.device=cuda:1 \
-  --set runtime.deterministic=false --set runtime.output_dir=runs/50m-low-lr
-```
-
-Training evaluates a fixed sample of 1,048,576 validation targets each epoch and
-the full validation split after the last epoch. Reported loss is token-weighted
-cross-entropy in nats. Padding in the last validation block does not contribute.
-
-## Sequential buffered loading
-
-Training partitions the selected cache prefix into sequence-aligned ranges. Each
-range is read sequentially across binary shards into a compact `uint16` buffer,
-then drained using shuffled sequence indices. Only the requested microbatch is
-converted to `int64`; batches and virtual epochs can cross buffer boundaries.
-The original sequence boundaries and next-token targets are preserved.
-
-`data.buffer_size_mib: 64` controls the active token buffer. With the default
-`data.prefetch: true`, one background reader loads the next range, using about
-128 MiB of token storage in total (plus two lookahead tokens, row indices, the
-validation subset, and microbatch tensors). Set prefetch to false for one-buffer
-loading. `data.shuffle_buffer` remains the separate preparation-time document
-shuffle setting. No token-cache regeneration is needed.
-
-`runtime.seed` independently determines range order and each range's row order;
-thread timing does not affect samples. Full validation streams in original order.
-The fixed epoch-validation subset is collected during one sequential validation
-scan at startup and retained in RAM for subsequent epochs (about 2 MiB by default).
-Startup also retains the existing cache checksum verification.
-
-## SLURM jobs
-
-Submit from the repository root using `scripts/slurm.sh` for ordinary training,
-packed training, evaluation, and benchmarks. The launcher sources `~/.bashrc` to
-select the compute node's architecture-specific UV environment, synchronizes
-locked dependencies, and starts the command with `srun`.
-
-Create `runs/` before submitting: SLURM opens the console log before the script
-starts. Combined stdout and stderr are written to `./runs/slurm-<job-id>.log`.
-The defaults request account `naiss2026-3-205-gpu`, partition `gpu`, one GPU,
-one task, and two hours. CPU counts are allocated automatically by SLURM;
-the launcher preserves its device visibility and CPU allocation.
-
-```bash
-mkdir -p runs
-sbatch scripts/slurm.sh train --config configs/20m.yaml
-# Standard sbatch options override resource defaults:
-sbatch --time=00:30:00 scripts/slurm.sh train --config configs/packed-20m.yaml
-```
-
-## GH200 execution and profiling
-
-Use the [SLURM launcher](#slurm-jobs) on Arrhenius.
-The 20M, 50M, and 90M default recipes use the measured optimized settings:
-microbatch 32, compilation in `default` mode, automatic SDPA, and eight CPU threads.
-Validation uses a separate batch size of 128 sequences (131,072 targets at context
-1024), with no gradient accumulation. Override `evaluation.batch_size` for devices
-with less memory. Loss remains weighted by valid tokens; batch size can cause small
-floating-point differences.
-For example, train 20M with:
-
-```bash
-mkdir -p runs
-sbatch scripts/slurm.sh train --config configs/20m.yaml
-```
-
-To repeat the tuning campaign:
-
-```bash
-mkdir -p runs
-sbatch scripts/slurm.sh benchmark --config configs/20m.yaml \
-  --gh200 --budget-minutes 75 --output runs/gh200-tuning
-```
-
-The staged tuner measures real C4 updates, then varies microbatch size,
-compilation, SDPA kernel selection, and CPU threads. Every candidate runs in a
-separate process with 20 warmup updates and three 100-update timing windows.
-`selected.yaml` records the fastest successful candidate. Compilation and
-warmup are reported separately. Synthetic benchmarks remain available with
-`--data-mode synthetic`; they exclude loading and transfers.
-
-To profile a specific configuration, run this inside an allocation or pass the
-same arguments to the SLURM launcher:
-
-```bash
-.venv-aarch64/bin/python -m tiny_llm benchmark-worker \
-  --config runs/gh200-tuning/selected.yaml --data-mode real --profile \
-  --output runs/gh200-profile.json
-```
-
-The worker writes repeated measurements, hardware/software metadata, and actual
-attention dispatch. `--profile` additionally writes a Chrome CPU/CUDA trace and
-an operator table after timing finishes. Benchmark windows use full optimizer
-batches without validation or checkpoint writes; actual training also handles
-short virtual-epoch boundary updates. Use training results to assess elapsed
-throughput including validation and checkpoints.
-
-`runtime.compile_mode` accepts `default`, `reduce-overhead`, or `max-autotune`;
-`runtime.compile` still controls whether compilation is enabled. Full microbatches
-are compiled; short epoch-ending microbatches run eagerly to avoid recompilation.
-`runtime.sdpa_backend` accepts `auto`, `flash`, or `cudnn`. Forced unsupported
-kernels fail explicitly. The reference path remains available for second-order
-analysis. Default-valued new settings preserve existing checkpoint identities;
-changing execution settings for a resumed run still requires a compatible recipe.
-
-Training metrics report `tokens_per_second` excluding startup, validation, and
-checkpoint writes, and `elapsed_tokens_per_second` including validation and
-checkpoint overhead since the first training update. Compilation is included
-in the first training window. Final results also record aggregate training and
-elapsed seconds; `seconds_this_session` additionally includes validation-subset
-preparation and final full validation, but excludes earlier model/cache setup.
-
-See [GH200 measurements and analysis](docs/gh200_performance.md).
-
-## Run the complete tuning campaign
-
-The completed search in `runs/campaign` selected LR 0.001 and weight decay 0.1
-for all sizes, with beta2 0.95 for 20M and 0.99 for 50M/90M. These settings are
-now in the default presets. See [campaign results](docs/campaign_results.md) for
-the comparisons and the limits of the 90M selection.
-
-```bash
-uv run tiny-llm sweep --config configs/20m.yaml \
-  --benchmarks runs/benchmarks --output runs/campaign-buffered --gpus 0,1
-uv run tiny-llm report --runs runs/campaign-buffered
-```
-
-The sweep runs one independent training process per GPU, never distributed
-training. The 12-run search promotes recipes in three stages as described in the
-[recipe](docs/training_recipe.md). Rerun the same command after interruption to
-resume. Completed runs are skipped; incompatible campaign settings are rejected.
-
-For unattended use, the process can be launched with a terminal multiplexer or
-`nohup`, with its log redirected to a local file. Send SIGTERM to the sweep PID
-to request checkpoints and graceful interruption of its training children.
-
-## Packed decentralized training
-
-`PackedLlama` executes independent local models together on one GPU. The same
-seed produces exactly the ordinary Llama initialization in every worker. Each
-step uses one local microbatch, one parameter-mixing event, and one local AdamW
-update; decentralized training does not accumulate gradients.
-
-Packed presets use four workers with local microbatch 8. They inherit compilation
-in `default` mode, automatic SDPA, and global evaluation batch size 128. Cached
-RoPE is shared across workers; shortened local batches run eagerly.
+Packed presets run four independent local models together on one GPU. To use
+eight workers while preserving the global batch:
 
 ```bash
 uv run tiny-llm train --config configs/packed-20m.yaml
-# Eight workers at the same global batch size:
 uv run tiny-llm train --config configs/packed-20m.yaml \
   --set decentralized.num_models=8 --set training.micro_batch_size=4 \
   --set runtime.output_dir=runs/packed-20m-n8
 ```
 
-The global batch must equal `num_models * micro_batch_size * context_length`.
-Every realized epoch boundary must divide evenly across workers. The packed
-presets round each ordinary total budget down to a multiple of `8 * context_length`,
-so their prepared caches remain sufficient. They use 40 epochs with a shorter
-final epoch (408,068,096 total targets for packed 20M). The ordinary presets retain
-their existing token-budget calculation.
-The buffered loader's shuffled sample stream is partitioned without overlap:
-worker i receives every Nth sample, including across buffer and epoch boundaries.
+The global batch must equal `num_models * micro_batch_size * context_length`,
+and epoch boundaries must divide evenly across workers. Root epoch checkpoints
+contain averaged weights; worker weights live under `node-NNN/`.
+[Packed implementation details](doc/training_details.md#packed-decentralized-training)
+cover topologies and optimizer behavior.
 
-Each worker computes a mean loss over its own valid tokens. The sum of these
-local means supplies independent gradients, with no division by the worker
-count. Gradients are clipped locally; parameters are then mixed before local
-AdamW updates. Moments remain local. Available `decentralized.topology` values:
+## Evaluation
 
-- `complete`: globally average parameters each step.
-- `one_peer_ring`: half self, half left/right neighbor, alternating each step.
-- `one_peer_exponential`: half self, half incoming neighbor at cyclic
-  power-of-two offsets modulo N.
+Evaluate a saved checkpoint using the run's resolved configuration. `--full`
+selects the full cached validation split; omit it to use the fixed subset.
 
-Before validation, a separate ordinary Llama receives the global parameter
-average. It evaluates with the global `evaluation.batch_size`; training weights,
-moments, and topology phase stay unchanged. Validation metrics and `best.json`
-refer to this averaged model. Root `epoch-NNN.safetensors` files contain averaged
-weights; `node-000/epoch-NNN.safetensors`, etc. contain local weights. Resume
-checkpoints retain all local parameters and optimizer states.
-
-Parameters and AdamW's `m` and `v` occupy three contiguous `[N, D_padded]` arenas
-with identical offsets and 64-element alignment. Padding is zero and excluded
-from optimization and exports. Place the model on its final device/dtype before
-constructing the optimizer:
-
-```python
-from tiny_llm.packed import PackedLlama, local_mean_losses
-from tiny_llm.packed_optimizer import PackedAdamW
-
-model = PackedLlama(config.model, 4).to(device)
-optimizer = PackedAdamW(model, config)
-parameters = model.parameter_storage
-m, v = optimizer.first_moment_storage, optimizer.second_moment_storage
-layout = model.layout  # name, local shape, start, numel, padded_numel
+```bash
+uv run tiny-llm evaluate --config runs/20m/resolved.yaml \
+  --checkpoint runs/20m/final.pt --full
+uv run tiny-llm evaluate --config runs/20m/resolved.yaml \
+  --checkpoint runs/20m/epoch-020.safetensors
 ```
 
-Local optimizer parameter/moment tensors directly alias these arenas. Arena
-edits should occur under `torch.no_grad()` between updates. Use
-`model.local_state_dict(i)` for ordinary Llama-compatible weights, and the
-training resume checkpoints to preserve arena bindings and optimizer counters.
+Both `.pt` and `.safetensors` checkpoints are supported. Packed training states
+are evaluated at their averaged weights. Loss is token-weighted cross-entropy
+in nats. Training already evaluates the subset every epoch and the full split
+at completion. For less GPU memory, pass `--set evaluation.batch_size=32`
+(the default is 128 sequences).
 
-### SLURM on aarch64
+## Analysis
 
-Use the same [SLURM launcher and setup](#slurm-jobs) for packed training on the
-aarch64 compute nodes:
+Analyze all checkpoints or select filenames relative to the run directory.
+Use a prepared cache with enough data for both seen and unseen cases; the tool
+checks capacity before computing. Packed runs use root, averaged checkpoints.
+
+```bash
+uv run tiny-llm analyze --run runs/20m --checkpoints all \
+  --output runs/20m/analysis
+# Analyze a selection with the measured BF16/HVP batch settings:
+uv run tiny-llm analyze --run runs/20m \
+  --checkpoints epoch-001.safetensors epoch-020.safetensors final.pt \
+  --amp --hvp-batch-size 64 --output runs/20m/analysis-bf16
+```
+
+Defaults are both data cases, 32 noise samples, 32 random directions, seed 42,
+FP32 without AMP, TF32 enabled on CUDA, and compiled Pearlmutter HVPs with
+reference attention. Gradient microbatch size always comes from `resolved.yaml`;
+HVP batch size defaults to that size. Useful options:
+
+- `--data-case seen|unseen|both` selects data cases.
+- `--noise-samples N|all` and `--random-samples N` control sampling.
+- `--amp --hvp-batch-size 64` enables BF16 forward AMP with FP32 parameters.
+- `--device cpu --dtype float64` runs eager derivative checks on CPU.
+- `--no-tf32`, `--no-compile-hvp`, and `--no-plots` disable those features.
+
+Results include per-sample JSON, a manifest, `summary.csv`, and three PDF/PNG
+figures: normalized alignment, unnormalized noise alignment, and gradient/noise
+norms. Seen and unseen curves share axes against training tokens. Repeat the
+same command to reuse completed compatible results; use a new output directory
+when changing source or numerical settings. Regenerate figures with:
+
+```bash
+uv run tiny-llm plot-analysis --output runs/20m/analysis
+```
+
+Add `--training-norms` to include logged training norms. See the
+[analysis reference](doc/analysis.md) for formulas, data selection, and precision,
+and [measurements](doc/analysis_performance.md) for BF16 accuracy and runtime.
+
+## Slurm jobs
+
+Submit from the repository root. Create `runs/` first because Slurm opens logs
+before the launcher starts:
 
 ```bash
 mkdir -p runs
+sbatch scripts/slurm.sh train --config configs/20m.yaml
 sbatch scripts/slurm.sh train --config configs/packed-20m.yaml
+sbatch scripts/slurm.sh evaluate --config runs/20m/resolved.yaml \
+  --checkpoint runs/20m/final.pt --full
+```
+
+The launcher defaults to account `naiss2026-3-205-gpu`, partition `gpu`, one GPU,
+one task, and **two hours**. Slurm allocates CPUs automatically. Combined output
+goes to `runs/slurm-<job-id>.log`. The launcher sources `~/.bashrc` to select the
+compute node's architecture-specific UV environment, synchronizes locked
+dependencies, and runs the command with `srun`.
+
+Place resource overrides before the script path. For example, request six hours
+for a longer training run:
+
+```bash
+sbatch --time=06:00:00 scripts/slurm.sh train --config configs/90m.yaml
+squeue -u "$USER"
+sacct -j JOB_ID --format=JobID,State,Elapsed,Timelimit,ExitCode
+```
+
+Benchmark jobs use the same launcher:
+
+```bash
+sbatch scripts/slurm.sh benchmark --config configs/20m.yaml \
+  --gh200 --budget-minutes 75 --output runs/gh200-tuning
 sbatch scripts/slurm.sh benchmark-packed --config configs/20m.yaml \
   --num-models 4 8 --output runs/packed-benchmarks
 ```
 
-The benchmark compares packed and sequential ordinary workers in
-isolated processes with the same global batch, initialization, and updates.
-It reports throughput, speedup, memory, component timings, and profiler traces.
-Compilation is enabled by default; use `--set runtime.compile=false` for an eager
-comparison. Full validation and data loading are excluded from synthetic benchmark timings.
-See [GH200 validation and benchmark results](docs/packed_benchmarks.md) for the
-measured N=4/8 comparisons and memory costs.
+See [benchmarking and sweeps](doc/benchmarking.md) for tuning, profiling,
+selected configurations, and campaign commands.
 
-## Checkpoints and artifacts
+### Analysis jobs
 
-Each run contains:
-
-- `resolved.yaml`, `environment.json`, `run.log`, and `metrics.jsonl`.
-- `epoch-NNN.safetensors`: canonical FP32 model weights after every epoch.
-- `best.json`: best intermediate checkpoint by subset-validation loss.
-- `latest.pt`: model, AdamW state, RNG states, data cursor, and schedule progress.
-- `final.pt` and `result.json`: final training state and full-validation metrics.
-
-Resume using the saved configuration. Device and output-directory changes are
-allowed, as is changing `data.prefetch`. Recipe, precision, data identity, batch,
-seed, and buffer-size changes are rejected. Ordinary checkpoint format v2 and
-packed format v3 record loader format v1 and a committed sample cursor. Resume
-reconstructs the current range and row position directly, without replaying earlier training ranges or saving
-buffer contents. The normal startup cache checksum scan still runs.
-
-Old global-permutation checkpoints (ordinary v1 and packed v2) cannot resume
-training under this loader; start a fresh run. Their model weights remain usable
-for evaluation and analysis.
-The previous campaign is preserved under `runs/campaign`; fresh buffered runs use
-`runs/campaign-buffered` and reuse the existing model computation benchmarks.
+Run the submitter on the login node. It divides unique checkpoint states among
+`--jobs N` independent single-GPU allocations, waits for successful jobs, then
+collects results and plots locally. Identical checkpoints stay together, with
+all filenames retained as aliases. Preview assignments before submitting:
 
 ```bash
-uv run tiny-llm train --config runs/baseline/resolved.yaml \
-  --resume runs/baseline/latest.pt
+uv run tiny-llm submit-analysis \
+  --run runs/campaign/20m-lr0.001-wd0.1 --checkpoints all --jobs 4 \
+  --output runs/campaign/20m-lr0.001-wd0.1/analysis/new-analysis --dry-run
 ```
 
-Resume `.pt` files are trusted local pickle artifacts. For exchanging model
-weights, use the `.safetensors` files. Model/data artifacts live in gitignored
-`runs/` and `data/`; source, configurations, the UV lockfile, and documentation
-are tracked in Git.
+Remove `--dry-run` to submit and wait. The equivalent script entrypoint is
+`uv run python scripts/submit_analysis.py`. Submission defaults to **BF16 forward
+AMP, FP32 parameters, TF32, compiled HVPs at batch 64**, both cases, seed 42, and
+32 noise plus 32 random samples. Gradient microbatches come from `resolved.yaml`.
+The same numerical options as `analyze` are available.
 
-## Analysis API
+For the measured ordinary 20M recipe (context 1024, training batch/microbatch 32,
+default analysis settings), jobs explicitly request GH200 GPUs. Each wall time
+is twice estimated runtime plus 30 minutes, rounded up to an hour: **25 hours
+for ten checkpoints** with default sample counts. Other architectures or
+execution settings require `--walltime-hours N`. Requests must fit the **72-hour**
+partition limit; increase `--jobs` if the estimated work will not fit. Each job
+uses the same account and partition as the launcher, with no shard dependencies.
 
-```python
-import torch
-from safetensors.torch import load_file
-from tiny_llm.config import load_config
-from tiny_llm.model import Llama, token_losses
+Keep the login-side watcher running in `tmux`, or detach it with `nohup`:
 
-config = load_config("runs/baseline/resolved.yaml")
-model = Llama(config.model, attention_backend="reference").double()
-model.load_state_dict(load_file("runs/baseline/epoch-040.safetensors"), strict=True)
-inputs = torch.tensor([[1, 4, 8]])
-targets = torch.tensor([[4, 8, 2]])
-loss = token_losses(model(inputs), targets).mean()
-parameters = tuple(model.parameters())
-gradient = torch.autograd.grad(loss, parameters, create_graph=True)
-direction = tuple(torch.randn_like(p) for p in parameters)
-directional_gradient = sum((g * v).sum() for g, v in zip(gradient, direction))
-hvp = torch.autograd.grad(directional_gradient, parameters)
+```bash
+nohup uv run tiny-llm submit-analysis \
+  --run runs/campaign/20m-lr0.001-wd0.1 --checkpoints all --jobs 4 \
+  --output runs/campaign/20m-lr0.001-wd0.1/analysis/new-analysis \
+  > analysis-orchestrator.log 2>&1 < /dev/null &
 ```
 
-`torch.func.functional_call` is supported for stateless parameter experiments.
-The entire reference computation preserves double precision. Gradient-noise
-estimators and Hessian eigensolvers are not implemented.
+`OUTPUT/submission.json` records assignments, source snapshots, job IDs,
+resource requests, and log paths. The watcher checks `squeue` and `sacct` every
+60 seconds and requires successful status plus valid output before collection.
+Stopping it leaves GPU jobs running. Repeat the original arguments with
+`--resume` to reattach and retry terminal failed jobs, preserving completed
+results. If submission was interrupted before a job ID was recorded, reconcile
+that job with Slurm before retrying. Older receipts must use their original
+[frozen source entrypoint](doc/analysis.md#execution-and-provenance).
+
+Each shard writes statistics to its own directory; the watcher publishes the
+combined results only after all shards succeed. Compiler caches use a unique
+temporary directory under `SLURM_TMPDIR`, `TMPDIR`, or `/tmp`, with cleanup on
+normal exit, failure, or catchable termination.
+
+## Further documentation
+
+- [Training recipe and evidence](doc/training_recipe.md)
+- [Loader, packed models, and checkpoint formats](doc/training_details.md)
+- [Analysis definitions and API](doc/analysis.md)
+- [Benchmarking, profiling, and sweeps](doc/benchmarking.md)
+- Measurements: [training](doc/gh200_performance.md),
+  [packed training](doc/packed_benchmarks.md), [analysis](doc/analysis_performance.md)
+- [Campaign results](doc/campaign_results.md) and
+  [implementation validation](doc/implementation_validation.md)
+
+For local code checks, run `uv run pytest -q`, `uv run ruff check .`, and
+`uv run ruff format --check .`. GPU tests require a CUDA allocation.
