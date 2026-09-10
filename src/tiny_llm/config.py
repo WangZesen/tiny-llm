@@ -107,6 +107,7 @@ class RuntimeConfig(StrictModel):
 class AdaptiveConsensusConfig(StrictModel):
     start_frac: float = Field(..., ge=0, le=1)
     p: float = Field(..., ge=0)
+    exclude_embeddings: bool = False
 
 
 class DecentralizedConfig(StrictModel):

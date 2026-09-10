@@ -255,6 +255,8 @@ def recipe_identity(config: Config, cache: TokenCache) -> str:
         value.pop("decentralized")  # Keep pre-feature single-model recipe identities.
     elif value["decentralized"]["adaptive_consensus"] is None:
         value["decentralized"].pop("adaptive_consensus")
+    elif not value["decentralized"]["adaptive_consensus"]["exclude_embeddings"]:
+        value["decentralized"]["adaptive_consensus"].pop("exclude_embeddings")
     # Default execution controls retain the identity of existing v2 checkpoints.
     for name, default in (("compile_mode", "default"), ("sdpa_backend", "auto")):
         if value["runtime"][name] == default:
@@ -307,6 +309,8 @@ def _train(config: Config, resume: Path | None) -> dict:
             "decentralized epoch boundaries must contain a multiple of num_models blocks"
         )
     consensus_schedule = adaptive_consensus_schedule(config, boundaries)
+    adaptive = decentralized.adaptive_consensus if decentralized else None
+    exclude_embeddings = bool(adaptive and adaptive.exclude_embeddings)
     model = (
         PackedLlama(config.model, num_models, actual_backend(config))
         if decentralized
@@ -399,7 +403,9 @@ def _train(config: Config, resume: Path | None) -> dict:
             storage_numel=model.storage_numel,
         )
     if consensus_schedule is not None:
-        metadata["adaptive_consensus"] = asdict(consensus_schedule)
+        metadata["adaptive_consensus"] = asdict(consensus_schedule) | {
+            "exclude_embeddings": exclude_embeddings
+        }
     atomic_json(output / ("environment-resume.json" if resume else "environment.json"), metadata)
     logger.info(
         "Training {:,} parameters for {:,} targets in {} virtual epochs",
@@ -482,7 +488,12 @@ def _train(config: Config, resume: Path | None) -> dict:
                     if not torch.isfinite(step_loss).item():
                         raise FloatingPointError(f"nonfinite training loss at step {step}")
                     mixing_gamma = consensus_schedule.gamma(step, lr) if consensus_schedule else 1.0
-                    model.mix_(decentralized.topology, step, gamma=mixing_gamma)
+                    model.mix_(
+                        decentralized.topology,
+                        step,
+                        gamma=mixing_gamma,
+                        exclude_embeddings=exclude_embeddings,
+                    )
                     optimizer.step()
                 else:
                     step_loss, grad_norm = optimizer_update(
@@ -527,6 +538,7 @@ def _train(config: Config, resume: Path | None) -> dict:
                             tokens_per_model=cursor * length // num_models,
                             mixing_step=step - 1,
                             mixing_gamma=mixing_gamma,
+                            embedding_mixing_gamma=1.0 if exclude_embeddings else mixing_gamma,
                         )
                     append_metric(metrics_path, row)
                     logger.info(

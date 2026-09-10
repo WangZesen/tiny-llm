@@ -102,6 +102,17 @@ epoch-ending updates. See [adaptive consensus](doc/training_details.md#adaptive-
 for the LR normalization and resume semantics. It is supported by training only;
 packed throughput benchmarks reject adaptive-consensus configurations.
 
+To keep the tied embedding/LM head on the configured topology's normal mixing
+while applying adaptive scaling to all other parameters:
+
+```bash
+uv run tiny-llm train --config configs/packed-20m-adaptive.yaml \
+  --set decentralized.adaptive_consensus.exclude_embeddings=true \
+  --set runtime.output_dir=runs/packed-20m-adaptive-exclude-embeddings
+```
+
+`exclude_embeddings` defaults to `false`, which applies gamma to every parameter.
+
 ## Evaluation
 
 Epoch-weight examples below require training with `--set training.checkpoint_policy=all`.

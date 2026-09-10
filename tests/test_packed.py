@@ -66,8 +66,10 @@ def matrix(n, topology, step, device="cpu", dtype=torch.float64):
         ("sdpa", "complete"),
     ],
 )
-@pytest.mark.parametrize("adaptive", [False, True])
-def test_independent_worker_parity(tiny_config, backend, topology, adaptive):
+@pytest.mark.parametrize(
+    "adaptive,exclude_embeddings", [(False, False), (True, False), (True, True)]
+)
+def test_independent_worker_parity(tiny_config, backend, topology, adaptive, exclude_embeddings):
     n = 3
     schedule = None
     if adaptive:
@@ -116,13 +118,18 @@ def test_independent_worker_parity(tiny_config, backend, topology, adaptive):
         for model in locals_:
             torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
         moments_before = optimizer.first_moment_storage.clone()
-        packed.mix_(topology, step, gamma=gamma)
+        packed.mix_(topology, step, gamma=gamma, exclude_embeddings=exclude_embeddings)
         assert torch.equal(moments_before, optimizer.first_moment_storage)
         w = gamma * matrix(n, topology, step) + (1 - gamma) * torch.eye(n, dtype=torch.float64)
         with torch.no_grad():
             for name, _ in locals_[0].named_parameters():
                 old = torch.stack([model.get_parameter(name) for model in locals_])
-                mixed = (w @ old.flatten(1)).view_as(old)
+                local_w = (
+                    matrix(n, topology, step)
+                    if exclude_embeddings and name == "embedding.weight"
+                    else w
+                )
+                mixed = (local_w @ old.flatten(1)).view_as(old)
                 for i, model in enumerate(locals_):
                     model.get_parameter(name).copy_(mixed[i])
         optimizer.step()
@@ -325,10 +332,10 @@ def test_training_resume(tiny_config, cache_dir, monkeypatch):
     original_mix = PackedLlama.mix_
     events = []
 
-    def record_mix(self, topology, step, gamma=1.0):
+    def record_mix(self, topology, step, gamma=1.0, *, exclude_embeddings=False):
         assert all(parameter.grad is not None for parameter in self.parameters())
         events.append(("mix", step))
-        original_mix(self, topology, step, gamma=gamma)
+        original_mix(self, topology, step, gamma=gamma, exclude_embeddings=exclude_embeddings)
 
     def record_update(self):
         events.append(("update", None))
@@ -479,7 +486,8 @@ def test_benchmark_worker(tiny_config, tmp_path, execution):
 
 @pytest.mark.cuda
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA required")
-def test_cuda_bf16_and_fused_optimizer(tiny_config):
+@pytest.mark.parametrize("exclude_embeddings", [False, True])
+def test_cuda_bf16_and_fused_optimizer(tiny_config, exclude_embeddings):
     from tiny_llm.checkpoints import load_training_checkpoint, save_epoch_checkpoint
     from tiny_llm.config import DecentralizedConfig
 
@@ -523,13 +531,16 @@ def test_cuda_bf16_and_fused_optimizer(tiny_config):
         optimizer.clip_grad_norm_(cfg.optimizer.grad_clip)
         for model in locals_:
             torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.optimizer.grad_clip)
-        gamma = 1.0 if _step == 0 else 0.25
-        packed.mix_("complete", _step, gamma=gamma)
+        gamma = 0.0 if exclude_embeddings and _step == 0 else (1.0 if _step == 0 else 0.25)
+        packed.mix_("complete", _step, gamma=gamma, exclude_embeddings=exclude_embeddings)
         with torch.no_grad():
             for name, _ in locals_[0].named_parameters():
                 average = torch.stack([model.get_parameter(name) for model in locals_]).mean(0)
                 for model in locals_:
-                    model.get_parameter(name).mul_(1 - gamma).add_(average, alpha=gamma)
+                    local_gamma = (
+                        1.0 if exclude_embeddings and name == "embedding.weight" else gamma
+                    )
+                    model.get_parameter(name).mul_(1 - local_gamma).add_(average, alpha=local_gamma)
         optimizer.step()
         for opt in optimizers:
             opt.step()

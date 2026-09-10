@@ -125,10 +125,20 @@ The maximum is computed from the existing token-based LR schedule, so activation
 during warmup is supported. Step fractions and token fractions need not coincide.
 
 Mixing uses `W' = gamma * W + (1 - gamma) * I`. Smaller gamma weakens averaging;
-gamma zero leaves parameters unchanged at the mixing event. Backward and local
+by default, gamma zero leaves parameters unchanged at the mixing event. Backward and local
 clipping still precede mixing, and each worker's AdamW update follows it. Gradients
 and moments stay local. Evaluation always uses the full global average.
 The Python API also accepts a constant `model.mix_(topology, step, gamma=...)`.
+
+Set `decentralized.adaptive_consensus.exclude_embeddings: true` to apply the
+configured topology `W` to `embedding.weight`, the single shared embedding and
+LM-head parameter, while other parameters use `gamma * W + (1 - gamma) * I`.
+This defaults to `false`. Normal embedding mixing uses the current ring,
+exponential, or complete topology and its current phase; it does not force a
+global average. At gamma zero, only the embedding mixes; other parameters remain
+unchanged at the mixing event. Optimizer updates still follow for every worker.
+The Python API exposes this as `model.mix_(topology, step, gamma=..., exclude_embeddings=True)`.
+No separate LM-head weights or optimizer moments are introduced.
 
 `start_frac` must be finite and in `[0, 1]`; `p` must be finite and nonnegative.
 Omitting the section or setting `p=0` retains gamma one. If the ceiling places
@@ -137,10 +147,15 @@ An active window whose maximum LR is zero is rejected for positive `p`.
 `mixing_gamma` is recorded in packed training metrics. Run metadata includes
 `adaptive_consensus.total_steps`, `start_step`, `lr_max` (null for an empty window),
 and `p`.
+Metadata also records `exclude_embeddings`; `embedding_mixing_gamma` in training
+metrics is one when exclusion is enabled and otherwise equals `mixing_gamma`.
+`mixing_gamma` always describes the non-embedding parameters.
 
 Resume reconstructs the schedule from the complete original recipe and restored
 step, including when loading an epoch snapshot. Adaptive settings must match;
 legacy packed checkpoints remain compatible when the feature is absent.
+Older adaptive checkpoints without `exclude_embeddings` resume with its default
+false value. Changing the flag during resume is rejected as a recipe change.
 Existing presets are unchanged. Packed throughput benchmarks reject adaptive
 configurations because they use a constant LR rather than the training schedule.
 

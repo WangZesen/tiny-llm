@@ -85,7 +85,8 @@ def test_zero_lr_and_empty_window(tiny_config):
 
 @pytest.mark.parametrize("topology", ["complete", "one_peer_ring", "one_peer_exponential"])
 @pytest.mark.parametrize("n", [1, 3, 4])
-def test_weighted_mixing(tiny_config, topology, n):
+@pytest.mark.parametrize("exclude_embeddings", [False, True])
+def test_weighted_mixing(tiny_config, topology, n, exclude_embeddings):
     model = PackedLlama(tiny_config.model, n).double()
     opt = PackedAdamW(model, tiny_config)
     with torch.no_grad():
@@ -106,16 +107,23 @@ def test_weighted_mixing(tiny_config, topology, n):
         expected = (
             gamma * matrix(n, topology, step) + (1 - gamma) * torch.eye(n, dtype=before.dtype)
         ) @ before
-        model.mix_(topology, step, gamma)
+        embedding = next(entry for entry in model.layout if entry.name == "embedding.weight")
+        start, end = embedding.start, embedding.start + embedding.numel
+        if exclude_embeddings:
+            expected[:, start:end] = matrix(n, topology, step) @ before[:, start:end]
+        model.mix_(topology, step, gamma, exclude_embeddings=exclude_embeddings)
         torch.testing.assert_close(model.parameter_storage, expected, rtol=1e-14, atol=1e-14)
         assert model.parameter_storage.data_ptr() == pointer
         if gamma == 0:
-            assert torch.equal(model.parameter_storage, before)
-        if gamma == 1:
-            if n == 1:
+            assert torch.equal(model.parameter_storage[:, :start], before[:, :start])
+            assert torch.equal(model.parameter_storage[:, end:], before[:, end:])
+            if not exclude_embeddings:
+                assert torch.equal(model.parameter_storage, before)
+        if gamma == 1 or not exclude_embeddings:
+            if n == 1 or gamma == 0:
                 legacy = before
             elif topology == "complete":
-                legacy = before.mean(0).expand_as(before)
+                legacy = before.mean(0).expand_as(before).clone()
             else:
                 offset = (
                     (1 if step % 2 == 0 else -1)
@@ -123,6 +131,8 @@ def test_weighted_mixing(tiny_config, topology, n):
                     else 1 << (step % (n - 1).bit_length())
                 )
                 legacy = (before[(torch.arange(n) - offset) % n] + before) * 0.5
+            if n > 1 and 0 < gamma < 1:
+                legacy.mul_(gamma).add_(before, alpha=1 - gamma)
             assert torch.equal(model.parameter_storage, legacy)
         assert_storage(model, opt)
         assert torch.equal(opt.first_moment_storage, moments[0])
@@ -134,6 +144,36 @@ def test_weighted_mixing(tiny_config, topology, n):
     for gamma in (-0.1, 1.1, float("nan"), float("inf")):
         with pytest.raises(ValueError, match="gamma"):
             model.mix_(topology, 0, gamma)
+
+
+def test_tied_embedding_after_conversion_and_restore(tiny_config, monkeypatch):
+    import tiny_llm.packed as module
+    from tiny_llm.model import Llama
+
+    model = PackedLlama(tiny_config.model, 3).double()
+    with torch.no_grad():
+        model.embedding.weight.add_(torch.arange(3, dtype=torch.float64)[:, None, None] * 0.1)
+    model.mix_("one_peer_ring", 0, 0.3, exclude_embeddings=True)
+    restored = PackedLlama(tiny_config.model, 3).double()
+    restored.load_packed_state_dict(model.packed_state_dict())
+    assert_storage(restored, PackedAdamW(restored, tiny_config))
+    assert restored.local_parameter_count == tiny_config.model.parameter_count
+    assert not any("lm_head" in key for key in restored.state_dict())
+    weights = []
+    original = module.linear
+
+    def observe(inputs, weight):
+        weights.append(weight)
+        return original(inputs, weight)
+
+    monkeypatch.setattr(module, "linear", observe)
+    tokens = torch.randint(tiny_config.model.vocab_size, (3, 2, 4))
+    actual = restored(tokens)
+    assert weights[-1] is restored.embedding.weight
+    for worker in range(3):
+        ordinary = Llama(tiny_config.model).double()
+        ordinary.load_state_dict(restored.local_state_dict(worker))
+        torch.testing.assert_close(actual[worker], ordinary(tokens[worker]), rtol=1e-10, atol=1e-12)
 
 
 def test_identity_and_benchmark_guards(tiny_config, cache_dir, tmp_path):
@@ -154,7 +194,15 @@ def test_identity_and_benchmark_guards(tiny_config, cache_dir, tmp_path):
         cache_identity=cache.manifest["identity"], loader_version=BufferedTokenLoader.VERSION
     )
     assert disabled == fingerprint(legacy) != enabled
+    # This is the pre-exclusion adaptive recipe: the new field must not alter its hash.
+    legacy["decentralized"]["adaptive_consensus"] = dict(start_frac=0.3, p=1.5)
+    assert enabled == fingerprint(legacy)
     config = adaptive_config(tiny_config)
+    assert not config.decentralized.adaptive_consensus.exclude_embeddings
+    config.decentralized.adaptive_consensus.exclude_embeddings = False
+    assert recipe_identity(config, cache) == enabled
+    config.decentralized.adaptive_consensus.exclude_embeddings = True
+    assert recipe_identity(config, cache) != enabled
     destination = tmp_path / "must-not-exist"
     with pytest.raises(ValueError, match="training only"):
         benchmark_packed(config, destination)
@@ -164,17 +212,36 @@ def test_identity_and_benchmark_guards(tiny_config, cache_dir, tmp_path):
     assert not destination.exists()
 
 
-@pytest.mark.parametrize("resume_at", ["before", "after", "epoch"])
-def test_adaptive_resume(tiny_config, cache_dir, monkeypatch, resume_at):
+@pytest.mark.parametrize(
+    "resume_at,exclude_embeddings",
+    [
+        ("before", False),
+        ("before", True),
+        ("after", False),
+        ("after", True),
+        ("epoch", False),
+        ("epoch", True),
+        ("legacy", False),
+    ],
+)
+def test_adaptive_resume(tiny_config, cache_dir, monkeypatch, resume_at, exclude_embeddings):
     config = adaptive_config(tiny_config)
+    config.decentralized.adaptive_consensus.exclude_embeddings = exclude_embeddings
     config.training.checkpoint_policy = "all"
     config.runtime.deterministic = True
     config.optimizer.warmup_fraction = 0.6
     baseline = config.model_copy(deep=True)
     baseline.runtime.output_dir = cache_dir.parent / "baseline"
     expected = train(baseline)
-    if resume_at == "epoch":
+    if resume_at in ("epoch", "legacy"):
         source = baseline.runtime.output_dir / "epoch-001.pt"
+        if resume_at == "legacy":
+            state = load_training_checkpoint(source)
+            state["config"]["decentralized"]["adaptive_consensus"].pop("exclude_embeddings")
+            source = baseline.runtime.output_dir / "legacy.pt"
+            torch.save(state, source)
+            config = Config.model_validate(state["config"])
+            assert not config.decentralized.adaptive_consensus.exclude_embeddings
     else:
         original = PackedAdamW.step
         updates = 0
@@ -212,8 +279,18 @@ def test_adaptive_resume(tiny_config, cache_dir, monkeypatch, resume_at):
         for row in rows:
             if row["event"] == "train":
                 assert row["mixing_gamma"] == schedule.gamma(row["mixing_step"], row["lr"])
+                assert row["embedding_mixing_gamma"] == (
+                    1 if exclude_embeddings else row["mixing_gamma"]
+                )
     meta = json.loads((config.runtime.output_dir / "environment-resume.json").read_text())
-    assert meta["adaptive_consensus"] == asdict(schedule)
+    assert meta["adaptive_consensus"] == asdict(schedule) | {
+        "exclude_embeddings": exclude_embeddings
+    }
+    config.decentralized.adaptive_consensus.exclude_embeddings = not exclude_embeddings
+    config.runtime.output_dir = cache_dir.parent / "incompatible-exclusion"
+    with pytest.raises(ValueError, match="incompatible"):
+        train(config, source)
+    config.decentralized.adaptive_consensus.exclude_embeddings = exclude_embeddings
     config.decentralized.adaptive_consensus.p += 1
     config.runtime.output_dir = cache_dir.parent / "incompatible"
     with pytest.raises(ValueError, match="incompatible"):

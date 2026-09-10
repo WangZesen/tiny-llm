@@ -55,6 +55,9 @@ class PackedLlama(nn.Module):
             entries.append(ParameterLayout(name, tuple(parameter.shape), offset, size, padded))
             offset += padded
         self.layout = tuple(entries)
+        self._embedding_layout = next(
+            entry for entry in self.layout if entry.name == "embedding.weight"
+        )
         self.storage_numel = offset
         first = next(self.parameters())
         self._parameter_storage = first.new_zeros((num_models, offset))
@@ -202,18 +205,26 @@ class PackedLlama(nn.Module):
             )
 
     @torch.no_grad()
-    def mix_(self, topology: str, step: int, gamma: float = 1.0):
+    def mix_(
+        self, topology: str, step: int, gamma: float = 1.0, *, exclude_embeddings: bool = False
+    ):
         if topology not in ("complete", "one_peer_ring", "one_peer_exponential") or step < 0:
             raise ValueError("invalid topology or step")
         if not math.isfinite(gamma) or not 0 <= gamma <= 1:
             raise ValueError("mixing gamma must be finite and in [0, 1]")
-        if self.num_models == 1 or gamma == 0:
+        if self.num_models == 1 or (gamma == 0 and not exclude_embeddings):
             return
         arena = self.parameter_storage
         if self._mix_scratch is None:
             self._mix_scratch = torch.empty_like(arena)
+        mixed = self._mix_scratch
+        embedding = self._embedding_layout
+        start, end = embedding.start, embedding.start + embedding.numel
+        if gamma == 0:
+            # Only the tied embedding/head participates; other columns stay untouched.
+            arena, mixed = arena[:, start:end], mixed[:, start:end]
         if topology == "complete":
-            self._mix_scratch.copy_(arena.mean(dim=0, keepdim=True))
+            mixed.copy_(arena.mean(dim=0, keepdim=True))
         else:
             offset = (
                 (1 if step % 2 == 0 else -1)
@@ -221,8 +232,13 @@ class PackedLlama(nn.Module):
                 else (1 << (step % (self.num_models - 1).bit_length()))
             )
             peers = (torch.arange(self.num_models, device=arena.device) - offset) % self.num_models
-            torch.index_select(arena, 0, peers, out=self._mix_scratch)
-            self._mix_scratch.add_(arena).mul_(0.5)
-        if gamma != 1:
-            self._mix_scratch.mul_(gamma).add_(arena, alpha=1 - gamma)
-        arena.copy_(self._mix_scratch)
+            torch.index_select(arena, 0, peers, out=mixed)
+            mixed.add_(arena).mul_(0.5)
+        if 0 < gamma < 1:
+            if exclude_embeddings:
+                for columns in (slice(0, start), slice(end, None)):
+                    if arena[:, columns].numel():
+                        mixed[:, columns].mul_(gamma).add_(arena[:, columns], alpha=1 - gamma)
+            else:
+                mixed.mul_(gamma).add_(arena, alpha=1 - gamma)
+        arena.copy_(mixed)
