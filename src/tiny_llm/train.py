@@ -402,8 +402,10 @@ def _train(config: Config, resume: Path | None) -> dict:
         metadata["adaptive_consensus"] = asdict(consensus_schedule)
     atomic_json(output / ("environment-resume.json" if resume else "environment.json"), metadata)
     logger.info(
-        "Training {:,} parameters for {:,} targets in {} virtual epochs",
+        "Training {:,} parameters ({:,} excluding embeddings and tied LM head) "
+        "for {:,} targets in {} virtual epochs",
         model.parameter_count,
+        model.parameter_count - model.embedding.weight.numel(),
         blocks * length,
         len(boundaries),
     )
