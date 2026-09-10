@@ -5,6 +5,7 @@ import signal
 import time
 from collections.abc import Callable
 from contextlib import nullcontext
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import torch
@@ -84,6 +85,47 @@ def learning_rate(config: Config, consumed: int, total: int) -> float:
     return cfg.lr * (
         cfg.min_lr_ratio + (1 - cfg.min_lr_ratio) * (1 + math.cos(math.pi * progress)) / 2
     )
+
+
+@dataclass(frozen=True)
+class AdaptiveConsensusSchedule:
+    total_steps: int
+    start_step: int
+    lr_max: float | None
+    p: float
+
+    def gamma(self, step: int, lr: float) -> float:
+        if step < self.start_step or self.p == 0 or self.lr_max is None:
+            return 1.0
+        return (lr / self.lr_max) ** self.p
+
+
+def adaptive_consensus_schedule(
+    config: Config, boundaries: list[int]
+) -> AdaptiveConsensusSchedule | None:
+    """Resolve the full run's active LR maximum, including shortened epoch steps."""
+    adaptive = config.decentralized.adaptive_consensus if config.decentralized else None
+    if adaptive is None:
+        return None
+    length = config.model.context_length
+    batch = config.training.batch_tokens // length
+    previous, total_steps = 0, 0
+    for boundary in boundaries:
+        total_steps += (boundary - previous + batch - 1) // batch
+        previous = boundary
+    start_step = math.ceil(adaptive.start_frac * total_steps)
+    previous, step, lr_max = 0, 0, None
+    for boundary in boundaries:
+        for cursor in range(previous, boundary, batch):
+            if step >= start_step:
+                consumed = min(cursor + batch, boundary) * length
+                lr = learning_rate(config, consumed, boundaries[-1] * length)
+                lr_max = lr if lr_max is None else max(lr_max, lr)
+            step += 1
+        previous = boundary
+    if lr_max == 0 and adaptive.p > 0:
+        raise ValueError("adaptive consensus requires a positive maximum LR in its active steps")
+    return AdaptiveConsensusSchedule(total_steps, start_step, lr_max, adaptive.p)
 
 
 def loss_function(model, config: Config, device: torch.device):
@@ -211,6 +253,8 @@ def recipe_identity(config: Config, cache: TokenCache) -> str:
         value["training"].pop(key)
     if value["decentralized"] is None:
         value.pop("decentralized")  # Keep pre-feature single-model recipe identities.
+    elif value["decentralized"]["adaptive_consensus"] is None:
+        value["decentralized"].pop("adaptive_consensus")
     # Default execution controls retain the identity of existing v2 checkpoints.
     for name, default in (("compile_mode", "default"), ("sdpa_backend", "auto")):
         if value["runtime"][name] == default:
@@ -262,6 +306,7 @@ def _train(config: Config, resume: Path | None) -> dict:
         raise ValueError(
             "decentralized epoch boundaries must contain a multiple of num_models blocks"
         )
+    consensus_schedule = adaptive_consensus_schedule(config, boundaries)
     model = (
         PackedLlama(config.model, num_models, actual_backend(config))
         if decentralized
@@ -353,6 +398,8 @@ def _train(config: Config, resume: Path | None) -> dict:
             topology=decentralized.topology,
             storage_numel=model.storage_numel,
         )
+    if consensus_schedule is not None:
+        metadata["adaptive_consensus"] = asdict(consensus_schedule)
     atomic_json(output / ("environment-resume.json" if resume else "environment.json"), metadata)
     logger.info(
         "Training {:,} parameters for {:,} targets in {} virtual epochs",
@@ -434,7 +481,8 @@ def _train(config: Config, resume: Path | None) -> dict:
                     grad_norm = local_grad_norms.max()
                     if not torch.isfinite(step_loss).item():
                         raise FloatingPointError(f"nonfinite training loss at step {step}")
-                    model.mix_(decentralized.topology, step)
+                    mixing_gamma = consensus_schedule.gamma(step, lr) if consensus_schedule else 1.0
+                    model.mix_(decentralized.topology, step, gamma=mixing_gamma)
                     optimizer.step()
                 else:
                     step_loss, grad_norm = optimizer_update(
@@ -478,6 +526,7 @@ def _train(config: Config, resume: Path | None) -> dict:
                             local_grad_norms=local_grad_norms.tolist(),
                             tokens_per_model=cursor * length // num_models,
                             mixing_step=step - 1,
+                            mixing_gamma=mixing_gamma,
                         )
                     append_metric(metrics_path, row)
                     logger.info(

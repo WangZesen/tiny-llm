@@ -202,10 +202,12 @@ class PackedLlama(nn.Module):
             )
 
     @torch.no_grad()
-    def mix_(self, topology: str, step: int):
+    def mix_(self, topology: str, step: int, gamma: float = 1.0):
         if topology not in ("complete", "one_peer_ring", "one_peer_exponential") or step < 0:
             raise ValueError("invalid topology or step")
-        if self.num_models == 1:
+        if not math.isfinite(gamma) or not 0 <= gamma <= 1:
+            raise ValueError("mixing gamma must be finite and in [0, 1]")
+        if self.num_models == 1 or gamma == 0:
             return
         arena = self.parameter_storage
         if self._mix_scratch is None:
@@ -221,4 +223,6 @@ class PackedLlama(nn.Module):
             peers = (torch.arange(self.num_models, device=arena.device) - offset) % self.num_models
             torch.index_select(arena, 0, peers, out=self._mix_scratch)
             self._mix_scratch.add_(arena).mul_(0.5)
+        if gamma != 1:
+            self._mix_scratch.mul_(gamma).add_(arena, alpha=1 - gamma)
         arena.copy_(self._mix_scratch)

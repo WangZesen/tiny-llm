@@ -90,6 +90,18 @@ under `node-NNN/`. The default `final.pt` retains all local training states.
 [Packed implementation details](doc/training_details.md#packed-decentralized-training)
 cover topologies and optimizer behavior.
 
+Optional adaptive consensus weakens mixing as the learning rate falls. The sample
+config uses four workers, `start_frac=0.5`, and `p=1.0`:
+
+```bash
+uv run tiny-llm train --config configs/packed-20m-adaptive.yaml
+```
+
+Activation uses the ceiling of `start_frac * total_steps`, counting shortened
+epoch-ending updates. See [adaptive consensus](doc/training_details.md#adaptive-consensus)
+for the LR normalization and resume semantics. It is supported by training only;
+packed throughput benchmarks reject adaptive-consensus configurations.
+
 ## Evaluation
 
 Epoch-weight examples below require training with `--set training.checkpoint_policy=all`.

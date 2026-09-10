@@ -18,6 +18,8 @@ from tiny_llm.train import loss_function, make_optimizer
 def benchmark_packed_worker(
     config: Config, destination: Path, execution: str, warmup: int = 3, steps: int = 8
 ) -> dict:
+    if config.decentralized and config.decentralized.adaptive_consensus is not None:
+        raise ValueError("adaptive consensus is supported by training only, not packed benchmarks")
     config = Config.model_validate(config.model_dump())
     if config.decentralized is None or execution not in ("packed", "sequential"):
         raise ValueError("benchmark requires decentralized config and packed/sequential execution")
@@ -156,6 +158,8 @@ def benchmark_packed_worker(
 def benchmark_packed(
     config: Config, output: Path, num_models: list[int] = (4, 8), warmup: int = 3, steps: int = 8
 ) -> dict:
+    if config.decentralized and config.decentralized.adaptive_consensus is not None:
+        raise ValueError("adaptive consensus is supported by training only, not packed benchmarks")
     output.mkdir(parents=True, exist_ok=True)
     results = []
     for n in num_models:
