@@ -46,6 +46,19 @@ uv run tiny-llm train --config runs/20m/resolved.yaml \
   --resume runs/20m/latest.pt
 ```
 
+With policy `all`, `training.save_epoch_training_state` defaults to `true`, retaining
+complete `epoch-NNN.pt` snapshots as well. Set it to `false` to keep only epoch
+weight exports and rolling recovery states. Packed epoch snapshots store each
+worker's weights and AdamW moments in `node-NNN/epoch-NNN.pt`; the root file holds
+shared state and references to those files. Keep the complete set together.
+To branch from an earlier epoch, use its root checkpoint and a new output directory:
+
+```bash
+uv run tiny-llm train --config runs/packed-20m/resolved.yaml \
+  --resume runs/packed-20m/epoch-010.pt \
+  --set runtime.output_dir=runs/packed-20m-from-epoch010
+```
+
 Resume allows device, output-directory, and prefetch changes; keep the training
 recipe and data settings unchanged. See [checkpoint compatibility](doc/training_details.md#checkpoints-and-artifacts).
 
@@ -103,6 +116,12 @@ For epoch-by-epoch analysis, train with `--set training.checkpoint_policy=all`.
 Analyze all checkpoints or select filenames relative to the run directory.
 Use a prepared cache with enough data for both seen and unseen cases; the tool
 checks capacity before computing. Packed runs use root, averaged checkpoints.
+
+Packed runs also analyze every worker's consensus error `x_i - x_bar`, using
+the Hessian at the averaged model. Worker-level scalars are saved, and aggregate
+alignment and norm curves join the existing figures. Epoch exports require all
+matching `node-NNN/` weight files; packed `.pt` states already contain them.
+Use `--no-consensus` with `analyze` or `submit-analysis` to disable this diagnostic.
 
 ```bash
 uv run tiny-llm analyze --run runs/20m --checkpoints all \

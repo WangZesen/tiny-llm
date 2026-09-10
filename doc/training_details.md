@@ -108,11 +108,17 @@ training resume checkpoints to preserve arena bindings and optimizer counters.
 By default, `training.checkpoint_policy: final` saves only the final training
 checkpoint. No periodic, epoch, worker-weight, or interruption checkpoints are
 written. Set `training.checkpoint_policy: all` to enable the previous behavior.
+With policy `all`, `training.save_epoch_training_state: true` (the default)
+also retains complete epoch snapshots. Set the new field to `false` to disable
+these archives while preserving weight exports and rolling recovery saves.
+The field has no effect under policy `final`.
 
 Each run contains:
 
 - `resolved.yaml`, `environment.json`, `run.log`, and `metrics.jsonl`.
 - `epoch-NNN.safetensors` (policy `all`): FP32 weights after every epoch.
+- `epoch-NNN.pt` (policy `all`, epoch states enabled): complete ordinary state,
+  or shared packed state with references to separate worker files.
 - `best.json`: best epoch and subset loss; `weights` is null under policy `final`.
 - `latest.pt` (policy `all`): model, AdamW, RNG states, data cursor, and schedule progress.
 - `final.pt` and `result.json`: final training state and full-validation metrics.
@@ -141,3 +147,57 @@ Resume `.pt` files are trusted local pickle artifacts. For exchanging model
 weights, use the `.safetensors` files produced with policy `all`. Model/data artifacts live in gitignored
 `runs/` and `data/`; source, configurations, the UV lockfile, and documentation
 are tracked in Git.
+
+### Full epoch state and local worker inspection
+
+Snapshots are captured after epoch validation, best-result updates, and advancement
+of the completed-epoch counter. They contain parameters, both AdamW moment states,
+optimizer counters and groups, Python/NumPy/PyTorch/CUDA RNG states, committed
+loader position, global step, configuration/recipe identity, and best-validation
+metadata. The token cursor restores learning-rate progress; the global step
+restores decentralized mixing phase. Gradients are cleared before the next update,
+and compiler caches are not algorithmic training state.
+
+Ordinary epoch files use the existing full checkpoint format v2. Packed epoch
+roots use version 4 (`kind: packed_epoch`) and contain shared state plus ordered
+worker references and SHA-256 checksums. Each `node-NNN/epoch-NNN.pt` uses version 1
+(`kind: packed_worker`) and contains that worker's model configuration, index,
+worker count, recipe identity, epoch/step/cursor, named parameters, and named AdamW
+state. Parameter groups reference names rather than opaque parameter indices.
+All worker tensors are compact CPU clones with their original shapes; arena
+padding and other workers' backing storage are excluded.
+
+```python
+import torch
+
+local = torch.load("runs/packed-20m/node-000/epoch-010.pt",
+                   map_location="cpu", weights_only=False)
+name = "embedding.weight"
+weights = local["model"][name]
+first_moment = local["optimizer"]["state"][name]["exp_avg"]
+second_moment = local["optimizer"]["state"][name]["exp_avg_sq"]
+optimizer_step = local["optimizer"]["state"][name]["step"]
+```
+
+A local file is independently inspectable but cannot resume the whole decentralized
+run. Pass the root `epoch-NNN.pt` to `--resume`. The shared reader validates the
+complete worker set, checksums, names/shapes, groups, counters, and training
+position before returning reconstructed packed state. Training, evaluation, and
+consensus analysis all use this reader. Existing combined packed v3 `latest.pt`
+and `final.pt` remain unchanged.
+
+Worker files are written atomically and the root is published last. An interrupted
+snapshot without a root can be rewritten. Committed epoch snapshots are immutable;
+branch from an older epoch into a new output directory. Move/copy a packed root
+together with its referenced worker files, preserving their relative paths.
+
+The root stores no duplicate parameter or moment arrays. Each full epoch archive
+adds approximately three FP32 model copies per worker (weights plus two moments),
+in addition to existing weight exports and rolling/final checkpoints. Snapshots
+are retained per epoch, not per periodic save interval.
+
+The new retention field is excluded from recipe identity, so older configurations
+and checkpoints remain compatible and retention can change on resume. Complete
+state restoration supports bitwise continuation with deterministic execution under
+matching conditions. Nondeterministic CUDA kernels and hardware/software changes
+retain their existing numerical reproducibility limits.

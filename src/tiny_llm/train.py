@@ -11,6 +11,12 @@ import torch
 from loguru import logger
 from safetensors.torch import load_file, save_file
 
+from tiny_llm.checkpoints import (
+    RETENTION_FIELDS,
+    load_training_checkpoint,
+    require_new_epoch,
+    save_epoch_checkpoint,
+)
 from tiny_llm.config import Config, save_config
 from tiny_llm.data import (
     BufferedTokenLoader,
@@ -201,7 +207,8 @@ def evaluate(
 
 def recipe_identity(config: Config, cache: TokenCache) -> str:
     value = config.model_dump(mode="json")
-    value["training"].pop("checkpoint_policy")
+    for key in RETENTION_FIELDS:
+        value["training"].pop(key)
     if value["decentralized"] is None:
         value.pop("decentralized")  # Keep pre-feature single-model recipe identities.
     # Default execution controls retain the identity of existing v2 checkpoints.
@@ -284,7 +291,7 @@ def _train(config: Config, resume: Path | None) -> dict:
     state = None
     if resume:
         # Resume checkpoints are trusted local pickle artifacts, not untrusted model downloads.
-        state = torch.load(resume, map_location="cpu", weights_only=False)
+        state = load_training_checkpoint(resume)
         if state.get("version") == 1 or (state.get("version") == 2 and "loader" not in state):
             raise ValueError(
                 "legacy checkpoint uses global memmap shuffling; start a new buffered "
@@ -308,6 +315,9 @@ def _train(config: Config, resume: Path | None) -> dict:
             cursor * length,
             completed_epochs,
         )
+    if config.training.checkpoint_policy == "all" and config.training.save_epoch_training_state:
+        for epoch in range(completed_epochs + 1, len(boundaries) + 1):
+            require_new_epoch(output / f"epoch-{epoch:03d}.pt")
     loader = BufferedTokenLoader(
         cache,
         "train",
@@ -364,26 +374,27 @@ def _train(config: Config, resume: Path | None) -> dict:
 
     previous_handlers = {sig: signal.signal(sig, stop) for sig in (signal.SIGINT, signal.SIGTERM)}
 
-    def checkpoint(name="latest.pt"):
+    def checkpoint(name="latest.pt", *, epoch=False):
         if config.training.checkpoint_policy == "final" and name != "final.pt":
             return
-        atomic_checkpoint(
-            output / name,
-            dict(
-                version=3 if decentralized else 2,
-                recipe_identity=identity,
-                config=config.model_dump(mode="json"),
-                model=model.packed_state_dict() if decentralized else model.state_dict(),
-                optimizer=optimizer.state_dict(),
-                rng=rng_state(),
-                cursor=cursor,
-                step=step,
-                completed_epochs=completed_epochs,
-                best_loss=best_loss,
-                best_epoch=best_epoch,
-                loader=loader.state_dict(committed_cursor=cursor),
-            ),
+        state = dict(
+            version=3 if decentralized else 2,
+            recipe_identity=identity,
+            config=config.model_dump(mode="json"),
+            model=model.packed_state_dict() if decentralized else model.state_dict(),
+            optimizer=optimizer.state_dict(),
+            rng=rng_state(),
+            cursor=cursor,
+            step=step,
+            completed_epochs=completed_epochs,
+            best_loss=best_loss,
+            best_epoch=best_epoch,
+            loader=loader.state_dict(committed_cursor=cursor),
         )
+        if epoch:
+            save_epoch_checkpoint(output / name, state, model, optimizer)
+        else:
+            atomic_checkpoint(output / name, state)
 
     start = time.monotonic()
     session_initial_tokens = cursor * length
@@ -543,6 +554,8 @@ def _train(config: Config, resume: Path | None) -> dict:
                     ),
                 )
             completed_epochs = epoch_index + 1
+            if config.training.save_epoch_training_state:
+                checkpoint(f"epoch-{completed_epochs:03d}.pt", epoch=True)
             checkpoint()
             if stopped:
                 result = dict(status="interrupted", step=step, tokens=cursor * length)
@@ -627,7 +640,7 @@ def evaluate_checkpoint(config: Config, checkpoint: Path, full: bool) -> dict:
     if checkpoint.suffix == ".safetensors":
         model.load_state_dict(load_file(str(checkpoint)), strict=True)
     else:
-        state = torch.load(checkpoint, map_location="cpu", weights_only=False)
+        state = load_training_checkpoint(checkpoint)
         # Version 2 is shared by legacy packed and current ordinary checkpoints.
         # Inspect the payload so both remain usable for evaluation.
         if "parameter_storage" in state["model"]:

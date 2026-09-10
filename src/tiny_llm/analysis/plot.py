@@ -4,6 +4,8 @@ import csv
 import json
 from pathlib import Path
 
+from tiny_llm.analysis.core import result_key, validate_consensus
+
 
 def plot_analysis(output: Path, training_norms: bool = False):
     import matplotlib
@@ -16,12 +18,13 @@ def plot_analysis(output: Path, training_norms: bool = False):
     rows, seen = [], set()
     for checkpoint in manifest["checkpoints"]:
         for case in ("seen", "unseen"):
-            path = output / f"{checkpoint['weights_hash']}-{case}.json"
+            path = output / f"{result_key(checkpoint)}-{case}.json"
             if not path.exists():
                 continue
             result = json.loads(path.read_text())
             if result["identity"] != manifest["identity"]:
                 raise ValueError(f"incompatible result {path}")
+            validate_consensus(result, checkpoint)
             rows.append(
                 dict(
                     checkpoint=checkpoint["name"],
@@ -30,6 +33,7 @@ def plot_analysis(output: Path, training_norms: bool = False):
                     step=checkpoint["step"],
                     case=case,
                     weights_hash=checkpoint["weights_hash"],
+                    result_key=result_key(checkpoint),
                     **result["statistics"],
                 )
             )
@@ -37,13 +41,15 @@ def plot_analysis(output: Path, training_norms: bool = False):
         return []
     temporary = output / "summary.csv.tmp"
     with temporary.open("w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+        writer = csv.DictWriter(
+            handle, fieldnames=list(dict.fromkeys(k for row in rows for k in row))
+        )
         writer.writeheader()
         writer.writerows(rows)
     temporary.replace(output / "summary.csv")
     curves = []
     for row in sorted(rows, key=lambda row: (row["tokens"], row["checkpoint"])):
-        key = (row["weights_hash"], row["tokens"], row["case"])
+        key = (row["result_key"], row["tokens"], row["case"])
         if key not in seen:
             curves.append(row)
             seen.add(key)
@@ -73,21 +79,45 @@ def plot_analysis(output: Path, training_norms: bool = False):
             ],
         ),
     ]
+    if any("consensus_alignment" in row for row in curves):
+        specs[0][2].append(("normalized_consensus_alignment", "Consensus error"))
+        specs[1] = (specs[1][0], "Unnormalized alignment", specs[1][2])
+        specs[1][2].append(("consensus_alignment", "Consensus error"))
+        specs[2][2].append(("average_consensus_norm", "Average consensus-error norm"))
     for name, ylabel, fields in specs:
-        fig, ax = plt.subplots(figsize=(9, 5), constrained_layout=True)
+        normalized = name == "normalized-alignment"
+        fig, axes = plt.subplots(
+            2 if normalized else 1,
+            1,
+            figsize=(9, 9 if normalized else 5),
+            sharex=True,
+            squeeze=False,
+            constrained_layout=True,
+        )
+        ax = axes[0, 0]
+        log_ax = axes[1, 0] if normalized else None
+        nonpositive = False
+        positive = False
         for color, (field, label) in enumerate(fields):
             for case, linestyle in (("seen", "-"), ("unseen", "--")):
                 values = [row for row in curves if row["case"] == case]
                 if values:
-                    ax.plot(
-                        [row["tokens"] for row in values],
-                        [float("nan") if row[field] is None else row[field] for row in values],
+                    x = [row["tokens"] for row in values]
+                    y = [float("nan") if row.get(field) is None else row[field] for row in values]
+                    style = dict(
                         color=f"C{color}",
                         linestyle=linestyle,
                         marker="o",
                         markersize=3,
                         label=f"{label} ({case})",
                     )
+                    ax.plot(x, y, **style)
+                    if log_ax is not None:
+                        nonpositive |= any(value <= 0 for value in y)
+                        positive |= any(value > 0 for value in y)
+                        log_ax.plot(
+                            x, [value if value > 0 else float("nan") for value in y], **style
+                        )
         if training_norms and name == "gradient-norms":
             path = Path(manifest["run"]) / "metrics.jsonl"
             logged = {}
@@ -124,6 +154,26 @@ def plot_analysis(output: Path, training_norms: bool = False):
         ax.set(xlabel="Training tokens", ylabel=ylabel, title=Path(manifest["run"]).name)
         ax.grid(alpha=0.2)
         ax.legend(fontsize=8)
+        if log_ax is not None:
+            ax.set_xlabel("")
+            ax.set_title(f"{Path(manifest['run']).name} — linear scale")
+            log_ax.set_yscale("log")
+            log_ax.set(xlabel="Training tokens", ylabel=ylabel, title="Logarithmic scale")
+            if not positive:
+                log_ax.set_ylim(1e-3, 1)
+                log_ax.text(
+                    0.02, 0.98, "No positive alignments", transform=log_ax.transAxes, va="top"
+                )
+            elif nonpositive:
+                log_ax.text(
+                    0.02,
+                    0.98,
+                    "Nonpositive values omitted",
+                    transform=log_ax.transAxes,
+                    va="top",
+                    fontsize=8,
+                )
+            log_ax.grid(alpha=0.2, which="both")
         for extension in ("pdf", "png"):
             temporary = output / f"{name}.{extension}.tmp"
             fig.savefig(temporary, format=extension, dpi=180)

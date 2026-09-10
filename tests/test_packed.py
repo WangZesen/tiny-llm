@@ -364,6 +364,7 @@ def test_config_and_buffered_identity(tiny_config, cache_dir):
         train(config)
     value = tiny_config.model_dump(mode="json")
     value["training"].pop("checkpoint_policy")
+    value["training"].pop("save_epoch_training_state")
     value.pop("decentralized")
     for key in ("device", "output_dir", "cpu_threads", "compile_mode", "sdpa_backend"):
         value["runtime"].pop(key)
@@ -455,6 +456,9 @@ def test_benchmark_worker(tiny_config, tmp_path, execution):
 @pytest.mark.cuda
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA required")
 def test_cuda_bf16_and_fused_optimizer(tiny_config):
+    from tiny_llm.checkpoints import load_training_checkpoint, save_epoch_checkpoint
+    from tiny_llm.config import DecentralizedConfig
+
     cfg = tiny_config
     cfg.runtime.device, cfg.runtime.amp = "cuda:0", True
     cfg.runtime.deterministic = False
@@ -505,6 +509,37 @@ def test_cuda_bf16_and_fused_optimizer(tiny_config):
         for opt in optimizers:
             opt.step()
         assert_storage(packed, optimizer)
+        if _step == 0:
+            # Continue the compiled BF16/fused update after restoring separate worker files.
+            cfg.decentralized = DecentralizedConfig(num_models=2)
+            cfg.training.max_tokens = 128
+            cfg.training.epoch_tokens = 64
+            directory = cfg.runtime.output_dir
+            directory.mkdir()
+            path = directory / "epoch-001.pt"
+            state = dict(
+                version=3,
+                config=cfg.model_dump(mode="json"),
+                recipe_identity="cuda-fixture",
+                model=packed.packed_state_dict(),
+                optimizer=optimizer.state_dict(),
+                cursor=4,
+                step=1,
+                completed_epochs=1,
+                loader=dict(cursor=4),
+                rng=rng_state(),
+                best_loss=1.0,
+                best_epoch=1,
+            )
+            save_epoch_checkpoint(path, state, packed, optimizer)
+            restored = load_training_checkpoint(path)
+            with torch.no_grad():
+                packed.parameter_storage.zero_()
+                optimizer.first_moment_storage.zero_()
+                optimizer.second_moment_storage.zero_()
+            packed.load_packed_state_dict(restored["model"])
+            optimizer.load_state_dict(restored["optimizer"])
+            assert_storage(packed, optimizer)
     for i, model in enumerate(locals_):
         for name, q in model.named_parameters():
             torch.testing.assert_close(packed.get_parameter(name)[i], q, rtol=1e-6, atol=1e-8)

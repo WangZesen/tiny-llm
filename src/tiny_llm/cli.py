@@ -37,6 +37,12 @@ def _add_analysis_arguments(parser):
     )
     parser.add_argument("--compile-hvp", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--hvp-batch-size", type=int)
+    parser.add_argument(
+        "--consensus",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="also analyze every consensus-error direction for packed runs",
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -45,6 +51,7 @@ def build_parser() -> argparse.ArgumentParser:
     analysis = commands.add_parser("analyze")
     _add_analysis_arguments(analysis)
     analysis.add_argument("--plots", action=argparse.BooleanOptionalAction, default=True)
+    analysis.add_argument("--checkpoint-manifest", type=Path, help=argparse.SUPPRESS)
     plotting = commands.add_parser("plot-analysis")
     plotting.add_argument("--output", required=True, type=Path)
     plotting.add_argument("--training-norms", action="store_true")
@@ -113,11 +120,24 @@ def main(argv=None):
                 amp=args.amp,
                 compile_hvp=args.compile_hvp,
                 hvp_batch_size=args.hvp_batch_size,
+                consensus=args.consensus,
             )
         except ValueError as exc:
             parser.error(str(exc))
         if args.command == "analyze":
-            analyze(args.run, args.checkpoints, args.output, options, plots=args.plots)
+            expected = (
+                json.loads(args.checkpoint_manifest.read_text())
+                if args.checkpoint_manifest
+                else None
+            )
+            analyze(
+                args.run,
+                args.checkpoints,
+                args.output,
+                options,
+                plots=args.plots,
+                expected_checkpoints=expected,
+            )
         else:
             from tiny_llm.analysis.slurm import orchestrate
 

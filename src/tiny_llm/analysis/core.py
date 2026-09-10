@@ -21,6 +21,7 @@ from torch.func import functional_call, grad, jvp
 from torch.fx.experimental.proxy_tensor import make_fx
 from torch.nn import functional as F
 
+from tiny_llm.checkpoints import RETENTION_FIELDS, load_training_checkpoint
 from tiny_llm.config import Config, load_config
 from tiny_llm.data import BufferedTokenLoader, TokenCache, fingerprint, training_boundaries
 from tiny_llm.model import Llama, token_losses
@@ -40,6 +41,7 @@ class AnalysisOptions:
     amp: bool = False
     compile_hvp: bool = True
     hvp_batch_size: int | None = None
+    consensus: bool = True
 
     def __post_init__(self):
         if self.data_case not in ("seen", "unseen", "both"):
@@ -396,7 +398,86 @@ def summarize(noise, random, dimension, mean_norm):
     )
 
 
-def measure(model, data: EpochData, options: AnalysisOptions, device, kernel=None):
+def consensus_statistics(rows):
+    quadratic = math.fsum(row["quadratic"] for row in rows)
+    squared = math.fsum(row["norm_squared"] for row in rows)
+    return dict(
+        consensus_workers=len(rows),
+        consensus_alignment=quadratic / len(rows),
+        normalized_consensus_alignment=quadratic / squared if squared else None,
+        average_consensus_norm=math.fsum(row["norm"] for row in rows) / len(rows),
+    )
+
+
+def consensus_directions(model, workers):
+    base = model.base if isinstance(model, AutocastModel) else model
+    for state in workers:
+        yield tuple(
+            (state[name].to(device=p.device, dtype=p.dtype) - p).detach()
+            for name, p in base.named_parameters()
+        )
+
+
+def measure_consensus(model, data, options, device, workers, kernel=None):
+    rows = []
+    directions = consensus_directions(model, workers)
+    for index in range(len(workers)):
+        start = time.monotonic()
+        direction = next(directions)
+        squared = tensor_dot(direction, direction).item()
+        logger.info("{}: consensus direction {}/{}", data.case, index + 1, len(workers))
+        hvp_start = time.monotonic()
+        quadratic = (
+            hessian_quadratic(
+                model,
+                data.batches(device, batch_size=options.hvp_batch_size),
+                data.tokens,
+                direction,
+                kernel=kernel,
+            )
+            if squared
+            else 0.0
+        )
+        rows.append(
+            dict(
+                worker=index,
+                norm_squared=squared,
+                norm=math.sqrt(squared),
+                quadratic=quadratic,
+                normalized_alignment=quadratic / squared if squared else None,
+                hvp_seconds=time.monotonic() - hvp_start,
+                total_seconds=time.monotonic() - start,
+            )
+        )
+        del direction
+    return rows
+
+
+def validate_consensus(result, checkpoint):
+    """Require complete, finite worker scalars and their derived statistics."""
+    count = len(checkpoint.get("workers", []))
+    rows = result.get("consensus", [])
+    if len(rows) != count or [row["worker"] for row in rows] != list(range(count)):
+        raise ValueError("incomplete consensus worker IDs/counts")
+    if not count:
+        return
+    for row in rows:
+        for field in ("norm_squared", "norm", "quadratic", "hvp_seconds", "total_seconds"):
+            if not math.isfinite(row[field]) or (field != "quadratic" and row[field] < 0):
+                raise ValueError("invalid consensus scalar")
+        squared = row["norm_squared"]
+        if not math.isclose(row["norm"], math.sqrt(squared), rel_tol=1e-12, abs_tol=1e-15):
+            raise ValueError("inconsistent consensus norm")
+        expected = row["quadratic"] / squared if squared else None
+        if expected is not None and not math.isfinite(expected):
+            raise ValueError("nonfinite normalized consensus alignment")
+        if row["normalized_alignment"] != expected or (not squared and row["quadratic"] != 0):
+            raise ValueError("inconsistent consensus alignment")
+    if any(result["statistics"].get(k) != v for k, v in consensus_statistics(rows).items()):
+        raise ValueError("inconsistent consensus statistics")
+
+
+def measure(model, data: EpochData, options: AnalysisOptions, device, kernel=None, workers=()):
     started = time.monotonic()
     logger.info("{}: full-epoch mean gradient over {:,} tokens", data.case, data.tokens)
     mean = gradient(model, data.batches(device), data.tokens)
@@ -462,8 +543,13 @@ def measure(model, data: EpochData, options: AnalysisOptions, device, kernel=Non
         )
         random.append(dict(index=i, quadratic=quadratic, hvp_seconds=time.monotonic() - start))
         del v
+    consensus = measure_consensus(model, data, options, device, workers, kernel) if workers else []
+    statistics = summarize(noise, random, model.parameter_count, mean_norm)
+    if consensus:
+        statistics.update(consensus_statistics(consensus))
     return dict(
-        statistics=summarize(noise, random, model.parameter_count, mean_norm),
+        statistics=statistics,
+        **(dict(consensus=consensus) if consensus else {}),
         noise=noise,
         random=random,
         timing=dict(mean_gradient_seconds=mean_seconds, total_seconds=time.monotonic() - started),
@@ -489,8 +575,22 @@ def checkpoint_paths(run: Path, selected):
     return sorted(set(paths))
 
 
-def load_checkpoint(config, path):
+def result_key(checkpoint):
+    return checkpoint.get("result_key", checkpoint["weights_hash"])
+
+
+def weights_hash(state):
+    digest = hashlib.sha256()
+    for name, value in sorted(state.items()):
+        digest.update(name.encode())
+        digest.update(str((value.dtype, tuple(value.shape))).encode())
+        digest.update(value.contiguous().view(torch.uint8).numpy().tobytes())
+    return digest.hexdigest()
+
+
+def load_checkpoint(config, path, *, consensus=True, worker_states=None):
     model = Llama(config.model, "reference")
+    packed = None
     boundaries = training_boundaries(config, config.model.parameter_count)
     if path.suffix == ".safetensors":
         match = re.fullmatch(r"epoch-(\d+)\.safetensors", path.name)
@@ -507,11 +607,12 @@ def load_checkpoint(config, path):
         model.load_state_dict(load_file(str(path)), strict=True)
     else:
         # Trusted local training artifacts, as in train/evaluate.
-        state = torch.load(path, map_location="cpu", weights_only=False)
+        state = load_training_checkpoint(path)
         saved = Config.model_validate(state["config"])
         if (
             saved.model != config.model
-            or saved.training != config.training
+            or saved.training.model_dump(exclude=RETENTION_FIELDS)
+            != config.training.model_dump(exclude=RETENTION_FIELDS)
             or saved.decentralized != config.decentralized
         ):
             raise ValueError(f"checkpoint recipe does not match resolved.yaml: {path}")
@@ -524,22 +625,68 @@ def load_checkpoint(config, path):
         else:
             model.load_state_dict(state["model"], strict=True)
         cursor, step, epoch = state["cursor"], state["step"], state["completed_epochs"]
-    digest = hashlib.sha256()
-    for name, value in sorted(model.state_dict().items()):
-        digest.update(name.encode())
-        digest.update(str((value.dtype, tuple(value.shape))).encode())
-        digest.update(value.contiguous().view(torch.uint8).numpy().tobytes())
-    return model.eval(), dict(
+    info = dict(
         path=str(path),
         name=path.name,
-        weights_hash=digest.hexdigest(),
+        weights_hash=weights_hash(model.state_dict()),
         tokens=cursor * config.model.context_length,
         step=step,
         epoch=epoch,
     )
+    if consensus and config.decentralized is not None:
+        parameters = dict(model.named_parameters())
+        workers, provenance = [], []
+        for index in range(config.decentralized.num_models):
+            source = path if path.suffix == ".pt" else path.parent / f"node-{index:03d}" / path.name
+            if path.suffix == ".pt":
+                if "worker_files" in state:
+                    source = path.parent / state["worker_files"][index]["path"]
+                if packed is None:
+                    raise ValueError(
+                        f"checkpoint lacks packed worker weights: {path}; use --no-consensus"
+                    )
+                local = packed.local_state_dict(index)
+            else:
+                if not source.is_file():
+                    raise ValueError(f"missing worker checkpoint: {source}; use --no-consensus")
+                local = load_file(str(source))
+            if set(local) != set(parameters) or any(
+                local[name].shape != p.shape
+                or not local[name].is_floating_point()
+                or not torch.isfinite(local[name]).all()
+                or not torch.isfinite(p).all()
+                for name, p in parameters.items()
+            ):
+                raise ValueError(f"invalid worker parameters: {source} (worker {index})")
+            workers.append(local)
+            provenance.append(
+                dict(worker=index, path=str(source), weights_hash=weights_hash(local))
+            )
+        for name, p in parameters.items():
+            average = torch.stack([local[name].float() for local in workers]).mean(0)
+            if not torch.allclose(p, average, rtol=1e-5, atol=1e-7):
+                raise ValueError(f"root weights differ from worker average: {path} ({name})")
+        info["workers"] = provenance
+        info["result_key"] = fingerprint(
+            dict(
+                weights_hash=info["weights_hash"],
+                workers=[row["weights_hash"] for row in provenance],
+            )
+        )
+        if worker_states is not None:
+            worker_states.extend(workers)
+    return model.eval(), info
 
 
-def analyze(run: Path, selected, output: Path, options: AnalysisOptions, *, plots=True):
+def analyze(
+    run: Path,
+    selected,
+    output: Path,
+    options: AnalysisOptions,
+    *,
+    plots=True,
+    expected_checkpoints=None,
+):
     import fcntl
 
     run, output = run.resolve(), output.resolve()
@@ -550,6 +697,22 @@ def analyze(run: Path, selected, output: Path, options: AnalysisOptions, *, plot
     cache.verify()
     cases = ("seen", "unseen") if options.data_case == "both" else (options.data_case,)
     datasets = [EpochData(cache, config, case) for case in cases]
+    # Validate every selected worker file and submission assignment before CUDA work.
+    checkpoints = []
+    previous_threads = torch.get_num_threads()
+    try:
+        torch.set_num_threads(config.runtime.cpu_threads)
+        with preserve_rng():
+            for path in paths:
+                loaded, checkpoint = load_checkpoint(config, path, consensus=options.consensus)
+                checkpoints.append(checkpoint)
+                del loaded
+    finally:
+        torch.set_num_threads(previous_threads)
+    if expected_checkpoints is not None and sorted(checkpoints, key=lambda r: r["path"]) != sorted(
+        expected_checkpoints, key=lambda r: r["path"]
+    ):
+        raise ValueError("checkpoint hashes differ from submission assignments")
     output.mkdir(parents=True, exist_ok=True)
     with (
         (output / ".lock").open("a") as lock,
@@ -592,8 +755,13 @@ def analyze(run: Path, selected, output: Path, options: AnalysisOptions, *, plot
             manifest = old
         atomic_json(manifest_path, manifest)
         base, model, kernel = None, None, None
-        for path in paths:
-            loaded, checkpoint = load_checkpoint(config, path)
+        for path, expected in zip(paths, checkpoints, strict=True):
+            workers = []
+            loaded, checkpoint = load_checkpoint(
+                config, path, consensus=options.consensus, worker_states=workers
+            )
+            if checkpoint != expected:
+                raise ValueError(f"checkpoint changed after validation: {path}")
             if base is None:
                 base = loaded.to(device=device, dtype=getattr(torch, options.dtype))
                 model = base
@@ -607,11 +775,14 @@ def analyze(run: Path, selected, output: Path, options: AnalysisOptions, *, plot
             manifest["checkpoints"] = sorted(entries, key=lambda row: (row["tokens"], row["name"]))
             atomic_json(manifest_path, manifest)
             for data in datasets:
-                destination = output / f"{checkpoint['weights_hash']}-{data.case}.json"
+                destination = output / f"{result_key(checkpoint)}-{data.case}.json"
                 if destination.exists():
                     saved = json.loads(destination.read_text())
                     if saved["identity"] != identity:
                         raise ValueError(f"incompatible saved result: {destination}")
+                    if result_key(saved) != result_key(checkpoint):
+                        raise ValueError(f"incompatible saved checkpoint: {destination}")
+                    validate_consensus(saved, checkpoint)
                     logger.info("Reusing {} {} (verified identical weights)", path.name, data.case)
                     continue
                 if kernel is None and policy["compiled"]:
@@ -637,12 +808,14 @@ def analyze(run: Path, selected, output: Path, options: AnalysisOptions, *, plot
                     config.training.micro_batch_size,
                     policy["tf32_effective"],
                 )
-                result = measure(model, data, options, device, kernel)
+                result = measure(model, data, options, device, kernel, workers)
+                validate_consensus(result, checkpoint)
                 atomic_json(
                     destination,
                     dict(
                         identity=identity,
                         weights_hash=checkpoint["weights_hash"],
+                        result_key=result_key(checkpoint),
                         case=data.case,
                         data=data.metadata(),
                         **result,

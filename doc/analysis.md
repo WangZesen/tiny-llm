@@ -109,6 +109,68 @@ with training tokens on the x-axis. `plot-analysis --training-norms` optionally
 adds pre-clipping training log norms; packed logs are labeled as the maximum
 worker norm, not the gradient at averaged weights.
 
+The normalized-alignment PDF/PNG contains two panels with shared training-token
+axes: the original linear view and a logarithmic y-axis view. Nonpositive values
+remain in the linear panel and are omitted from the log panel, with an annotation.
+
+## Packed consensus errors
+
+Consensus analysis is enabled by default for packed runs in both `analyze` and
+`submit-analysis`. Ordinary runs are unaffected. Disable it with `--no-consensus`.
+For every worker, form `e_i = x_i - x_bar`, where `x_bar` is the same averaged
+checkpoint used by the gradient-noise analysis. Evaluate `q_i = e_i^T H e_i`
+using the full-epoch token-mean Hessian at `x_bar`, separately for seen and unseen
+data. No worker-local Hessian or optimizer transformation is used.
+
+Packed `.pt` files supply all local states. Root epoch exports require the matching
+file under every configured `node-NNN/` directory. Before GPU work or submission,
+analysis checks all selected checkpoints for missing workers, parameter names and
+shapes, finite weights, and agreement between the saved root weights and the
+workers' FP32 average (`rtol=1e-5`, `atol=1e-7`, allowing reduction rounding).
+An incomplete checkpoint fails with an instruction to supply worker weights or
+disable consensus analysis. Training exports are unchanged.
+
+Directions use the configured parameter dtype and are detached. They count tied
+parameters once and exclude arena padding. Only one worker direction resides on
+the GPU at a time, using the existing reference-attention HVP kernel, batching,
+and precision policy. Each nonzero worker adds one full-epoch HVP per data case;
+exactly zero directions skip that pass and record zero curvature.
+
+Each result's `consensus` array records the worker index, squared norm, norm,
+quadratic form, normalized alignment, and HVP/total timing. Scalar reductions use
+FP64. The summary adds:
+
+| Field | Definition |
+|---|---|
+| `consensus_workers` | Number of workers, `N` |
+| `consensus_alignment` | `sum(q_i) / N` |
+| `normalized_consensus_alignment` | `sum(q_i) / sum(||e_i||^2)` |
+| `average_consensus_norm` | `sum(||e_i||) / N` |
+
+The normalized aggregate is a ratio of sums, not a mean of worker ratios.
+Negative curvature is preserved. A zero-denominator ratio is JSON `null` and a
+blank CSV cell. The three existing figures gain the corresponding aggregate
+consensus curve, with seen/unseen line styles and unchanged output filenames.
+Worker-level curves are not plotted; older results remain plottable.
+
+The averaged `weights_hash` remains available. Consensus-enabled checkpoints also
+have a `result_key` derived from the average and ordered worker hashes; aliases
+merge only when both agree. Worker IDs, hashes, and file paths are retained in the
+manifest. Shard assignment, resumption, collection, filenames, and plot
+deduplication all use this key, so equal averages with different consensus errors
+remain distinct. Workers verify their checkpoint metadata against the saved shard
+assignment before computation. Collection requires every worker's valid scalars
+and consistent aggregate statistics before publishing combined results.
+Hash matching is exact: identical local states with differently rounded CPU/GPU
+averages remain separate even when both pass the averaging-consistency check.
+
+Packed submissions still require explicit `--walltime-hours`; the ordinary 20M
+timing profile is not extrapolated. Each shard records worker counts and an upper
+bound `additional_hvp_passes` (worker count times selected data cases, summed over
+unique assigned states); zero directions can reduce the actual work. Existing
+campaigns retain their frozen source and receipts. Use a fresh output directory
+for analyses with the new source/settings.
+
 ## Execution and provenance
 
 Verified identical parameter states stay together, with every filename retained

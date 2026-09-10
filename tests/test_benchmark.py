@@ -17,6 +17,7 @@ def test_execution_config_and_legacy_identity(tiny_config, cache_dir):
     cache = TokenCache(cache_dir)
     old = tiny_config.model_dump(mode="json")
     old["training"].pop("checkpoint_policy")
+    old["training"].pop("save_epoch_training_state")
     old.pop("decentralized")
     for key in ("output_dir", "device", "cpu_threads", "compile_mode", "sdpa_backend"):
         old["runtime"].pop(key)

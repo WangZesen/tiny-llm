@@ -27,6 +27,10 @@ from tiny_llm.packed import PackedLlama
 
 
 def test_explicit_hessian_and_weighted_microbatches():
+    from types import SimpleNamespace
+
+    from tiny_llm.analysis.core import consensus_directions, consensus_statistics, measure_consensus
+
     torch.manual_seed(7)
     model = Llama(
         ModelConfig(vocab_size=3, layers=1, width=2, heads=1, ffn_width=2, context_length=2),
@@ -45,6 +49,29 @@ def test_explicit_hessian_and_weighted_microbatches():
 
     explicit = torch.autograd.functional.hessian(loss, flat, vectorize=True)
     batches = [(x[:2], y[:2]), (x[2:], y[2:])]
+    # Four workers with unequal deviations and one exactly at consensus.
+    workers = [
+        {name: p.detach() + offset * 0.001 for name, p in model.named_parameters()}
+        for offset in (0, 1, 2, -3)
+    ]
+    data = SimpleNamespace(case="seen", tokens=5, batches=lambda *a, **kw: batches)
+    consensus = measure_consensus(model, data, AnalysisOptions(), torch.device("cpu"), workers)
+    expected_quadratics = []
+    for row, direction in zip(consensus, consensus_directions(model, workers), strict=True):
+        vector = torch.cat([p.flatten() for p in direction])
+        expected = (vector @ explicit @ vector).item()
+        expected_quadratics.append(expected)
+        assert row["quadratic"] == pytest.approx(expected, rel=1e-9, abs=1e-12)
+        assert row["norm_squared"] == pytest.approx(vector.square().sum().item())
+    assert consensus[0]["quadratic"] == 0 and consensus[0]["normalized_alignment"] is None
+    pooled = consensus_statistics(consensus)
+    assert pooled["consensus_alignment"] == pytest.approx(sum(expected_quadratics) / 4)
+    assert pooled["normalized_consensus_alignment"] == pytest.approx(
+        sum(expected_quadratics) / sum(row["norm_squared"] for row in consensus)
+    )
+    assert pooled["average_consensus_norm"] == pytest.approx(
+        sum(row["norm"] for row in consensus) / 4
+    )
     full = gradient(model, [(x, y)], 5)
     micro = gradient(model, batches, 5)
     for a, b in zip(full, micro, strict=True):
@@ -87,6 +114,23 @@ def test_explicit_hessian_and_weighted_microbatches():
 
 
 def test_signed_statistics_and_zero_noise():
+    from tiny_llm.analysis.core import consensus_statistics
+
+    stats = consensus_statistics(
+        [
+            dict(quadratic=-2, norm_squared=1, norm=1),
+            dict(quadratic=3, norm_squared=9, norm=3),
+        ]
+    )
+    assert stats["consensus_alignment"] == 0.5
+    assert stats["normalized_consensus_alignment"] == 0.1
+    assert stats["average_consensus_norm"] == 2
+    assert (
+        consensus_statistics([dict(quadratic=0, norm_squared=0, norm=0)])[
+            "normalized_consensus_alignment"
+        ]
+        is None
+    )
     rows = [
         dict(quadratic=-2, noise_norm_squared=1, gradient_norm=2),
         dict(quadratic=3, noise_norm_squared=9, gradient_norm=6),
@@ -146,6 +190,8 @@ def test_epoch_replay_unseen_and_microbatch(tiny_config, cache_dir):
 
 
 def test_packed_batches_and_average_loading(tiny_config, cache_dir):
+    from tiny_llm.analysis.core import result_key
+
     cfg = tiny_config
     cfg.decentralized = DecentralizedConfig(num_models=2)
     cfg.training.epoch_tokens = 24
@@ -185,6 +231,52 @@ def test_packed_batches_and_average_loading(tiny_config, cache_dir):
         )
     assert info["tokens"] == 24
     assert all(b.attention.backend == "reference" for b in model.blocks)
+    assert len(info["workers"]) == 2
+    root = path.parent / "epoch-001.safetensors"
+    save_file(model.state_dict(), root)
+    for index in range(2):
+        directory = path.parent / f"node-{index:03d}"
+        directory.mkdir()
+        save_file(packed.local_state_dict(index), directory / root.name)
+    assert result_key(load_checkpoint(cfg, root)[1]) == result_key(info)
+    # A changed local state must not alias another checkpoint with the same mean.
+    for index, delta in enumerate((-0.25, 0.25)):
+        state = packed.local_state_dict(index)
+        state["norm.weight"].add_(delta)
+        save_file(state, path.parent / f"node-{index:03d}" / root.name)
+    _, changed = load_checkpoint(cfg, root)
+    assert changed["weights_hash"] == info["weights_hash"]
+    assert result_key(changed) != result_key(info)
+    save_config(cfg, path.parent / "resolved.yaml")
+    with pytest.raises(ValueError, match="submission assignments"):
+        analyze(
+            path.parent,
+            [root.name],
+            path.parent / "stale",
+            AnalysisOptions(device="cuda"),
+            expected_checkpoints=[dict(info, name=root.name, path=str(root))],
+        )
+    assert not (path.parent / "stale").exists()
+    worker = path.parent / "node-001" / root.name
+    valid = {k: v.clone() for k, v in state.items()}
+    for damage in ("shape", "name", "nonfinite", "mean"):
+        state = {k: v.clone() for k, v in valid.items()}
+        if damage == "shape":
+            state["norm.weight"] = state["norm.weight"][:1]
+        elif damage == "name":
+            state.pop("norm.weight")
+        elif damage == "nonfinite":
+            state["norm.weight"][0] = float("nan")
+        else:
+            state["norm.weight"].add_(1)
+        save_file(state, worker)
+        with pytest.raises(ValueError, match="worker"):
+            load_checkpoint(cfg, root)
+    worker.unlink()
+    with pytest.raises(ValueError, match="missing worker"):
+        analyze(path.parent, ["all"], path.parent / "missing", AnalysisOptions(device="cuda"))
+    assert not (path.parent / "missing").exists()
+    assert "workers" not in load_checkpoint(cfg, root, consensus=False)[1]
 
 
 def test_runtime_restoration(tiny_config):
@@ -292,6 +384,12 @@ def test_cli_defaults_and_invalid_options():
         ["analyze", "--run", "run", "--checkpoints", "all", "--output", "out"]
     )
     assert args.tf32 and args.noise_samples == "32" and args.random_samples == 32
+    assert args.consensus
+    for command in ("analyze", "submit-analysis"):
+        argv = [command, "--run", "run", "--output", "out", "--no-consensus"]
+        if command == "submit-analysis":
+            argv.extend(["--jobs", "2"])
+        assert not build_parser().parse_args(argv).consensus
     assert not hasattr(args, "micro_batch_size")
     for kwargs in (
         dict(noise_samples=0),

@@ -2,7 +2,7 @@ import pytest
 import torch
 
 from tiny_llm.analysis import hessian_quadratic, rademacher
-from tiny_llm.analysis.core import QuadraticKernel
+from tiny_llm.analysis.core import QuadraticKernel, consensus_directions
 from tiny_llm.model import Llama
 
 
@@ -72,6 +72,8 @@ def test_compiled_cuda_tf32_against_ieee(tiny_config):
         g = gradient(model, [(x, y)], y.numel())
         local = gradient(model, [(x[:1], y[:1])], 4)
         directions.append(tuple(a - b for a, b in zip(local, g, strict=True)))
+        workers = [{name: p.detach() + 0.1 for name, p in model.named_parameters()}]
+        directions.extend(consensus_directions(model, workers))
         directions.append(tuple(torch.zeros_like(p) for p in model.parameters()))
         reference = [hessian_quadratic(model, [(x, y)], 12, v) for v in directions]
     with analysis_runtime(tiny_config, options):
@@ -106,7 +108,9 @@ def test_bf16_amp_functional_hvp(tiny_config):
             4,
             backend="inductor",
         )
-        for _ in range(2):
+        workers = [{name: p.detach() + 0.1 for name, p in base.named_parameters()}]
+        directions = (direction, next(consensus_directions(amp, workers)))
+        for direction in directions:
             reference = hessian_quadratic(amp, [(x, y)], 12, direction)
             actual = kernel(x, y, direction).item() / 12
             assert actual == pytest.approx(reference, rel=0.04, abs=0.002)

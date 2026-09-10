@@ -18,7 +18,13 @@ from pathlib import Path
 
 import torch
 
-from tiny_llm.analysis.core import EpochData, checkpoint_paths, load_checkpoint
+from tiny_llm.analysis.core import (
+    EpochData,
+    checkpoint_paths,
+    load_checkpoint,
+    result_key,
+    validate_consensus,
+)
 from tiny_llm.analysis.plot import plot_analysis
 from tiny_llm.config import PRESETS, ModelConfig, load_config
 from tiny_llm.data import TokenCache
@@ -86,7 +92,7 @@ def measured_timing(config, data, options):
 def plan_shards(checkpoints, jobs, timing, max_hours=72, walltime_hours=None):
     groups = {}
     for checkpoint in sorted(checkpoints, key=lambda row: (row["tokens"], row["name"])):
-        groups.setdefault(checkpoint["weights_hash"], []).append(checkpoint)
+        groups.setdefault(result_key(checkpoint), []).append(checkpoint)
     if not 1 <= jobs <= len(groups):
         raise ValueError(f"jobs must be between 1 and {len(groups)} unique checkpoints")
     if timing is None and walltime_hours is None:
@@ -163,7 +169,7 @@ def prepare_plan(run, selected, output, jobs, options, walltime_hours=None):
     try:
         torch.set_num_threads(config.runtime.cpu_threads)
         for path in checkpoint_paths(run, selected):
-            model, info = load_checkpoint(config, path)
+            model, info = load_checkpoint(config, path, consensus=options.consensus)
             infos.append(info)
             del model
     finally:
@@ -185,6 +191,11 @@ def prepare_plan(run, selected, output, jobs, options, walltime_hours=None):
     )
     for row in plan["jobs"]:
         row["output"] = str(output / "shards" / f"{row['index']:03d}")
+        unique = {result_key(info): info for info in row["checkpoints"]}
+        row["consensus_workers"] = {
+            key: len(info.get("workers", [])) for key, info in unique.items()
+        }
+        row["additional_hvp_passes"] = len(cases) * sum(row["consensus_workers"].values())
     return plan
 
 
@@ -222,6 +233,7 @@ def job_command(plan, shard, attempt):
     ]
     command.append("analyze")
     command.extend(["--run", plan["run"], "--output", str(directory), "--no-plots"])
+    command.extend(["--checkpoint-manifest", str(directory / "checkpoints.json")])
     for key, value in plan["options"].items():
         if value is None:
             continue
@@ -289,13 +301,14 @@ def validated_shard(plan, shard):
     results = {}
     for row in expected.values():
         for data in plan["data"]:
-            name = f"{row['weights_hash']}-{data['case']}.json"
+            name = f"{result_key(row)}-{data['case']}.json"
             if name in results:
                 continue
             result = json.loads((directory / name).read_text())
             if (
                 result["identity"] != manifest["identity"]
                 or result["weights_hash"] != row["weights_hash"]
+                or result_key(result) != result_key(row)
                 or result["case"] != data["case"]
                 or result["data"] != data
             ):
@@ -310,6 +323,7 @@ def validated_shard(plan, shard):
                 or result["statistics"]["random_samples"] != len(result["random"])
             ):
                 raise ValueError(f"incomplete sample counts: {directory / name}")
+            validate_consensus(result, row)
             results[name] = result
     return manifest, results
 
@@ -368,6 +382,7 @@ def submit_pending(plan, receipt, *, resume):
                 except (OSError, ValueError, KeyError):
                     LOG.warning("Shard %s has incomplete or invalid outputs", shard["index"])
         Path(shard["output"]).mkdir(parents=True, exist_ok=True)
+        atomic_json(Path(shard["output"]) / "checkpoints.json", shard["checkpoints"])
         command, log = job_command(plan, shard, len(shard["attempts"]) + 1)
         # A crash between sbatch accepting the job and receipt persistence must not
         # cause a blind duplicate submission on restart.

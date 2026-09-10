@@ -52,6 +52,13 @@ def test_static_shards_aliases_and_limits(timing):
         jobs.plan_shards(checkpoints(), 1, timing)
     with pytest.raises(ValueError, match="one checkpoint exceeds"):
         jobs.plan_shards(checkpoints(), 4, timing, max_hours=1)
+    same_average = [
+        dict(name=name, tokens=i, weights_hash="average", result_key=key)
+        for i, (name, key) in enumerate((("one", "a"), ("two", "b"), ("alias", "a")))
+    ]
+    split = jobs.plan_shards(same_average, 2, None, walltime_hours=2)
+    assert split["unique_checkpoints"] == 2
+    assert [row["name"] for row in split["jobs"][0]["checkpoints"]] == ["one", "alias"]
 
 
 def test_measured_profile_and_explicit_walltime(tiny_config):
@@ -81,17 +88,33 @@ def test_measured_profile_and_explicit_walltime(tiny_config):
 
 
 @pytest.fixture
-def saved_shards(tmp_path, tiny_config, cache_dir, monkeypatch):
+def saved_shards(tmp_path, tiny_config, cache_dir, monkeypatch, request):
     import tiny_llm.analysis.core as analysis
+    from tiny_llm.config import DecentralizedConfig
+    from tiny_llm.packed import PackedLlama
 
     cfg = tiny_config
+    packed = getattr(request, "param", False)
+    if packed:
+        cfg.decentralized = DecentralizedConfig(num_models=2)
     run = cfg.runtime.output_dir
     run.mkdir()
     save_config(cfg, run / "resolved.yaml")
     infos = []
     for epoch in (1, 2):
         path = run / f"epoch-{epoch:03d}.safetensors"
-        save_file(Llama(cfg.model).state_dict(), str(path))
+        model = Llama(cfg.model)
+        if packed:
+            local = PackedLlama(cfg.model, 2)
+            for index, delta in enumerate((-0.125, 0.125)):
+                state = {k: v.detach().clone() for k, v in model.state_dict().items()}
+                state["norm.weight"].add_(delta)
+                local.load_local_state_dict(index, state)
+                directory = run / f"node-{index:03d}"
+                directory.mkdir(exist_ok=True)
+                save_file(state, directory / path.name)
+            local.copy_average_to(model)
+        save_file(model.state_dict(), str(path))
         _, info = load_checkpoint(cfg, path)
         infos.append(info)
     source_hash = jobs.source_digest(jobs.Path(jobs.__file__).parents[1])
@@ -137,7 +160,23 @@ def saved_shards(tmp_path, tiny_config, cache_dir, monkeypatch):
                 random=random,
                 statistics=summarize(noise, random, cfg.model.parameter_count, 0.5),
             )
-            jobs.atomic_json(output / f"{info['weights_hash']}-{row['case']}.json", result)
+            if packed:
+                consensus = [
+                    dict(
+                        worker=i,
+                        norm_squared=1.0,
+                        norm=1.0,
+                        quadratic=-0.5,
+                        normalized_alignment=-0.5,
+                        hvp_seconds=1.0,
+                        total_seconds=1.1,
+                    )
+                    for i in range(2)
+                ]
+                result["consensus"] = consensus
+                result["statistics"].update(analysis.consensus_statistics(consensus))
+                result["result_key"] = jobs.result_key(info)
+            jobs.atomic_json(output / f"{jobs.result_key(info)}-{row['case']}.json", result)
         shards.append(
             dict(
                 index=index,
@@ -161,7 +200,8 @@ def saved_shards(tmp_path, tiny_config, cache_dir, monkeypatch):
     )
 
 
-def test_collect_matches_serial_and_ignores_worker_provenance(saved_shards):
+@pytest.mark.parametrize("saved_shards", [False, True], indirect=True, ids=["ordinary", "packed"])
+def test_collect_matches_serial_and_ignores_worker_provenance(saved_shards, monkeypatch):
     plan = saved_shards
     # Only this integration test performs actual analysis and plotting.
     for shard in plan["jobs"]:
@@ -195,8 +235,57 @@ def test_collect_matches_serial_and_ignores_worker_provenance(saved_shards):
         assert [row["batch_index"] for row in parallel["noise"]] == [
             row["batch_index"] for row in single["noise"]
         ]
+        for a, b in zip(parallel.get("consensus", []), single.get("consensus", []), strict=True):
+            assert {k: v for k, v in a.items() if not k.endswith("seconds")} == {
+                k: v for k, v in b.items() if not k.endswith("seconds")
+            }
     # Running with plotting disabled does not change numerical identity or resume behavior.
     assert combined["identity"] == json.loads((serial / "manifest.json").read_text())["identity"]
+    import tiny_llm.analysis.core as analysis
+
+    monkeypatch.setattr(analysis, "measure", lambda *args: pytest.fail("recomputed saved cases"))
+    analyze(
+        jobs.Path(plan["run"]), ["all"], serial, AnalysisOptions(**plan["options"]), plots=False
+    )
+
+
+@pytest.mark.parametrize("saved_shards", [True], indirect=True)
+def test_consensus_collection_validation_and_preflight(saved_shards, monkeypatch):
+    from tiny_llm.analysis import slurm
+
+    plan = saved_shards
+    directory = jobs.Path(plan["jobs"][0]["output"])
+    path = next(directory.glob("*-seen.json"))
+    original = json.loads(path.read_text())
+    for damage in ("missing", "worker", "scalar", "statistic", "key"):
+        row = copy.deepcopy(original)
+        if damage == "missing":
+            row["consensus"].pop()
+        elif damage == "worker":
+            row["consensus"][1]["worker"] = 0
+        elif damage == "scalar":
+            row["consensus"][0]["norm"] = float("inf")
+        elif damage == "key":
+            row["result_key"] = "wrong"
+        else:
+            row["statistics"]["consensus_alignment"] = 9
+        path.write_text(json.dumps(row))
+        with pytest.raises(ValueError):
+            jobs.collect_results(plan)
+    path.write_text(json.dumps(original))
+    monkeypatch.setattr(slurm, "partition_hours", lambda: 72)
+    options = AnalysisOptions(**(plan["options"] | dict(device="cuda")))
+    prepared = slurm.prepare_plan(
+        jobs.Path(plan["run"]), ["all"], directory / "new", 2, options, walltime_hours=2
+    )
+    assert prepared["timing"] is None
+    assert all(shard["additional_hvp_passes"] == 4 for shard in prepared["jobs"])
+    assert all(list(shard["consensus_workers"].values()) == [2] for shard in prepared["jobs"])
+    next((jobs.Path(plan["run"]) / "node-001").glob("*.safetensors")).unlink()
+    with pytest.raises(ValueError, match="missing worker"):
+        slurm.prepare_plan(
+            jobs.Path(plan["run"]), ["all"], directory / "new", 2, options, walltime_hours=2
+        )
 
 
 @pytest.mark.parametrize("damage", ["missing", "identity", "samples", "checkpoint", "options"])
@@ -302,6 +391,9 @@ def test_submission_resume_and_commands(saved_shards, monkeypatch):
     assert len(commands) == 1
     command = commands[0]
     assert "--gpus=1" in command and "--no-plots" in command
+    assert "--consensus" in command
+    assignment = jobs.Path(command[command.index("--checkpoint-manifest") + 1])
+    assert json.loads(assignment.read_text()) == plan["jobs"][1]["checkpoints"]
     assert not any("dependency" in value for value in command)
     assert "epoch-002.safetensors" in command and "epoch-001.safetensors" not in command
     assert len(plan["jobs"][0]["attempts"]) == 1
