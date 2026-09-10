@@ -104,9 +104,15 @@ class RuntimeConfig(StrictModel):
     cpu_threads: int = Field(8, gt=0)
 
 
+class AdaptiveConsensusConfig(StrictModel):
+    start_frac: float = Field(..., ge=0, le=1)
+    p: float = Field(..., ge=0)
+
+
 class DecentralizedConfig(StrictModel):
     num_models: int = Field(..., gt=0)
     topology: Literal["complete", "one_peer_ring", "one_peer_exponential"] = "complete"
+    adaptive_consensus: AdaptiveConsensusConfig | None = None
 
 
 class Config(StrictModel):

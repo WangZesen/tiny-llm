@@ -14,7 +14,15 @@ from tiny_llm.packed import PackedLlama, local_mean_losses
 from tiny_llm.packed_benchmark import benchmark_packed_worker
 from tiny_llm.packed_optimizer import PackedAdamW
 from tiny_llm.runtime import preserve_rng, rng_state, setup_runtime
-from tiny_llm.train import evaluate, evaluate_checkpoint, make_optimizer, recipe_identity, train
+from tiny_llm.train import (
+    adaptive_consensus_schedule,
+    evaluate,
+    evaluate_checkpoint,
+    learning_rate,
+    make_optimizer,
+    recipe_identity,
+    train,
+)
 
 
 @pytest.mark.parametrize("seed,n", [(0, 1), (42, 4), (123, 8)])
@@ -58,8 +66,17 @@ def matrix(n, topology, step, device="cpu", dtype=torch.float64):
         ("sdpa", "complete"),
     ],
 )
-def test_independent_worker_parity(tiny_config, backend, topology):
+@pytest.mark.parametrize("adaptive", [False, True])
+def test_independent_worker_parity(tiny_config, backend, topology, adaptive):
     n = 3
+    schedule = None
+    if adaptive:
+        raw = tiny_config.model_dump()
+        raw["decentralized"] = dict(num_models=n, adaptive_consensus=dict(start_frac=0.2, p=2))
+        raw["training"]["batch_tokens"] = 24
+        raw["optimizer"]["min_lr_ratio"] = 0
+        tiny_config = Config.model_validate(raw)
+        schedule = adaptive_consensus_schedule(tiny_config, [9, 15])
     torch.manual_seed(13)
     packed = PackedLlama(tiny_config.model, n, backend).double()
     # Distinct parameters detect mixing order and cross-worker contamination.
@@ -71,7 +88,14 @@ def test_independent_worker_parity(tiny_config, backend, topology):
         model.load_state_dict(packed.local_state_dict(i))
     optimizer = PackedAdamW(packed, tiny_config)
     optimizers = [make_optimizer(model, tiny_config, torch.device("cpu")) for model in locals_]
+    consumed = 0
     for step, batch in enumerate((2, 1, 2)):
+        consumed += n * batch * 4
+        lr = learning_rate(tiny_config, consumed, 60)
+        for opt in [optimizer, *optimizers]:
+            for group in opt.param_groups:
+                group["lr"] = lr
+        gamma = schedule.gamma(step, lr) if schedule else 1.0
         x = torch.randint(17, (n, batch, 4))
         y = torch.randint(17, x.shape)
         y[0, 0, -1] = -100
@@ -92,9 +116,9 @@ def test_independent_worker_parity(tiny_config, backend, topology):
         for model in locals_:
             torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
         moments_before = optimizer.first_moment_storage.clone()
-        packed.mix_(topology, step)
+        packed.mix_(topology, step, gamma=gamma)
         assert torch.equal(moments_before, optimizer.first_moment_storage)
-        w = matrix(n, topology, step)
+        w = gamma * matrix(n, topology, step) + (1 - gamma) * torch.eye(n, dtype=torch.float64)
         with torch.no_grad():
             for name, _ in locals_[0].named_parameters():
                 old = torch.stack([model.get_parameter(name) for model in locals_])
@@ -301,10 +325,10 @@ def test_training_resume(tiny_config, cache_dir, monkeypatch):
     original_mix = PackedLlama.mix_
     events = []
 
-    def record_mix(self, topology, step):
+    def record_mix(self, topology, step, gamma=1.0):
         assert all(parameter.grad is not None for parameter in self.parameters())
         events.append(("mix", step))
-        original_mix(self, topology, step)
+        original_mix(self, topology, step, gamma=gamma)
 
     def record_update(self):
         events.append(("update", None))
@@ -499,12 +523,13 @@ def test_cuda_bf16_and_fused_optimizer(tiny_config):
         optimizer.clip_grad_norm_(cfg.optimizer.grad_clip)
         for model in locals_:
             torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.optimizer.grad_clip)
-        packed.mix_("complete", _step)
+        gamma = 1.0 if _step == 0 else 0.25
+        packed.mix_("complete", _step, gamma=gamma)
         with torch.no_grad():
             for name, _ in locals_[0].named_parameters():
                 average = torch.stack([model.get_parameter(name) for model in locals_]).mean(0)
                 for model in locals_:
-                    model.get_parameter(name).copy_(average)
+                    model.get_parameter(name).mul_(1 - gamma).add_(average, alpha=gamma)
         optimizer.step()
         for opt in optimizers:
             opt.step()

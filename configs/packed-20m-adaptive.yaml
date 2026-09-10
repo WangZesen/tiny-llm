@@ -1,0 +1,27 @@
+# Packed 20M baseline with adaptive consensus; defaults supply model/data/runtime.
+decentralized:
+  num_models: 4
+  topology: one_peer_exponential
+  adaptive_consensus:
+    # Activate at ceil(0.5 * total_steps), using zero-based update indices.
+    start_frac: 0.5
+    # After activation: gamma = (current_lr / max_active_lr) ** p.
+    p: 1.0
+training:
+  # 4 workers * 8 local sequences * 1024 tokens.
+  batch_tokens: 32768
+  micro_batch_size: 8
+  # Equal-worker epoch boundaries and the same cache budget as packed-20m.yaml.
+  epoch_tokens: 10207232
+  max_tokens: 408068096
+runtime:
+  output_dir: runs/packed-20m-adaptive
+optimizer:
+  lr: 0.0048
+  beta1: 0.9
+  beta2: 0.999
+  eps: 1.0e-08
+  weight_decay: 0.1
+  grad_clip: 1.0
+  warmup_fraction: 0.05
+  min_lr_ratio: 0.1

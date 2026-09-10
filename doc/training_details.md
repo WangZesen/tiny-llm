@@ -103,6 +103,47 @@ edits should occur under `torch.no_grad()` between updates. Use
 `model.local_state_dict(i)` for ordinary Llama-compatible weights, and the
 training resume checkpoints to preserve arena bindings and optimizer counters.
 
+### Adaptive consensus
+
+Add this optional section to a packed configuration; both fields are required:
+
+```yaml
+decentralized:
+  num_models: 4
+  topology: one_peer_exponential
+  adaptive_consensus:
+    start_frac: 0.5
+    p: 1.0
+```
+
+For zero-based update `r`, activation begins at
+`ceil(start_frac * total_steps)`. Count actual optimizer updates across all epochs,
+including shortened epoch-ending updates. Before activation, `gamma = 1`.
+After activation, `gamma = (lr / lr_max)**p`, where `lr` is the LR assigned to that
+update and `lr_max` is the largest LR among all active updates in the original run.
+The maximum is computed from the existing token-based LR schedule, so activation
+during warmup is supported. Step fractions and token fractions need not coincide.
+
+Mixing uses `W' = gamma * W + (1 - gamma) * I`. Smaller gamma weakens averaging;
+gamma zero leaves parameters unchanged at the mixing event. Backward and local
+clipping still precede mixing, and each worker's AdamW update follows it. Gradients
+and moments stay local. Evaluation always uses the full global average.
+The Python API also accepts a constant `model.mix_(topology, step, gamma=...)`.
+
+`start_frac` must be finite and in `[0, 1]`; `p` must be finite and nonnegative.
+Omitting the section or setting `p=0` retains gamma one. If the ceiling places
+activation beyond the last update (including `start_frac=1`), gamma stays one.
+An active window whose maximum LR is zero is rejected for positive `p`.
+`mixing_gamma` is recorded in packed training metrics. Run metadata includes
+`adaptive_consensus.total_steps`, `start_step`, `lr_max` (null for an empty window),
+and `p`.
+
+Resume reconstructs the schedule from the complete original recipe and restored
+step, including when loading an epoch snapshot. Adaptive settings must match;
+legacy packed checkpoints remain compatible when the feature is absent.
+Existing presets are unchanged. Packed throughput benchmarks reject adaptive
+configurations because they use a constant LR rather than the training schedule.
+
 ## Checkpoints and artifacts
 
 By default, `training.checkpoint_policy: final` saves only the final training
@@ -170,8 +211,7 @@ padding and other workers' backing storage are excluded.
 ```python
 import torch
 
-local = torch.load("runs/packed-20m/node-000/epoch-010.pt",
-                   map_location="cpu", weights_only=False)
+local = torch.load("runs/packed-20m/node-000/epoch-010.pt", map_location="cpu", weights_only=False)
 name = "embedding.weight"
 weights = local["model"][name]
 first_moment = local["optimizer"]["state"][name]["exp_avg"]
