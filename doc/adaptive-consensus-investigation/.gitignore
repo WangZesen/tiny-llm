@@ -1,0 +1,3 @@
+# These small, curated extracts are required to rebuild the documents.
+!data/
+!data/**

@@ -1,0 +1,72 @@
+{
+  "description": "Terminology-adjusted four-panel derivative of archived scaling review diagnosis; original PDF retained unchanged",
+  "sources": [
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048/analysis/similarity/full/epoch_summary.csv",
+      "sha256": "cff2bed8f5492fe0d838e3605761049c709e5da7cff1df40ae38a724f8b4a4c0",
+      "bytes": 3141770
+    },
+    {
+      "path": "runs/packed-ac-exclude-full-4-20m-0-0048/analysis/similarity/full/epoch_summary.csv",
+      "sha256": "47a6958c3c5cd38f87021046abf058ae5488c167cc1ba2ae6c37d3d26d80b6b8",
+      "bytes": 3146646
+    },
+    {
+      "path": "runs/consensus-scaling-review-2026-09-11/plot_review.py",
+      "sha256": "57806ba6d0f0e8c824a2c2ac0c21813db682fd0a9c90b8ce2b717bb86a094ea9",
+      "bytes": 4700
+    }
+  ],
+  "extracts": [
+    {
+      "path": "data/review-figure/packed-ac-full-scale-4-20m-0-0048.csv",
+      "sha256": "83ca323eaf892796e6237d666e7b6f9749ff32078ce9a31fdde4584eb1e2afda",
+      "source": "runs/packed-ac-full-scale-4-20m-0-0048/analysis/similarity/full/epoch_summary.csv",
+      "selection": "category=second_moment and level=aggregate; all columns and original decimal strings"
+    },
+    {
+      "path": "data/review-figure/packed-ac-exclude-full-4-20m-0-0048.csv",
+      "sha256": "22ef24d932e8e0007925829e7db830a4b315ec6b060d0c3a350933bbcc9198b2",
+      "source": "runs/packed-ac-exclude-full-4-20m-0-0048/analysis/similarity/full/epoch_summary.csv",
+      "selection": "category=second_moment and level=aggregate; all columns and original decimal strings"
+    }
+  ],
+  "existing_bundled_inputs": [
+    {
+      "path": "data/validation.csv",
+      "sha256": "1511d9d3ff49b63cc0a908819d659e2e21a3054a58ff68c0a8e704f033812656"
+    },
+    {
+      "path": "data/similarity-aggregate.csv",
+      "sha256": "8fb366585cc5204e511efcc88b77cafb08c5f46fd1caf3f69f687c2a1d96ca8e"
+    },
+    {
+      "path": "data/checkpoint-summary.csv",
+      "sha256": "2f9d7b00370210689b426da0991b599ffba57a5d07c86826bd801626d3136f3c"
+    },
+    {
+      "path": "data/counterfactual-mixing.csv",
+      "sha256": "414a013f3efb6c8ec465c370de84ee3f8967c6aaa127d061dee1327704f295e1"
+    },
+    {
+      "path": "data/fresh-update-counterfactual.csv",
+      "sha256": "00d9f06c269221643eab7cc0f9afb5d93fe7ba59ac42459ee6b619a7c4a36263"
+    },
+    {
+      "path": "data/parameter-breakdown.csv",
+      "sha256": "b2e2071870bad0eec36803d55962fd0f93f4410a5752498e5f2e1247857b8524"
+    }
+  ],
+  "existing_input_provenance": "../../provenance.json",
+  "outputs": [
+    "assets/review-diagnosis-consensus-error.svg",
+    "assets/review-diagnosis-consensus-error.pdf"
+  ],
+  "transformations": {
+    "A": "validation events with epoch>=10, raw subset loss; five original runs",
+    "B": "second_moment aggregate pairwise cosine; three original runs",
+    "C": "original four largest-coordinate energy fractions multiplied by 100",
+    "D": "original named-tensor error energy fractions multiplied by 100; Other=100 minus sum of displayed tensors"
+  },
+  "terminology": "Consensus error means local model minus global average model; labels updated without changing data or original curves."
+}

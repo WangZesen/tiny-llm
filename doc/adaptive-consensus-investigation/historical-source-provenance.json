@@ -1,0 +1,67 @@
+{
+  "reference_observed": "feature/adaptive-consensus-moment-scaling",
+  "committed_tree": "26a3bddb734b4d72b7a7ec287280be18b8fe804a",
+  "method_provenance": "Equations were checked against preserved executed source snapshots and run recipes; current uncommitted development was not used to identify historical behavior.",
+  "sources": [
+    {
+      "path": "runs/packed-ac-4-20m-0-0048/analysis/alignment/source/tiny_llm/config.py",
+      "sha256": "16f76800e67c3c0544bd5dee4b6db52a739b38956e80b029638f5a07035c78e7",
+      "bytes": 6604
+    },
+    {
+      "path": "runs/packed-ac-4-20m-0-0048/analysis/alignment/source/tiny_llm/model.py",
+      "sha256": "0c76eb6e409abf7760e5c5b16a4ee8c16079008ae5863ca3cc28af3d65ec1cc2",
+      "bytes": 7341
+    },
+    {
+      "path": "runs/packed-ac-4-20m-0-0048/analysis/alignment/source/tiny_llm/packed.py",
+      "sha256": "33bc1b5c797f1f463995e3fe1ab70bd3f88d9febf523d6a90626b5fc800c7b50",
+      "bytes": 9854
+    },
+    {
+      "path": "runs/packed-ac-4-20m-0-0048/analysis/alignment/source/tiny_llm/packed_optimizer.py",
+      "sha256": "6e18cb17bdfda8dc82a3b4e57d565af07917897899ada95760121bf2b14e4752",
+      "bytes": 5595
+    },
+    {
+      "path": "runs/packed-ac-4-20m-0-0048/analysis/alignment/source/tiny_llm/train.py",
+      "sha256": "4ba87d924655ee368ce9e1833e14178294541c6e805b352ee31a70a333df315d",
+      "bytes": 29272
+    },
+    {
+      "path": "runs/packed-ac-4-20m-0-0048/analysis/alignment/source/tiny_llm/analysis/core.py",
+      "sha256": "175857de6e32e89407431320ef4130c588ec20de177842f001909b9b4958a7cf",
+      "bytes": 35542
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048/analysis/alignment/source/tiny_llm/config.py",
+      "sha256": "522ee17b3e1b5282424f56d581244bbd3a208a84367e4f9cf8e00a7c4ac9de56",
+      "bytes": 6627
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048/analysis/alignment/source/tiny_llm/model.py",
+      "sha256": "0c76eb6e409abf7760e5c5b16a4ee8c16079008ae5863ca3cc28af3d65ec1cc2",
+      "bytes": 7341
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048/analysis/alignment/source/tiny_llm/packed.py",
+      "sha256": "67f177f19b0fe18d1110d9a8fac820e48006881c556246c8662c81ff0e611098",
+      "bytes": 12805
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048/analysis/alignment/source/tiny_llm/packed_optimizer.py",
+      "sha256": "6e18cb17bdfda8dc82a3b4e57d565af07917897899ada95760121bf2b14e4752",
+      "bytes": 5595
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048/analysis/alignment/source/tiny_llm/train.py",
+      "sha256": "85acad2dce6f47643439ac4636812b2dcb4d372d41ee812bc70e12a2ef660a47",
+      "bytes": 30028
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048/analysis/alignment/source/tiny_llm/analysis/core.py",
+      "sha256": "175857de6e32e89407431320ef4130c588ec20de177842f001909b9b4958a7cf",
+      "bytes": 35542
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "shared_v_with_worker_norm_mean_shift": [
+    -0.08830368802245059,
+    0.12251482265544138
+  ],
+  "shared_v_with_pooled_norm_mean_shift": [
+    0.0,
+    0.0
+  ],
+  "constant_v_ratio": 10,
+  "alpha": 0.1,
+  "reapplications": 100,
+  "coordinate_ratio_amplification": 10000000000.0,
+  "checks": "mean preservation, pooled-norm budget, and relaxed fresh-update correction passed"
+}

@@ -1,0 +1,38 @@
+[
+  {
+    "asset": "assets/originals/sync-gradient-norms.pdf",
+    "source": "runs/20m-0-0022/analysis/alignment/gradient-norms.pdf",
+    "sha256": "efeff3d05d8338705b02c7ac9a0486b6d9c3728099925f02f829fd7fc52f6e44",
+    "bytes": 17533
+  },
+  {
+    "asset": "assets/originals/packed-gradient-norms.pdf",
+    "source": "runs/packed-4-20m-0-0048/analysis/alignment/gradient-norms.pdf",
+    "sha256": "931693aac0d6e62cc27b5f255d6ab97347932104c33a8d733d456ebae2142db5",
+    "bytes": 18851
+  },
+  {
+    "asset": "assets/originals/ac-normalized-alignment.pdf",
+    "source": "runs/packed-ac-4-20m-0-0048/analysis/alignment/normalized-alignment.pdf",
+    "sha256": "f40eefadc665d96fb64f739a537fc6eb4ed42780c2d71f997e0f6426eafd974f",
+    "bytes": 23748
+  },
+  {
+    "asset": "assets/originals/ac-scaled-normalized-alignment.pdf",
+    "source": "runs/packed-ac-4-20m-0-0048/analysis/scaled-alignment/normalized-alignment.pdf",
+    "sha256": "5d3875f0d35beb03817edd11af5ca6026d66736dc867b889c327f545bcb2bd43",
+    "bytes": 39150
+  },
+  {
+    "asset": "assets/originals/ac-moment-similarity.pdf",
+    "source": "runs/packed-ac-4-20m-0-0048/analysis/similarity/full/similarity-curves.pdf",
+    "sha256": "6cd8f4e0076b7a097d5df613896832da648576fe2b25cc8d170f41d64a9bf5cb",
+    "bytes": 39493
+  },
+  {
+    "asset": "assets/originals/scaling-review-diagnosis.pdf",
+    "source": "runs/consensus-scaling-review-2026-09-11/diagnosis.pdf",
+    "sha256": "99dce5e14597b1e465a51216b3d85a3de60d25deb2491a2267f79d80a1cb1597",
+    "bytes": 39450
+  }
+]

@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "slide_pages": 13,
+  "supplement_pages": 16,
+  "slide_aspect_ratio": "16:9",
+  "supplement_paper": "A4, portrait and landscape",
+  "original_figures_verified": 6,
+  "review_rows_verified": 12,
+  "numeric_callouts_verified": 18,
+  "text_within_page_bounds": true,
+  "bundled_extract_hashes_verified": true,
+  "training_or_hessian_computation_required": false,
+  "document_sha256": {
+    "slides.pdf": "d8c917f26a0c1a35e7d46fa2016973b1ea601ee0cf8801f9c71040a6536bd6d8",
+    "supplement.pdf": "4fbe213201939a28103c754da7171a5f513d987e4c0bd5c82ac8db64a905c623"
+  },
+  "manual_review": "Visual page review and historical-source equation audit are separate from these automated checks."
+}

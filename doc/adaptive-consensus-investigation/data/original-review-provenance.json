@@ -1,0 +1,324 @@
+[
+  {
+    "run": "packed-ac-full-scale-4-20m-0-0048",
+    "epoch": 10,
+    "step": 3120,
+    "recipe_identity": "e6a8628a49ef739f7f22b0f85a4fef98fc1f11fc593f6253cb9cbbe3eabf72cd",
+    "sources": [
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/epoch-010.pt",
+        "size": 17381,
+        "mtime_ns": 1789069843000000000
+      },
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/node-000/epoch-010.pt",
+        "size": 244926383,
+        "mtime_ns": 1789069841000000000
+      },
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/node-001/epoch-010.pt",
+        "size": 244926383,
+        "mtime_ns": 1789069842000000000
+      },
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/node-002/epoch-010.pt",
+        "size": 244926383,
+        "mtime_ns": 1789069842000000000
+      },
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/node-003/epoch-010.pt",
+        "size": 244926383,
+        "mtime_ns": 1789069843000000000
+      }
+    ]
+  },
+  {
+    "run": "packed-ac-full-scale-4-20m-0-0048",
+    "epoch": 15,
+    "step": 4680,
+    "recipe_identity": "e6a8628a49ef739f7f22b0f85a4fef98fc1f11fc593f6253cb9cbbe3eabf72cd",
+    "sources": [
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/epoch-015.pt",
+        "size": 17381,
+        "mtime_ns": 1789069941000000000
+      },
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/node-000/epoch-015.pt",
+        "size": 244926383,
+        "mtime_ns": 1789069939000000000
+      },
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/node-001/epoch-015.pt",
+        "size": 244926383,
+        "mtime_ns": 1789069939000000000
+      },
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/node-002/epoch-015.pt",
+        "size": 244926383,
+        "mtime_ns": 1789069940000000000
+      },
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/node-003/epoch-015.pt",
+        "size": 244926383,
+        "mtime_ns": 1789069940000000000
+      }
+    ]
+  },
+  {
+    "run": "packed-ac-full-scale-4-20m-0-0048",
+    "epoch": 20,
+    "step": 6240,
+    "recipe_identity": "e6a8628a49ef739f7f22b0f85a4fef98fc1f11fc593f6253cb9cbbe3eabf72cd",
+    "sources": [
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/epoch-020.pt",
+        "size": 17381,
+        "mtime_ns": 1789070038000000000
+      },
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/node-000/epoch-020.pt",
+        "size": 244926383,
+        "mtime_ns": 1789070036000000000
+      },
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/node-001/epoch-020.pt",
+        "size": 244926383,
+        "mtime_ns": 1789070037000000000
+      },
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/node-002/epoch-020.pt",
+        "size": 244926383,
+        "mtime_ns": 1789070037000000000
+      },
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/node-003/epoch-020.pt",
+        "size": 244926383,
+        "mtime_ns": 1789070038000000000
+      }
+    ]
+  },
+  {
+    "run": "packed-ac-full-scale-4-20m-0-0048",
+    "epoch": 24,
+    "step": 7488,
+    "recipe_identity": "e6a8628a49ef739f7f22b0f85a4fef98fc1f11fc593f6253cb9cbbe3eabf72cd",
+    "sources": [
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/epoch-024.pt",
+        "size": 17381,
+        "mtime_ns": 1789070113000000000
+      },
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/node-000/epoch-024.pt",
+        "size": 244926383,
+        "mtime_ns": 1789070112000000000
+      },
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/node-001/epoch-024.pt",
+        "size": 244926383,
+        "mtime_ns": 1789070112000000000
+      },
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/node-002/epoch-024.pt",
+        "size": 244926383,
+        "mtime_ns": 1789070113000000000
+      },
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/node-003/epoch-024.pt",
+        "size": 244926383,
+        "mtime_ns": 1789070113000000000
+      }
+    ]
+  },
+  {
+    "run": "packed-ac-full-scale-4-20m-0-0048",
+    "epoch": 26,
+    "step": 8112,
+    "recipe_identity": "e6a8628a49ef739f7f22b0f85a4fef98fc1f11fc593f6253cb9cbbe3eabf72cd",
+    "sources": [
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/epoch-026.pt",
+        "size": 17381,
+        "mtime_ns": 1789070155000000000
+      },
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/node-000/epoch-026.pt",
+        "size": 244926383,
+        "mtime_ns": 1789070153000000000
+      },
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/node-001/epoch-026.pt",
+        "size": 244926383,
+        "mtime_ns": 1789070154000000000
+      },
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/node-002/epoch-026.pt",
+        "size": 244926383,
+        "mtime_ns": 1789070154000000000
+      },
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/node-003/epoch-026.pt",
+        "size": 244926383,
+        "mtime_ns": 1789070155000000000
+      }
+    ]
+  },
+  {
+    "run": "packed-ac-full-scale-4-20m-0-0048",
+    "epoch": 40,
+    "step": 12473,
+    "recipe_identity": "e6a8628a49ef739f7f22b0f85a4fef98fc1f11fc593f6253cb9cbbe3eabf72cd",
+    "sources": [
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/epoch-040.pt",
+        "size": 17381,
+        "mtime_ns": 1789070424000000000
+      },
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/node-000/epoch-040.pt",
+        "size": 244926383,
+        "mtime_ns": 1789070421000000000
+      },
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/node-001/epoch-040.pt",
+        "size": 244926383,
+        "mtime_ns": 1789070422000000000
+      },
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/node-002/epoch-040.pt",
+        "size": 244926383,
+        "mtime_ns": 1789070422000000000
+      },
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048/node-003/epoch-040.pt",
+        "size": 244926383,
+        "mtime_ns": 1789070423000000000
+      }
+    ]
+  },
+  {
+    "run": "packed-ac-full-scale-4-20m-0-0048-t2",
+    "epoch": 40,
+    "step": 12473,
+    "recipe_identity": "35f41f12b9df5a06738937bca560805f8cf4846cc4f92c5f093d1420f7091a34",
+    "sources": [
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048-t2/final.pt",
+        "size": 979478053,
+        "mtime_ns": 1789071192000000000
+      }
+    ]
+  },
+  {
+    "run": "packed-ac-full-scale-4-20m-0-0048-t3",
+    "epoch": 40,
+    "step": 12473,
+    "recipe_identity": "18a7c1f4b052d3ead45c3bbb0ad834effebf5c6bef0f882f3cba873defa946eb",
+    "sources": [
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048-t3/final.pt",
+        "size": 979478053,
+        "mtime_ns": 1789071181000000000
+      }
+    ]
+  },
+  {
+    "run": "packed-ac-full-scale-4-20m-0-0048-t4",
+    "epoch": 40,
+    "step": 12473,
+    "recipe_identity": "3f0b33cac6301055f1294970133c4673af6a532d822be3461e498384881ce114",
+    "sources": [
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048-t4/final.pt",
+        "size": 979478053,
+        "mtime_ns": 1789075550000000000
+      }
+    ]
+  },
+  {
+    "run": "packed-ac-full-scale-4-20m-0-0048-t5",
+    "epoch": 40,
+    "step": 12473,
+    "recipe_identity": "3e49beb42ec1139244df2c365caa39c434f9c6453cace7094bd82dc274f332b9",
+    "sources": [
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048-t5/final.pt",
+        "size": 979478053,
+        "mtime_ns": 1789076189000000000
+      }
+    ]
+  },
+  {
+    "run": "packed-ac-full-scale-4-20m-0-0048-t6",
+    "epoch": 40,
+    "step": 12473,
+    "recipe_identity": "46d986c13edd8dd293682c0b691e2d9d4efad0f3eafd9c3f8e4aa7303cd899b2",
+    "sources": [
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048-t6/final.pt",
+        "size": 979478053,
+        "mtime_ns": 1789078095000000000
+      }
+    ]
+  },
+  {
+    "run": "packed-full-4-20m-0-0048",
+    "epoch": 40,
+    "step": 12473,
+    "recipe_identity": "20062b73a5e200d72df7964904fa362970e445cf0ac1470ab59de5a38d554113",
+    "sources": [
+      {
+        "path": "runs/packed-full-4-20m-0-0048/final.pt",
+        "size": 979477989,
+        "mtime_ns": 1789044709000000000
+      }
+    ]
+  },
+  {
+    "run": "packed-ac-4-20m-0-0048",
+    "epoch": 40,
+    "step": 12473,
+    "recipe_identity": "557dee7900846bef5e4f22682c4a6a3fcd79ad7d7f57b7097f5bd0b48cdaee0f",
+    "sources": [
+      {
+        "path": "runs/packed-ac-4-20m-0-0048/epoch-040.pt",
+        "size": 17317,
+        "mtime_ns": 1789038370000000000
+      },
+      {
+        "path": "runs/packed-ac-4-20m-0-0048/node-000/epoch-040.pt",
+        "size": 244926383,
+        "mtime_ns": 1789038368000000000
+      },
+      {
+        "path": "runs/packed-ac-4-20m-0-0048/node-001/epoch-040.pt",
+        "size": 244926383,
+        "mtime_ns": 1789038368000000000
+      },
+      {
+        "path": "runs/packed-ac-4-20m-0-0048/node-002/epoch-040.pt",
+        "size": 244926383,
+        "mtime_ns": 1789038369000000000
+      },
+      {
+        "path": "runs/packed-ac-4-20m-0-0048/node-003/epoch-040.pt",
+        "size": 244926383,
+        "mtime_ns": 1789038369000000000
+      }
+    ]
+  },
+  {
+    "run": "packed-ac-full-scale-4-20m-0-0048-t7",
+    "epoch": 40,
+    "step": 12473,
+    "recipe_identity": "fb52b285ac4f164a5b8bc7d920e919c8ed8b8619318b4162e4ea6c03fa093367",
+    "sources": [
+      {
+        "path": "runs/packed-ac-full-scale-4-20m-0-0048-t7/final.pt",
+        "size": 979478053,
+        "mtime_ns": 1789078715000000000
+      }
+    ]
+  }
+]

@@ -1,0 +1,54 @@
+{
+  "noise": {
+    "sync": {
+      "first_epoch": 1,
+      "last_epoch": 40,
+      "ratio_first": 1.282465266041045,
+      "ratio_last": 2.609236100859384
+    },
+    "packed": {
+      "first_epoch": 1,
+      "last_epoch": 40,
+      "ratio_first": 2.777769853849692,
+      "ratio_last": 6.40886404230676
+    }
+  },
+  "baseline": {
+    "plain_full": 3.5958767775019402,
+    "adaptive_full": 3.6061622594259535,
+    "full_difference": 0.01028548192401324
+  },
+  "alignment_epoch20": {
+    "delta": 0.001117101668459556,
+    "sqrt_v": 0.04544122635192979,
+    "v": 2.432920347374924,
+    "sqrt_v_ratio": 40.67778934981956,
+    "v_ratio": 2177.8862354845783
+  },
+  "similarity_final": {
+    "v_cosine": 0.9981446266174316,
+    "v_relative_l2": 0.06608089059591293,
+    "m_cosine": 0.010414510034024715,
+    "adam_direction_cosine": 0.0036528175696730614
+  },
+  "diagnosis": {
+    "final_coordinate_percent": 95.66187142346816,
+    "epoch24_v_cosine": 0.7238145764470768,
+    "final_v_cosine": 0.9110779305645716,
+    "epoch10_v_cosine": 0.9980508903324165
+  },
+  "scaled_full_validation": {
+    "full_mixing": 3.579905465684856,
+    "alpha_half": 3.6001727555816974,
+    "alpha_point_one": 4.02640659350902,
+    "alpha_minus_half": 3.5826572151682505
+  },
+  "setup": {
+    "parameters": 20403520,
+    "packed_tokens": 408068096,
+    "sync_tokens": 408071168,
+    "epochs": 40,
+    "packed_steps": 12473,
+    "full_validation_tokens": 197411295
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "status": "complete",
+  "parameters": 20403520,
+  "tokens": 408071168,
+  "step": 12480,
+  "epochs": 40,
+  "best_subset_loss": 3.554417996351499,
+  "best_epoch": 40,
+  "final_validation": {
+    "loss": 3.55649756293707,
+    "perplexity": 35.040255683218376,
+    "tokens": 197411295,
+    "seconds": 100.25027559301816,
+    "split": "full",
+    "validation_complete": true
+  },
+  "seconds_this_session": 470.38104128604755,
+  "training_seconds": 303.38606198027264,
+  "training_elapsed_seconds": 370.0789044239791,
+  "training_tokens_per_second": 1345055.7528464652,
+  "elapsed_tokens_per_second": 1102659.900691057,
+  "peak_memory_bytes": 42391483392,
+  "recipe_identity": "0ba826086144e2c287320446405b5fd205198753ecec251ba7ae836bca52d8a2"
+}

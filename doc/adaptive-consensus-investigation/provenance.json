@@ -1,0 +1,748 @@
+{
+  "description": "Portable numerical extracts for Adaptive Consensus: From Diagnostics to Training Dynamics",
+  "source_root": "repository root (paths relative, independent of checkout location)",
+  "sources": [
+    {
+      "path": "runs/20m-0-0022/analysis/alignment/summary.csv",
+      "sha256": "bad2b8d2864d0b211f2998714ba6c64ebe19d473573a262084ebeecf00292820",
+      "bytes": 5851
+    },
+    {
+      "path": "runs/packed-4-20m-0-0048/analysis/alignment/summary.csv",
+      "sha256": "a1db2de69176dab8b18eb08de09e59613157a30c34f8430e1ba1e9e316f9fc81",
+      "bytes": 7057
+    },
+    {
+      "path": "runs/packed-ac-4-20m-0-0048/analysis/alignment/summary.csv",
+      "sha256": "98e0327ffd913858a84546b14edb0abf44aec7f8ce8f463dd51a318e13449043",
+      "bytes": 7044
+    },
+    {
+      "path": "runs/packed-ac-4-20m-0-0048/analysis/scaled-alignment/summary.csv",
+      "sha256": "fcf055fb21740bc4578387dc19efb4726b041fd88e256c556ce75ea4171566e7",
+      "bytes": 11943
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048/analysis/scaled-alignment/summary.csv",
+      "sha256": "ddc9cbaa8a8a7a76b52fac98369e3d024f0f98b53ffaf42e6359847772f50cd1",
+      "bytes": 11999
+    },
+    {
+      "path": "runs/packed-ac-4-20m-0-0048/analysis/similarity/full/epoch_summary.csv",
+      "sha256": "22e3464c3fdcc7c1999cf5dc17a92ba19f8f0dde4ca4f4a31c20378a3a99a090",
+      "bytes": 3142307
+    },
+    {
+      "path": "runs/consensus-scaling-review-2026-09-11/checkpoint_summary.csv",
+      "sha256": "2f9d7b00370210689b426da0991b599ffba57a5d07c86826bd801626d3136f3c",
+      "bytes": 2398
+    },
+    {
+      "path": "runs/consensus-scaling-review-2026-09-11/counterfactual_mixing.csv",
+      "sha256": "414a013f3efb6c8ec465c370de84ee3f8967c6aaa127d061dee1327704f295e1",
+      "bytes": 7920
+    },
+    {
+      "path": "runs/consensus-scaling-review-2026-09-11/fresh_update_counterfactual.csv",
+      "sha256": "00d9f06c269221643eab7cc0f9afb5d93fe7ba59ac42459ee6b619a7c4a36263",
+      "bytes": 610
+    },
+    {
+      "path": "runs/consensus-scaling-review-2026-09-11/largest_error_coordinates.csv",
+      "sha256": "d784ac2e1b42ccc5c24859b7fd04cbda02b5842d46e93452355f9aba858aeeae",
+      "bytes": 2435
+    },
+    {
+      "path": "runs/consensus-scaling-review-2026-09-11/parameter_breakdown.csv",
+      "sha256": "b2e2071870bad0eec36803d55962fd0f93f4410a5752498e5f2e1247857b8524",
+      "bytes": 165190
+    },
+    {
+      "path": "runs/consensus-scaling-review-2026-09-11/algebra_checks.json",
+      "sha256": "76a8438152e8598a48e951e8cf00771f062eca67fb9b15ad0de9eac46bbd160b",
+      "bytes": 383
+    },
+    {
+      "path": "runs/consensus-scaling-review-2026-09-11/provenance.json",
+      "sha256": "25f4154690795aa829bf4a2346b61bf82ea686b8f16dedfb61dc0c9f3aee52d3",
+      "bytes": 9540
+    },
+    {
+      "path": "runs/consensus-scaling-review-2026-09-11/run_comparison.csv",
+      "sha256": "719c4b1abccfd5798a419b0ee7abe0a2f52cce91cca71355c231ebbe9c12bc0f",
+      "bytes": 1817
+    },
+    {
+      "path": "runs/20m-0-0022/resolved.yaml",
+      "sha256": "093305416aab6365bf5cb667f14ae25b273c3117315e5328015178d883c6cf25",
+      "bytes": 1312
+    },
+    {
+      "path": "runs/20m-0-0022/result.json",
+      "sha256": "d399c92aba839daab82eede537aa6cd1a2bd3d6867c755ddd648df68ac3f812d",
+      "bytes": 744
+    },
+    {
+      "path": "runs/20m-0-0022/metrics.jsonl",
+      "sha256": "9f564848c542831294765448b48a349c7fb449a53589e8f4ef211ee508b0eb23",
+      "bytes": 219686
+    },
+    {
+      "path": "runs/packed-4-20m-0-0048/resolved.yaml",
+      "sha256": "1ce703b28fae3e235f7fc806853cda77a1fa16715d4275e4546b4fa32dd422fc",
+      "bytes": 1373
+    },
+    {
+      "path": "runs/packed-4-20m-0-0048/result.json",
+      "sha256": "185e3361f05ddc0a149f90c43d7edbc6a674c70be7bd810e330c2e436c8dd5d8",
+      "bytes": 866
+    },
+    {
+      "path": "runs/packed-4-20m-0-0048/metrics.jsonl",
+      "sha256": "f1bf8732fa2be43cabecd1b27a1cd1b6055e776d2ba9e9de5fb1c0fbe1da4564",
+      "bytes": 381867
+    },
+    {
+      "path": "runs/packed-ac-4-20m-0-0048/resolved.yaml",
+      "sha256": "0b8297ff0eb32bb220a8282f2756f29598c9ab7846535fc44dcf3fe6f2beb71d",
+      "bytes": 1430
+    },
+    {
+      "path": "runs/packed-ac-4-20m-0-0048/result.json",
+      "sha256": "d1501e869628eda84c4aa4942f379d5a9600834a9dd668e5238f81f8051d4b80",
+      "bytes": 866
+    },
+    {
+      "path": "runs/packed-ac-4-20m-0-0048/metrics.jsonl",
+      "sha256": "aa02ea1cda8c6b5ece304fc23c8c11c7ecb5a9cf69920f699735e11b9668fee1",
+      "bytes": 403356
+    },
+    {
+      "path": "runs/packed-ac-exclude-4-20m-0-0048/resolved.yaml",
+      "sha256": "330e2209bf3cc1ae8221e2f24c5548f759af58da2aad4178f515e9067f0f7b37",
+      "bytes": 1467
+    },
+    {
+      "path": "runs/packed-ac-exclude-4-20m-0-0048/result.json",
+      "sha256": "b5ca6a8ace0ce3b5bd365a7cebb6efdc4b64d96e0d890e95b0478a04d8bae0e7",
+      "bytes": 866
+    },
+    {
+      "path": "runs/packed-ac-exclude-4-20m-0-0048/metrics.jsonl",
+      "sha256": "9785757222d67d6fbfcb9f128b4861e365ac06b9f48b15ee8235a33709ddfc3e",
+      "bytes": 423594
+    },
+    {
+      "path": "runs/packed-ac-exclude-full-4-20m-0-0048/resolved.yaml",
+      "sha256": "a6b689e8972c25af3a8a521e4c51c85f9bfce49570c38e39d1210e2fba03f7fe",
+      "bytes": 1460
+    },
+    {
+      "path": "runs/packed-ac-exclude-full-4-20m-0-0048/result.json",
+      "sha256": "fe2f5494348ad054a09e796d1f4441c47938da794a1920adba7db4dfd5581c3e",
+      "bytes": 853
+    },
+    {
+      "path": "runs/packed-ac-exclude-full-4-20m-0-0048/metrics.jsonl",
+      "sha256": "7a471b07d5d939903960727de69d8b66fdad79351d84048c9211c4a53bf716aa",
+      "bytes": 423703
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048/resolved.yaml",
+      "sha256": "0841efdf917260c9a5e670d0dcc9b0ed2034df5255cbcdf1c5753ec23be50375",
+      "bytes": 1444
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048/result.json",
+      "sha256": "45f84272bed07f31f22e815f182c35e05886d719e68f880e12754a9d67be6575",
+      "bytes": 853
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048/metrics.jsonl",
+      "sha256": "535772fb2b6cea4c287b42a6d563e9d49674d7e845da18f7c21fdd12c6efb876",
+      "bytes": 402922
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048-t2/resolved.yaml",
+      "sha256": "641b4acd3a3c63f1618f7e68d609b5b08e93156a754bb907984710fcc2e6922d",
+      "bytes": 1449
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048-t2/result.json",
+      "sha256": "08bcfb56e3a18737195980e2a817427135687b27bb02bb88c74741188f7bbb4d",
+      "bytes": 846
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048-t2/metrics.jsonl",
+      "sha256": "9caa072c58334e526df03468a03506002cc532c9dbb594dd4d1a15edb17245a4",
+      "bytes": 402785
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048-t3/resolved.yaml",
+      "sha256": "1d9a379dc28b9d9c411277b0ed1cadfc36074830cd22fa2f9dcec431d61dbe96",
+      "bytes": 1450
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048-t3/result.json",
+      "sha256": "cbb5987509672fede3262a61efd43ece495b67423a3dbd9ee244300b4c1be969",
+      "bytes": 853
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048-t3/metrics.jsonl",
+      "sha256": "6f2408c5a2acbc7ffe7e0d0b341d2919da1326eaf360e92d523a99eba693c36f",
+      "bytes": 402741
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048-t4/resolved.yaml",
+      "sha256": "117f2bd2d5ee42e8a0c74d793d2ea4f5df99beb8b68e959ae77bf9741bcb2886",
+      "bytes": 1451
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048-t4/result.json",
+      "sha256": "abc9847409e7d158d0f924b359a10d837359589362d1e6d185a04188d7ec17bb",
+      "bytes": 854
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048-t4/metrics.jsonl",
+      "sha256": "3c7249be393bc5011a36a941907cef67fec3fa71595cbba1dc7f9b059848f92a",
+      "bytes": 402823
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048-t5/resolved.yaml",
+      "sha256": "a223337077bd4721abca3e545f718688ef8ca9f0968753cd80209b098da700cc",
+      "bytes": 1450
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048-t5/result.json",
+      "sha256": "74d93017a845615e7e2f857a1bcb1f0a18a71399164420bb3caa22428fb39814",
+      "bytes": 850
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048-t5/metrics.jsonl",
+      "sha256": "beb435733fdd0b209aafb5ac2a4fdab9eb34ebdb351e906f41985e6ea3300251",
+      "bytes": 402724
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048-t6/resolved.yaml",
+      "sha256": "9ea19d4b4bc30a59f445ff2d52df113393c96d97309ea7a2fb69e685d63a19b2",
+      "bytes": 1450
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048-t6/result.json",
+      "sha256": "48849040ceac1dc9376a0334a8f96fec5cc1b25afb6cc3a3571b809c91d122e2",
+      "bytes": 852
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048-t6/metrics.jsonl",
+      "sha256": "62ee8d82a820e1c992ae50c449440c5d335991a739543e53e921fced7b1380d1",
+      "bytes": 402730
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048-t7/resolved.yaml",
+      "sha256": "c64067aa908cd3d657091ae3fec77c8041f9fffa304ca2fb3f51bcd0da9b9c99",
+      "bytes": 1451
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048-t7/result.json",
+      "sha256": "57534a049364b608e9f547a3aba2438a6d21419c4aa6d98eb851d975a240e3bd",
+      "bytes": 854
+    },
+    {
+      "path": "runs/packed-ac-full-scale-4-20m-0-0048-t7/metrics.jsonl",
+      "sha256": "502f30bde05770f6d89c2b3363d80ea9b69e115d003c9649e3c8727ed6827fbd",
+      "bytes": 402552
+    },
+    {
+      "path": "runs/packed-full-4-20m-0-0048/resolved.yaml",
+      "sha256": "e9475ecf2918351429bcfedd5197f92f64f6fad16b2aedc072e50fbd23a4b328",
+      "bytes": 1395
+    },
+    {
+      "path": "runs/packed-full-4-20m-0-0048/result.json",
+      "sha256": "7ca7bc30ca16e9559213f3a24cdd360c8a8b577ca1e71de7d071f6ea73fc96d1",
+      "bytes": 854
+    },
+    {
+      "path": "runs/packed-full-4-20m-0-0048/metrics.jsonl",
+      "sha256": "bab1924a16049d26e7ffdb09a7fbfe0fdf6ae46077124aea35de619a07f4f9f7",
+      "bytes": 416091
+    }
+  ],
+  "extracts": [
+    {
+      "file": "data/alignment-sync.csv",
+      "sources": [
+        "runs/20m-0-0022/analysis/alignment/summary.csv"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "bad2b8d2864d0b211f2998714ba6c64ebe19d473573a262084ebeecf00292820"
+    },
+    {
+      "file": "data/alignment-plain.csv",
+      "sources": [
+        "runs/packed-4-20m-0-0048/analysis/alignment/summary.csv"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "a1db2de69176dab8b18eb08de09e59613157a30c34f8430e1ba1e9e316f9fc81"
+    },
+    {
+      "file": "data/alignment-adaptive.csv",
+      "sources": [
+        "runs/packed-ac-4-20m-0-0048/analysis/alignment/summary.csv"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "98e0327ffd913858a84546b14edb0abf44aec7f8ce8f463dd51a318e13449043"
+    },
+    {
+      "file": "data/scaled-alignment-adaptive.csv",
+      "sources": [
+        "runs/packed-ac-4-20m-0-0048/analysis/scaled-alignment/summary.csv"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "fcf055fb21740bc4578387dc19efb4726b041fd88e256c556ce75ea4171566e7"
+    },
+    {
+      "file": "data/scaled-alignment-scaled.csv",
+      "sources": [
+        "runs/packed-ac-full-scale-4-20m-0-0048/analysis/scaled-alignment/summary.csv"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "ddc9cbaa8a8a7a76b52fac98369e3d024f0f98b53ffaf42e6359847772f50cd1"
+    },
+    {
+      "file": "data/similarity-aggregate.csv",
+      "sources": [
+        "runs/packed-ac-4-20m-0-0048/analysis/similarity/full/epoch_summary.csv"
+      ],
+      "selection": "level=aggregate and group=all; all categories, epochs and columns; original decimal strings",
+      "sha256": "8fb366585cc5204e511efcc88b77cafb08c5f46fd1caf3f69f687c2a1d96ca8e"
+    },
+    {
+      "file": "data/checkpoint-summary.csv",
+      "sources": [
+        "runs/consensus-scaling-review-2026-09-11/checkpoint_summary.csv"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "2f9d7b00370210689b426da0991b599ffba57a5d07c86826bd801626d3136f3c"
+    },
+    {
+      "file": "data/counterfactual-mixing.csv",
+      "sources": [
+        "runs/consensus-scaling-review-2026-09-11/counterfactual_mixing.csv"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "414a013f3efb6c8ec465c370de84ee3f8967c6aaa127d061dee1327704f295e1"
+    },
+    {
+      "file": "data/fresh-update-counterfactual.csv",
+      "sources": [
+        "runs/consensus-scaling-review-2026-09-11/fresh_update_counterfactual.csv"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "00d9f06c269221643eab7cc0f9afb5d93fe7ba59ac42459ee6b619a7c4a36263"
+    },
+    {
+      "file": "data/largest-error-coordinates.csv",
+      "sources": [
+        "runs/consensus-scaling-review-2026-09-11/largest_error_coordinates.csv"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "d784ac2e1b42ccc5c24859b7fd04cbda02b5842d46e93452355f9aba858aeeae"
+    },
+    {
+      "file": "data/parameter-breakdown.csv",
+      "sources": [
+        "runs/consensus-scaling-review-2026-09-11/parameter_breakdown.csv"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "b2e2071870bad0eec36803d55962fd0f93f4410a5752498e5f2e1247857b8524"
+    },
+    {
+      "file": "data/algebra-checks.json",
+      "sources": [
+        "runs/consensus-scaling-review-2026-09-11/algebra_checks.json"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "76a8438152e8598a48e951e8cf00771f062eca67fb9b15ad0de9eac46bbd160b"
+    },
+    {
+      "file": "data/original-review-provenance.json",
+      "sources": [
+        "runs/consensus-scaling-review-2026-09-11/provenance.json"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "25f4154690795aa829bf4a2346b61bf82ea686b8f16dedfb61dc0c9f3aee52d3"
+    },
+    {
+      "file": "data/run-comparison.csv",
+      "sources": [
+        "runs/consensus-scaling-review-2026-09-11/run_comparison.csv",
+        "runs/consensus-scaling-review-2026-09-11/checkpoint_summary.csv"
+      ],
+      "selection": "all comparison rows joined on run with epoch=40 checkpoint diagnostics; blanks mean unavailable",
+      "sha256": "95af505354f0cf207af4f6747c9540b97737f5db9412e41b5262fefe1092eeef"
+    },
+    {
+      "file": "data/recipes/20m-0-0022.yaml",
+      "sources": [
+        "runs/20m-0-0022/resolved.yaml"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "093305416aab6365bf5cb667f14ae25b273c3117315e5328015178d883c6cf25"
+    },
+    {
+      "file": "data/results/20m-0-0022.json",
+      "sources": [
+        "runs/20m-0-0022/result.json"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "d399c92aba839daab82eede537aa6cd1a2bd3d6867c755ddd648df68ac3f812d"
+    },
+    {
+      "file": "data/recipes/packed-4-20m-0-0048.yaml",
+      "sources": [
+        "runs/packed-4-20m-0-0048/resolved.yaml"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "1ce703b28fae3e235f7fc806853cda77a1fa16715d4275e4546b4fa32dd422fc"
+    },
+    {
+      "file": "data/results/packed-4-20m-0-0048.json",
+      "sources": [
+        "runs/packed-4-20m-0-0048/result.json"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "185e3361f05ddc0a149f90c43d7edbc6a674c70be7bd810e330c2e436c8dd5d8"
+    },
+    {
+      "file": "data/recipes/packed-ac-4-20m-0-0048.yaml",
+      "sources": [
+        "runs/packed-ac-4-20m-0-0048/resolved.yaml"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "0b8297ff0eb32bb220a8282f2756f29598c9ab7846535fc44dcf3fe6f2beb71d"
+    },
+    {
+      "file": "data/results/packed-ac-4-20m-0-0048.json",
+      "sources": [
+        "runs/packed-ac-4-20m-0-0048/result.json"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "d1501e869628eda84c4aa4942f379d5a9600834a9dd668e5238f81f8051d4b80"
+    },
+    {
+      "file": "data/recipes/packed-ac-exclude-4-20m-0-0048.yaml",
+      "sources": [
+        "runs/packed-ac-exclude-4-20m-0-0048/resolved.yaml"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "330e2209bf3cc1ae8221e2f24c5548f759af58da2aad4178f515e9067f0f7b37"
+    },
+    {
+      "file": "data/results/packed-ac-exclude-4-20m-0-0048.json",
+      "sources": [
+        "runs/packed-ac-exclude-4-20m-0-0048/result.json"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "b5ca6a8ace0ce3b5bd365a7cebb6efdc4b64d96e0d890e95b0478a04d8bae0e7"
+    },
+    {
+      "file": "data/recipes/packed-ac-exclude-full-4-20m-0-0048.yaml",
+      "sources": [
+        "runs/packed-ac-exclude-full-4-20m-0-0048/resolved.yaml"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "a6b689e8972c25af3a8a521e4c51c85f9bfce49570c38e39d1210e2fba03f7fe"
+    },
+    {
+      "file": "data/results/packed-ac-exclude-full-4-20m-0-0048.json",
+      "sources": [
+        "runs/packed-ac-exclude-full-4-20m-0-0048/result.json"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "fe2f5494348ad054a09e796d1f4441c47938da794a1920adba7db4dfd5581c3e"
+    },
+    {
+      "file": "data/recipes/packed-ac-full-scale-4-20m-0-0048.yaml",
+      "sources": [
+        "runs/packed-ac-full-scale-4-20m-0-0048/resolved.yaml"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "0841efdf917260c9a5e670d0dcc9b0ed2034df5255cbcdf1c5753ec23be50375"
+    },
+    {
+      "file": "data/results/packed-ac-full-scale-4-20m-0-0048.json",
+      "sources": [
+        "runs/packed-ac-full-scale-4-20m-0-0048/result.json"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "45f84272bed07f31f22e815f182c35e05886d719e68f880e12754a9d67be6575"
+    },
+    {
+      "file": "data/recipes/packed-ac-full-scale-4-20m-0-0048-t2.yaml",
+      "sources": [
+        "runs/packed-ac-full-scale-4-20m-0-0048-t2/resolved.yaml"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "641b4acd3a3c63f1618f7e68d609b5b08e93156a754bb907984710fcc2e6922d"
+    },
+    {
+      "file": "data/results/packed-ac-full-scale-4-20m-0-0048-t2.json",
+      "sources": [
+        "runs/packed-ac-full-scale-4-20m-0-0048-t2/result.json"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "08bcfb56e3a18737195980e2a817427135687b27bb02bb88c74741188f7bbb4d"
+    },
+    {
+      "file": "data/recipes/packed-ac-full-scale-4-20m-0-0048-t3.yaml",
+      "sources": [
+        "runs/packed-ac-full-scale-4-20m-0-0048-t3/resolved.yaml"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "1d9a379dc28b9d9c411277b0ed1cadfc36074830cd22fa2f9dcec431d61dbe96"
+    },
+    {
+      "file": "data/results/packed-ac-full-scale-4-20m-0-0048-t3.json",
+      "sources": [
+        "runs/packed-ac-full-scale-4-20m-0-0048-t3/result.json"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "cbb5987509672fede3262a61efd43ece495b67423a3dbd9ee244300b4c1be969"
+    },
+    {
+      "file": "data/recipes/packed-ac-full-scale-4-20m-0-0048-t4.yaml",
+      "sources": [
+        "runs/packed-ac-full-scale-4-20m-0-0048-t4/resolved.yaml"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "117f2bd2d5ee42e8a0c74d793d2ea4f5df99beb8b68e959ae77bf9741bcb2886"
+    },
+    {
+      "file": "data/results/packed-ac-full-scale-4-20m-0-0048-t4.json",
+      "sources": [
+        "runs/packed-ac-full-scale-4-20m-0-0048-t4/result.json"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "abc9847409e7d158d0f924b359a10d837359589362d1e6d185a04188d7ec17bb"
+    },
+    {
+      "file": "data/recipes/packed-ac-full-scale-4-20m-0-0048-t5.yaml",
+      "sources": [
+        "runs/packed-ac-full-scale-4-20m-0-0048-t5/resolved.yaml"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "a223337077bd4721abca3e545f718688ef8ca9f0968753cd80209b098da700cc"
+    },
+    {
+      "file": "data/results/packed-ac-full-scale-4-20m-0-0048-t5.json",
+      "sources": [
+        "runs/packed-ac-full-scale-4-20m-0-0048-t5/result.json"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "74d93017a845615e7e2f857a1bcb1f0a18a71399164420bb3caa22428fb39814"
+    },
+    {
+      "file": "data/recipes/packed-ac-full-scale-4-20m-0-0048-t6.yaml",
+      "sources": [
+        "runs/packed-ac-full-scale-4-20m-0-0048-t6/resolved.yaml"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "9ea19d4b4bc30a59f445ff2d52df113393c96d97309ea7a2fb69e685d63a19b2"
+    },
+    {
+      "file": "data/results/packed-ac-full-scale-4-20m-0-0048-t6.json",
+      "sources": [
+        "runs/packed-ac-full-scale-4-20m-0-0048-t6/result.json"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "48849040ceac1dc9376a0334a8f96fec5cc1b25afb6cc3a3571b809c91d122e2"
+    },
+    {
+      "file": "data/recipes/packed-ac-full-scale-4-20m-0-0048-t7.yaml",
+      "sources": [
+        "runs/packed-ac-full-scale-4-20m-0-0048-t7/resolved.yaml"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "c64067aa908cd3d657091ae3fec77c8041f9fffa304ca2fb3f51bcd0da9b9c99"
+    },
+    {
+      "file": "data/results/packed-ac-full-scale-4-20m-0-0048-t7.json",
+      "sources": [
+        "runs/packed-ac-full-scale-4-20m-0-0048-t7/result.json"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "57534a049364b608e9f547a3aba2438a6d21419c4aa6d98eb851d975a240e3bd"
+    },
+    {
+      "file": "data/recipes/packed-full-4-20m-0-0048.yaml",
+      "sources": [
+        "runs/packed-full-4-20m-0-0048/resolved.yaml"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "e9475ecf2918351429bcfedd5197f92f64f6fad16b2aedc072e50fbd23a4b328"
+    },
+    {
+      "file": "data/results/packed-full-4-20m-0-0048.json",
+      "sources": [
+        "runs/packed-full-4-20m-0-0048/result.json"
+      ],
+      "selection": "complete source file; bytes unchanged",
+      "sha256": "7ca7bc30ca16e9559213f3a24cdd360c8a8b577ca1e71de7d071f6ea73fc96d1"
+    },
+    {
+      "file": "data/validation.csv",
+      "sources": [
+        "runs/20m-0-0022/metrics.jsonl",
+        "runs/packed-4-20m-0-0048/metrics.jsonl",
+        "runs/packed-ac-4-20m-0-0048/metrics.jsonl",
+        "runs/packed-ac-exclude-4-20m-0-0048/metrics.jsonl",
+        "runs/packed-ac-exclude-full-4-20m-0-0048/metrics.jsonl",
+        "runs/packed-ac-full-scale-4-20m-0-0048/metrics.jsonl",
+        "runs/packed-ac-full-scale-4-20m-0-0048-t2/metrics.jsonl",
+        "runs/packed-ac-full-scale-4-20m-0-0048-t3/metrics.jsonl",
+        "runs/packed-ac-full-scale-4-20m-0-0048-t4/metrics.jsonl",
+        "runs/packed-ac-full-scale-4-20m-0-0048-t5/metrics.jsonl",
+        "runs/packed-ac-full-scale-4-20m-0-0048-t6/metrics.jsonl",
+        "runs/packed-ac-full-scale-4-20m-0-0048-t7/metrics.jsonl",
+        "runs/packed-full-4-20m-0-0048/metrics.jsonl"
+      ],
+      "selection": "event in {validation,final_validation}; original scalar values parsed from JSON; split retained; no smoothing",
+      "sha256": "1511d9d3ff49b63cc0a908819d659e2e21a3054a58ff68c0a8e704f033812656"
+    },
+    {
+      "file": "data/gamma.csv",
+      "sources": [
+        "runs/packed-ac-4-20m-0-0048/metrics.jsonl"
+      ],
+      "selection": "all train events; logged step, epoch, tokens, LR, mixing_step and mixing_gamma; no interpolation of unlogged steps",
+      "sha256": "ed8bbc3226848334ed807849fdda08dc6cab21e1df1eda6a9f34ee8b5f311586"
+    },
+    {
+      "file": "data/results.json",
+      "sources": [
+        "runs/20m-0-0022/result.json",
+        "runs/packed-4-20m-0-0048/result.json",
+        "runs/packed-ac-4-20m-0-0048/result.json",
+        "runs/packed-ac-exclude-4-20m-0-0048/result.json",
+        "runs/packed-ac-exclude-full-4-20m-0-0048/result.json",
+        "runs/packed-ac-full-scale-4-20m-0-0048/result.json",
+        "runs/packed-ac-full-scale-4-20m-0-0048-t2/result.json",
+        "runs/packed-ac-full-scale-4-20m-0-0048-t3/result.json",
+        "runs/packed-ac-full-scale-4-20m-0-0048-t4/result.json",
+        "runs/packed-ac-full-scale-4-20m-0-0048-t5/result.json",
+        "runs/packed-ac-full-scale-4-20m-0-0048-t6/result.json",
+        "runs/packed-ac-full-scale-4-20m-0-0048-t7/result.json",
+        "runs/packed-full-4-20m-0-0048/result.json"
+      ],
+      "selection": "all complete result objects keyed by run name; original JSON scalar values",
+      "sha256": "cd8ad96fa0b964d44edae854e57764d8f5304cd48856de37c95f093aab119fe5"
+    },
+    {
+      "file": "data/callouts.json",
+      "sha256": "9ea321f6d1d0b8705c0f143d1cab7b0118f8ce9305b34a3f2054276cb50ce84f",
+      "inputs": [
+        "data/alignment-sync.csv",
+        "data/alignment-plain.csv",
+        "data/scaled-alignment-adaptive.csv",
+        "data/validation.csv",
+        "data/similarity-aggregate.csv",
+        "data/checkpoint-summary.csv",
+        "data/results.json"
+      ],
+      "selection": "computed numerical slide anchors; formulas specified in diagnostics and build_figures.py; full stored floating-point values"
+    }
+  ],
+  "diagnostics": {
+    "main_deck_case": "unseen: held-out training-cache data, not the official validation split",
+    "norm_ratio": "average_noise_norm / mean_gradient_norm at first and last recorded checkpoint",
+    "alignment": "sum_i(d_i^T H d_i) / sum_i ||d_i||^2 (not a cosine or a [0,1]-bounded statistic)",
+    "uncertainty_band": "minimum to maximum of six worker pairs; descriptive range, not a confidence interval",
+    "concentration": "100 × worst-worker maximum-coordinate fraction of accumulated consensus error energy; observed checkpoint measurement",
+    "validation": "subset trajectories use validation events only; final full-validation values are separate and use final_validation events",
+    "smoothing": "none; lines connect stored measurements, and every stored point in selected intervals is retained"
+  },
+  "figures": {
+    "noise": {
+      "data": [
+        "alignment-sync.csv",
+        "alignment-plain.csv"
+      ],
+      "selection": "case=unseen",
+      "series": [
+        "average_noise_norm",
+        "mean_gradient_norm",
+        "average_batch_gradient_norm"
+      ]
+    },
+    "baseline-loss": {
+      "data": [
+        "validation.csv"
+      ],
+      "selection": "run in {packed-4-20m-0-0048, packed-ac-4-20m-0-0048}; split=subset; all epochs",
+      "transformation": "second panel is paired adaptive loss minus plain loss at identical epochs"
+    },
+    "alignment": {
+      "data": [
+        "alignment-adaptive.csv"
+      ],
+      "selection": "case=unseen",
+      "series": [
+        "normalized_noise_alignment",
+        "normalized_consensus_alignment",
+        "normalized_random_alignment"
+      ],
+      "scale": "log y"
+    },
+    "scaled-alignment": {
+      "data": [
+        "scaled-alignment-adaptive.csv"
+      ],
+      "selection": "case=unseen; direction in {delta,delta_mul_sqrt_v,delta_mul_v}",
+      "series": [
+        "normalized_alignment"
+      ],
+      "scale": "log y"
+    },
+    "moment-similarity": {
+      "data": [
+        "similarity-aggregate.csv"
+      ],
+      "selection": "category=second_moment",
+      "series": [
+        "cosine_mean",
+        "cosine_min",
+        "cosine_max",
+        "relative_l2_mean",
+        "relative_l2_min",
+        "relative_l2_max"
+      ]
+    },
+    "scaled-loss": {
+      "data": [
+        "validation.csv"
+      ],
+      "selection": "run in {packed-full-4-20m-0-0048, packed-ac-full-scale-4-20m-0-0048, packed-ac-full-scale-4-20m-0-0048-t2, packed-ac-full-scale-4-20m-0-0048-t5}; split=subset; epoch>=10"
+    },
+    "diagnosis": {
+      "data": [
+        "checkpoint-summary.csv"
+      ],
+      "selection": "run=packed-ac-full-scale-4-20m-0-0048; observed checkpoints only",
+      "series": [
+        "largest_coordinate_error_energy_fraction × 100",
+        "second_moment_cosine"
+      ]
+    },
+    "gamma": {
+      "data": [
+        "gamma.csv"
+      ],
+      "selection": "all extracted logged train events",
+      "series": [
+        "gamma"
+      ],
+      "transformation": "tokens / 1e6"
+    }
+  }
+}

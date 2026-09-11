@@ -1,0 +1,6 @@
+# Compiled documents and generated vector figures are reviewed visually.
+*.pdf binary
+assets/*.svg -diff -whitespace linguist-generated=true
+
+# Preserve archived extracts byte for byte, including their original line endings.
+data/** -text -whitespace linguist-generated=true

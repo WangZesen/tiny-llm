@@ -1,0 +1,28 @@
+{
+  "status": "complete",
+  "parameters": 20403520,
+  "tokens": 408068096,
+  "step": 12473,
+  "epochs": 40,
+  "best_subset_loss": 3.5984082154915202,
+  "best_epoch": 40,
+  "final_validation": {
+    "loss": 3.6001727555816974,
+    "perplexity": 36.60455753911769,
+    "tokens": 197411295,
+    "seconds": 100.42468960513361,
+    "split": "full",
+    "validation_complete": true
+  },
+  "seconds_this_session": 893.6765839548316,
+  "training_seconds": 473.44114460237324,
+  "training_elapsed_seconds": 793.198097683955,
+  "training_tokens_per_second": 861919.3761512261,
+  "elapsed_tokens_per_second": 514459.2469289964,
+  "peak_memory_bytes": 43793148416,
+  "recipe_identity": "e6a8628a49ef739f7f22b0f85a4fef98fc1f11fc593f6253cb9cbbe3eabf72cd",
+  "num_models": 4,
+  "total_parameters": 81614080,
+  "tokens_per_model": 102017024,
+  "topology": "complete"
+}

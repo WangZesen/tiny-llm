@@ -1,0 +1,31 @@
+{
+  "status": "passed",
+  "visual_review": {
+    "slides": 13,
+    "supplement_pages": 16,
+    "checks": [
+      "readable plot labels at presentation size",
+      "no clipped content or extra pages",
+      "equation notation and rendering",
+      "consistent colors and source identifiers"
+    ]
+  },
+  "science_review": {
+    "checks": [
+      "algorithm order and preceding-step local moments verified against historical source",
+      "noise and curvature estimators checked",
+      "topology and validation-split differences labeled",
+      "historical review boundary distinguished from later trials"
+    ]
+  },
+  "portable_rebuild": {
+    "status": "passed",
+    "method": "Copied package into a temporary directory and ran build.sh using bundled extracts, with no runs directory available."
+  },
+  "artifacts": {
+    "slides.pdf": "d8c917f26a0c1a35e7d46fa2016973b1ea601ee0cf8801f9c71040a6536bd6d8",
+    "supplement.pdf": "4fbe213201939a28103c754da7171a5f513d987e4c0bd5c82ac8db64a905c623"
+  },
+  "terminology": "Consensus error denotes local model minus global average model; updated throughout both PDFs and displayed figure labels.",
+  "terminology_verified": true
+}
