@@ -73,13 +73,15 @@ The smoke configuration truncates C4, so its evaluation is marked incomplete.
 
 ### Packed training
 
-Packed presets run four independent local models together on one GPU. To use
-eight workers while preserving the global batch:
+The packed baseline runs four local models together on one GPU, with 32
+sequences per model and a global batch of 131,072 tokens. It uses the
+[packed-4 sweep winner](doc/recipe_sweep_packed4_20m_128k.md).
+To use eight workers while preserving the baseline's global batch:
 
 ```bash
 uv run tiny-llm train --config configs/packed-20m.yaml
 uv run tiny-llm train --config configs/packed-20m.yaml \
-  --set decentralized.num_models=8 --set training.micro_batch_size=4 \
+  --set decentralized.num_models=8 --set training.micro_batch_size=16 \
   --set runtime.output_dir=runs/packed-20m-n8
 ```
 
@@ -91,7 +93,8 @@ under `node-NNN/`. The default `final.pt` retains all local training states.
 cover topologies and optimizer behavior.
 
 Optional adaptive consensus weakens mixing as the learning rate falls. The sample
-config uses four workers, `start_frac=0.5`, and `p=1.0`:
+config retains its separate 32,768-token recipe and uses four workers,
+`start_frac=0.5`, and `p=1.0`:
 
 ```bash
 uv run tiny-llm train --config configs/packed-20m-adaptive.yaml
@@ -269,6 +272,8 @@ normal exit, failure, or catchable termination.
   [packed training](doc/packed_benchmarks.md), [analysis](doc/analysis_performance.md)
 - [Synchronous 20M tuning at 128K tokens](doc/recipe_sweep_20m_128k.md):
   72 runs, tuning plots, and the current 20M preset.
+- [Packed-4 20M tuning at 128K tokens](doc/recipe_sweep_packed4_20m_128k.md):
+  72 runs with exponential topology and the current decentralized preset.
 - [Three-seed 20M recipe benchmark](doc/recipe_sweep_20m.md): synchronous and
   packed training results across 324 runs.
 - [Campaign results](doc/campaign_results.md) and

@@ -60,11 +60,14 @@ def test_boundary_rounding(tiny_config):
 def test_packed_presets_fit_ordinary_cache(preset, workers):
     directory = Path(__file__).resolve().parents[1] / "configs"
     ordinary = load_config(directory / f"{preset}.yaml")
+    base_packed = load_config(directory / f"packed-{preset}.yaml")
+    batch_sequences = base_packed.training.batch_tokens // base_packed.model.context_length
+    assert batch_sequences % workers == 0
     packed = load_config(
         directory / f"packed-{preset}.yaml",
         [
             f"decentralized.num_models={workers}",
-            f"training.micro_batch_size={32 // workers}",
+            f"training.micro_batch_size={batch_sequences // workers}",
         ],
     )
     assert packed.model == ordinary.model

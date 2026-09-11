@@ -28,6 +28,8 @@ statistically reliable improvements.
 These configurations record the 32,768-token-batch benchmark. This campaign
 left preset optimizer settings unchanged at the time. The synchronous 20M
 preset now uses the [128K-token sweep winner](recipe_sweep_20m_128k.md).
+The packed-4 preset now uses its own
+[128K-token exponential-topology winner](recipe_sweep_packed4_20m_128k.md).
 The earlier single-seed, multi-size campaign is
 reported separately in [campaign_results.md](campaign_results.md).
 

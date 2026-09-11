@@ -1,10 +1,16 @@
-# Defaults supply the ordinary 20M model, C4 cache, AdamW, and runtime settings.
+# Tuned packed-4 recipe; see doc/recipe_sweep_packed4_20m_128k.md.
+# Defaults supply the ordinary 20M model and runtime settings.
+data:
+  revision: 1588ec454efa1a09f29cd18ddd04fe05fc8653a2
+  tokenizer_revision: 59f6f375b26bde864a6ca194a9a3044570490064
 decentralized:
   num_models: 4
   topology: one_peer_exponential
 training:
-  batch_tokens: 32768
-  micro_batch_size: 8
+  # 4 local models * 32 sequences * 1024 tokens; no accumulation.
+  batch_tokens: 131072
+  micro_batch_size: 32
+  checkpoint_policy: final
   # Explicit equal-worker boundaries, divisible by 8 * context_length as well.
   epoch_tokens: 10207232
   # Round the ordinary total budget down to 8 * context_length; final epoch is shorter.
@@ -12,9 +18,9 @@ training:
 runtime:
   output_dir: runs/packed-20m
 optimizer:
-  lr: 0.0048
+  lr: 0.008
   beta1: 0.9
-  beta2: 0.999
+  beta2: 0.98
   eps: 1.0e-08
   weight_decay: 0.1
   grad_clip: 1.0

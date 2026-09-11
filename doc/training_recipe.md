@@ -106,6 +106,13 @@ of model losses, not differentiation through the optimizer's training history.
 
 ## Packed decentralized simulation
 
+The default packed-4 preset uses the
+[three-seed 128K-token sweep winner](recipe_sweep_packed4_20m_128k.md):
+LR 0.008, beta2 0.98, four local models, microbatch 32 per model, and
+`one_peer_exponential` topology. Its global batch is 131,072 targets, without
+accumulation. The adaptive-consensus preset retains its separate 32K-token
+recipe; adaptive consensus was disabled in this sweep.
+
 The opt-in decentralized path keeps the global token budget based on one local
 model's parameter count. It executes N workers together and assigns every Nth
 sample from the buffered loader's shuffled stream to each worker. This preserves
