@@ -1,252 +1,510 @@
 {
-  "git_commit": "4872de7c2babeb8e0d2f202b64b09c57a8f891c3",
-  "batch_tokens": 131072,
-  "micro_batch_size": 32,
-  "num_models": 4,
-  "topology": "one_peer_exponential",
-  "accumulation_steps": 1,
-  "parameters": 20403520,
-  "training_tokens": 408068096,
-  "optimizer_steps": 3119,
-  "epochs": 40,
-  "validation_tokens": 197411295,
-  "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151",
-  "lrs": [
-    0.0024,
-    0.0048,
-    0.0056,
-    0.008,
-    0.0112,
-    0.016,
-    0.0224,
-    0.032
-  ],
-  "beta2s": [
-    0.95,
-    0.98,
-    0.999
-  ],
-  "seeds": [
-    42,
-    43,
-    44
-  ],
-  "selection": "Mean final full-validation loss over all three seeds; ties: LR, beta2",
+  "schema_version": 2,
   "measured_date": "2026-09-11",
-  "archive": "runs/packed4-20m-batch128k-micro32-20260911",
-  "source_hashes": [
-    "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
-  ],
-  "source_file_hashes": {
-    "source/tiny_llm/__init__.py": "a6c9b2e8602883c050a69acaf3f8c8a5c76b4885d66085813c7342f21d481f2d",
-    "source/tiny_llm/__main__.py": "18b0986089d17edd6a889f723a95d0418ba60d22e4f8214f33539b5bc77bcb34",
-    "source/tiny_llm/analysis/__init__.py": "f7899324f928575b7c353c51b0c5e5b21b547e5effb8e045e1ac9e9ad68e1ca4",
-    "source/tiny_llm/analysis/core.py": "175857de6e32e89407431320ef4130c588ec20de177842f001909b9b4958a7cf",
-    "source/tiny_llm/analysis/plot.py": "7de80840117c68347c45647dc9a0fb52e482b25765f1c8ad701a7ad2fb867f3e",
-    "source/tiny_llm/analysis/slurm.py": "37a16565f3926d186af3c8715b77a155fb8bca0883046446028f366751dde1b5",
-    "source/tiny_llm/benchmark.py": "ff1cd6c8c685f618b560af25ef591d3fe3b6ec70f412741324e85cec91ece5e6",
-    "source/tiny_llm/checkpoints.py": "9340160365df6d7076a8f684201c733327c17392c2002c9fd13d0e294eebeadd",
-    "source/tiny_llm/cli.py": "c0fb2352369e16af95eca7a95267d2fa03d2a22038d523e95498541460a910f5",
-    "source/tiny_llm/config.py": "16f76800e67c3c0544bd5dee4b6db52a739b38956e80b029638f5a07035c78e7",
-    "source/tiny_llm/data.py": "74c1a9e7190fb19e5d7a5f07e17427a5b32937755b41ad51a4461fc04507b8bf",
-    "source/tiny_llm/experiments.py": "96c7cc117f731e9ab44dba16d16760014c59d6f19f5f2e0cc69f713a69353c23",
-    "source/tiny_llm/model.py": "0c76eb6e409abf7760e5c5b16a4ee8c16079008ae5863ca3cc28af3d65ec1cc2",
-    "source/tiny_llm/packed.py": "33bc1b5c797f1f463995e3fe1ab70bd3f88d9febf523d6a90626b5fc800c7b50",
-    "source/tiny_llm/packed_benchmark.py": "9d5258105785923cabe600ea9e7657ca4eaa28bc00b94e9079b87daf70d8ae12",
-    "source/tiny_llm/packed_optimizer.py": "6e18cb17bdfda8dc82a3b4e57d565af07917897899ada95760121bf2b14e4752",
-    "source/tiny_llm/runtime.py": "58fc2a63c39eb20f6b5ba2234d31e1ef83ee1bad02adf0d14d522a02530f8e27",
-    "source/tiny_llm/train.py": "3f9c99a686d60b3e14e217e02f5f40c998e6d8cefec34102051f3df135da3ade",
-    "source/uv.lock": "1e8873894c75b04fd652d0330c5e7d7a520153ade645b0703d0d74b482cdc4c5",
-    "source/pyproject.toml": "1597769fe175d1ead676d7dd9e319b84cd31a2e779065c466f0e05dc109897d1"
+  "run_count": 99,
+  "group_count": 33,
+  "protocol": {
+    "batch_tokens": 131072,
+    "micro_batch_size": 32,
+    "num_models": 4,
+    "topology": "one_peer_exponential",
+    "accumulation_steps": 1,
+    "parameters": 20403520,
+    "training_tokens": 408068096,
+    "optimizer_steps": 3119,
+    "epochs": 40,
+    "validation_tokens": 197411295,
+    "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151",
+    "seeds": [
+      42,
+      43,
+      44
+    ]
   },
-  "environment": {
-    "python": "3.12.13 (main, May 10 2026, 19:27:23) [Clang 22.1.3 ]",
-    "versions": {
-      "torch": "2.14.0",
-      "triton": "3.8.0",
-      "numpy": "2.5.3",
-      "pydantic": "2.13.5",
-      "datasets": "5.0.1",
-      "transformers": "5.16.1"
+  "selection": "Mean final full-validation loss over three seeds; ties: LR, beta1, beta2",
+  "campaigns": {
+    "lr_beta2": {
+      "git_commit": "4872de7c2babeb8e0d2f202b64b09c57a8f891c3",
+      "batch_tokens": 131072,
+      "micro_batch_size": 32,
+      "num_models": 4,
+      "topology": "one_peer_exponential",
+      "accumulation_steps": 1,
+      "parameters": 20403520,
+      "training_tokens": 408068096,
+      "optimizer_steps": 3119,
+      "epochs": 40,
+      "validation_tokens": 197411295,
+      "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151",
+      "lrs": [
+        0.0024,
+        0.0048,
+        0.0056,
+        0.008,
+        0.0112,
+        0.016,
+        0.0224,
+        0.032
+      ],
+      "beta2s": [
+        0.95,
+        0.98,
+        0.999
+      ],
+      "seeds": [
+        42,
+        43,
+        44
+      ],
+      "selection": "Mean final full-validation loss over all three seeds; ties: LR, beta2",
+      "measured_date": "2026-09-11",
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911",
+      "source_hashes": [
+        "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      ],
+      "source_file_hashes": {
+        "source/tiny_llm/__init__.py": "a6c9b2e8602883c050a69acaf3f8c8a5c76b4885d66085813c7342f21d481f2d",
+        "source/tiny_llm/__main__.py": "18b0986089d17edd6a889f723a95d0418ba60d22e4f8214f33539b5bc77bcb34",
+        "source/tiny_llm/analysis/__init__.py": "f7899324f928575b7c353c51b0c5e5b21b547e5effb8e045e1ac9e9ad68e1ca4",
+        "source/tiny_llm/analysis/core.py": "175857de6e32e89407431320ef4130c588ec20de177842f001909b9b4958a7cf",
+        "source/tiny_llm/analysis/plot.py": "7de80840117c68347c45647dc9a0fb52e482b25765f1c8ad701a7ad2fb867f3e",
+        "source/tiny_llm/analysis/slurm.py": "37a16565f3926d186af3c8715b77a155fb8bca0883046446028f366751dde1b5",
+        "source/tiny_llm/benchmark.py": "ff1cd6c8c685f618b560af25ef591d3fe3b6ec70f412741324e85cec91ece5e6",
+        "source/tiny_llm/checkpoints.py": "9340160365df6d7076a8f684201c733327c17392c2002c9fd13d0e294eebeadd",
+        "source/tiny_llm/cli.py": "c0fb2352369e16af95eca7a95267d2fa03d2a22038d523e95498541460a910f5",
+        "source/tiny_llm/config.py": "16f76800e67c3c0544bd5dee4b6db52a739b38956e80b029638f5a07035c78e7",
+        "source/tiny_llm/data.py": "74c1a9e7190fb19e5d7a5f07e17427a5b32937755b41ad51a4461fc04507b8bf",
+        "source/tiny_llm/experiments.py": "96c7cc117f731e9ab44dba16d16760014c59d6f19f5f2e0cc69f713a69353c23",
+        "source/tiny_llm/model.py": "0c76eb6e409abf7760e5c5b16a4ee8c16079008ae5863ca3cc28af3d65ec1cc2",
+        "source/tiny_llm/packed.py": "33bc1b5c797f1f463995e3fe1ab70bd3f88d9febf523d6a90626b5fc800c7b50",
+        "source/tiny_llm/packed_benchmark.py": "9d5258105785923cabe600ea9e7657ca4eaa28bc00b94e9079b87daf70d8ae12",
+        "source/tiny_llm/packed_optimizer.py": "6e18cb17bdfda8dc82a3b4e57d565af07917897899ada95760121bf2b14e4752",
+        "source/tiny_llm/runtime.py": "58fc2a63c39eb20f6b5ba2234d31e1ef83ee1bad02adf0d14d522a02530f8e27",
+        "source/tiny_llm/train.py": "3f9c99a686d60b3e14e217e02f5f40c998e6d8cefec34102051f3df135da3ade",
+        "source/uv.lock": "1e8873894c75b04fd652d0330c5e7d7a520153ade645b0703d0d74b482cdc4c5",
+        "source/pyproject.toml": "1597769fe175d1ead676d7dd9e319b84cd31a2e779065c466f0e05dc109897d1"
+      },
+      "environment": {
+        "python": "3.12.13 (main, May 10 2026, 19:27:23) [Clang 22.1.3 ]",
+        "versions": {
+          "torch": "2.14.0",
+          "triton": "3.8.0",
+          "numpy": "2.5.3",
+          "pydantic": "2.13.5",
+          "datasets": "5.0.1",
+          "transformers": "5.16.1"
+        },
+        "cuda": "13.0",
+        "gpu": "NVIDIA GH200 120GB"
+      },
+      "submission": {
+        "pilot": "2310341",
+        "sweep": "2310342"
+      },
+      "winner": {
+        "lr": 0.008,
+        "beta2": 0.98,
+        "seeds": 3,
+        "mean_loss": 3.6019101966394693,
+        "std_loss": 0.006841714099720442
+      },
+      "fixed_beta1": 0.9,
+      "input_results_sha256": "a554fbe0c7e866a041936d671ccfa53359e4c909259e8b6c84f89a3bfb841fcb"
     },
-    "cuda": "13.0",
-    "gpu": "NVIDIA GH200 120GB"
+    "beta1_beta2": {
+      "git_commit": "24f4d76bc39a4f67c10148582d2a7e79162be2f3",
+      "batch_tokens": 131072,
+      "micro_batch_size": 32,
+      "num_models": 4,
+      "topology": "one_peer_exponential",
+      "accumulation_steps": 1,
+      "parameters": 20403520,
+      "training_tokens": 408068096,
+      "optimizer_steps": 3119,
+      "epochs": 40,
+      "validation_tokens": 197411295,
+      "cache_identity": "8cf0c4883c19d26f378623f91bfe079bc8ebf8f23e51814821f4c8c28c4b8151",
+      "fixed_lr": 0.008,
+      "beta1s": [
+        0.925,
+        0.95,
+        0.975
+      ],
+      "beta2s": [
+        0.95,
+        0.98,
+        0.999
+      ],
+      "seeds": [
+        42,
+        43,
+        44
+      ],
+      "selection": "Mean final full-validation loss over all three seeds; ties: beta1, beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "measured_date": "2026-09-11",
+      "submission": {
+        "pilot": "2315431",
+        "sweep": "2315432"
+      },
+      "source_file_hashes": {
+        "source/tiny_llm/__init__.py": "a6c9b2e8602883c050a69acaf3f8c8a5c76b4885d66085813c7342f21d481f2d",
+        "source/tiny_llm/__main__.py": "18b0986089d17edd6a889f723a95d0418ba60d22e4f8214f33539b5bc77bcb34",
+        "source/tiny_llm/analysis/__init__.py": "f7899324f928575b7c353c51b0c5e5b21b547e5effb8e045e1ac9e9ad68e1ca4",
+        "source/tiny_llm/analysis/core.py": "175857de6e32e89407431320ef4130c588ec20de177842f001909b9b4958a7cf",
+        "source/tiny_llm/analysis/plot.py": "7de80840117c68347c45647dc9a0fb52e482b25765f1c8ad701a7ad2fb867f3e",
+        "source/tiny_llm/analysis/slurm.py": "37a16565f3926d186af3c8715b77a155fb8bca0883046446028f366751dde1b5",
+        "source/tiny_llm/benchmark.py": "ff1cd6c8c685f618b560af25ef591d3fe3b6ec70f412741324e85cec91ece5e6",
+        "source/tiny_llm/checkpoints.py": "9340160365df6d7076a8f684201c733327c17392c2002c9fd13d0e294eebeadd",
+        "source/tiny_llm/cli.py": "c0fb2352369e16af95eca7a95267d2fa03d2a22038d523e95498541460a910f5",
+        "source/tiny_llm/config.py": "16f76800e67c3c0544bd5dee4b6db52a739b38956e80b029638f5a07035c78e7",
+        "source/tiny_llm/data.py": "74c1a9e7190fb19e5d7a5f07e17427a5b32937755b41ad51a4461fc04507b8bf",
+        "source/tiny_llm/experiments.py": "96c7cc117f731e9ab44dba16d16760014c59d6f19f5f2e0cc69f713a69353c23",
+        "source/tiny_llm/model.py": "0c76eb6e409abf7760e5c5b16a4ee8c16079008ae5863ca3cc28af3d65ec1cc2",
+        "source/tiny_llm/packed.py": "33bc1b5c797f1f463995e3fe1ab70bd3f88d9febf523d6a90626b5fc800c7b50",
+        "source/tiny_llm/packed_benchmark.py": "9d5258105785923cabe600ea9e7657ca4eaa28bc00b94e9079b87daf70d8ae12",
+        "source/tiny_llm/packed_optimizer.py": "6e18cb17bdfda8dc82a3b4e57d565af07917897899ada95760121bf2b14e4752",
+        "source/tiny_llm/runtime.py": "58fc2a63c39eb20f6b5ba2234d31e1ef83ee1bad02adf0d14d522a02530f8e27",
+        "source/tiny_llm/train.py": "3f9c99a686d60b3e14e217e02f5f40c998e6d8cefec34102051f3df135da3ade",
+        "source/uv.lock": "1e8873894c75b04fd652d0330c5e7d7a520153ade645b0703d0d74b482cdc4c5",
+        "source/pyproject.toml": "1597769fe175d1ead676d7dd9e319b84cd31a2e779065c466f0e05dc109897d1"
+      },
+      "source_hashes": [
+        "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      ],
+      "environment": {
+        "python": "3.12.13 (main, May 10 2026, 19:27:23) [Clang 22.1.3 ]",
+        "versions": {
+          "torch": "2.14.0",
+          "triton": "3.8.0",
+          "numpy": "2.5.3",
+          "pydantic": "2.13.5",
+          "datasets": "5.0.1",
+          "transformers": "5.16.1"
+        },
+        "cuda": "13.0",
+        "gpu": "NVIDIA GH200 120GB"
+      },
+      "input_manifest_sha256": "8f8717fd11349b2a192b710cdef401fcbd401d9baa44cb94eb62013440a3cf9a"
+    }
   },
-  "submission": {
-    "pilot": "2310341",
-    "sweep": "2310342"
+  "audit": {
+    "new_runs": 27,
+    "previous_records": 72,
+    "unique_seeded_recipes": 99,
+    "source_and_protocol_match": true
   },
   "winner": {
+    "campaign": "lr_beta2",
     "lr": 0.008,
+    "beta1": 0.9,
     "beta2": 0.98,
     "seeds": 3,
     "mean_loss": 3.6019101966394693,
     "std_loss": 0.006841714099720442
   },
+  "new_grid_winner": {
+    "campaign": "beta1_beta2",
+    "lr": 0.008,
+    "beta1": 0.95,
+    "beta2": 0.98,
+    "seeds": 3,
+    "mean_loss": 3.6027938435840263,
+    "std_loss": 0.012886724299855516
+  },
   "groups": [
     {
+      "campaign": "lr_beta2",
       "lr": 0.008,
+      "beta1": 0.9,
       "beta2": 0.98,
       "seeds": 3,
       "mean_loss": 3.6019101966394693,
       "std_loss": 0.006841714099720442
     },
     {
+      "campaign": "beta1_beta2",
+      "lr": 0.008,
+      "beta1": 0.95,
+      "beta2": 0.98,
+      "seeds": 3,
+      "mean_loss": 3.6027938435840263,
+      "std_loss": 0.012886724299855516
+    },
+    {
+      "campaign": "beta1_beta2",
+      "lr": 0.008,
+      "beta1": 0.925,
+      "beta2": 0.98,
+      "seeds": 3,
+      "mean_loss": 3.6041534492588116,
+      "std_loss": 0.0040388555315509925
+    },
+    {
+      "campaign": "lr_beta2",
       "lr": 0.0056,
+      "beta1": 0.9,
       "beta2": 0.98,
       "seeds": 3,
       "mean_loss": 3.6061779045611995,
       "std_loss": 0.005627711767953746
     },
     {
+      "campaign": "lr_beta2",
       "lr": 0.0048,
+      "beta1": 0.9,
       "beta2": 0.999,
       "seeds": 3,
       "mean_loss": 3.610736022963442,
       "std_loss": 0.005866931034894169
     },
     {
+      "campaign": "beta1_beta2",
+      "lr": 0.008,
+      "beta1": 0.925,
+      "beta2": 0.95,
+      "seeds": 3,
+      "mean_loss": 3.612169297427642,
+      "std_loss": 0.008923049491508711
+    },
+    {
+      "campaign": "lr_beta2",
       "lr": 0.0056,
+      "beta1": 0.9,
       "beta2": 0.999,
       "seeds": 3,
       "mean_loss": 3.6129114400474163,
       "std_loss": 0.004839655175152347
     },
     {
+      "campaign": "lr_beta2",
       "lr": 0.0048,
+      "beta1": 0.9,
       "beta2": 0.98,
       "seeds": 3,
       "mean_loss": 3.613360891696694,
       "std_loss": 0.0009113145046585492
     },
     {
+      "campaign": "beta1_beta2",
       "lr": 0.008,
+      "beta1": 0.95,
+      "beta2": 0.95,
+      "seeds": 3,
+      "mean_loss": 3.6197698999670687,
+      "std_loss": 0.011060181625637312
+    },
+    {
+      "campaign": "lr_beta2",
+      "lr": 0.008,
+      "beta1": 0.9,
       "beta2": 0.95,
       "seeds": 3,
       "mean_loss": 3.620824265110116,
       "std_loss": 0.008201448311241323
     },
     {
+      "campaign": "beta1_beta2",
+      "lr": 0.008,
+      "beta1": 0.925,
+      "beta2": 0.999,
+      "seeds": 3,
+      "mean_loss": 3.627432627553983,
+      "std_loss": 0.00833438947488974
+    },
+    {
+      "campaign": "lr_beta2",
       "lr": 0.0056,
+      "beta1": 0.9,
       "beta2": 0.95,
       "seeds": 3,
       "mean_loss": 3.6363591898278917,
       "std_loss": 0.005782197339837242
     },
     {
+      "campaign": "lr_beta2",
       "lr": 0.0048,
+      "beta1": 0.9,
       "beta2": 0.95,
       "seeds": 3,
       "mean_loss": 3.6366872086939326,
       "std_loss": 0.003194444509549944
     },
     {
+      "campaign": "lr_beta2",
       "lr": 0.0024,
+      "beta1": 0.9,
       "beta2": 0.999,
       "seeds": 3,
       "mean_loss": 3.6379370336679706,
       "std_loss": 0.002463257639091142
     },
     {
+      "campaign": "beta1_beta2",
+      "lr": 0.008,
+      "beta1": 0.95,
+      "beta2": 0.999,
+      "seeds": 3,
+      "mean_loss": 3.6410304984629462,
+      "std_loss": 0.024591695062812013
+    },
+    {
+      "campaign": "lr_beta2",
       "lr": 0.0024,
+      "beta1": 0.9,
       "beta2": 0.98,
       "seeds": 3,
       "mean_loss": 3.658485991260638,
       "std_loss": 0.00546884010352723
     },
     {
+      "campaign": "beta1_beta2",
+      "lr": 0.008,
+      "beta1": 0.975,
+      "beta2": 0.98,
+      "seeds": 3,
+      "mean_loss": 3.6629060257370467,
+      "std_loss": 0.01009666981045401
+    },
+    {
+      "campaign": "beta1_beta2",
+      "lr": 0.008,
+      "beta1": 0.975,
+      "beta2": 0.999,
+      "seeds": 3,
+      "mean_loss": 3.6734067927007263,
+      "std_loss": 0.014273454525728322
+    },
+    {
+      "campaign": "lr_beta2",
       "lr": 0.0112,
+      "beta1": 0.9,
       "beta2": 0.95,
       "seeds": 3,
       "mean_loss": 3.6765707864814243,
       "std_loss": 0.019166283484756453
     },
     {
+      "campaign": "lr_beta2",
       "lr": 0.0024,
+      "beta1": 0.9,
       "beta2": 0.95,
       "seeds": 3,
       "mean_loss": 3.676713624147467,
       "std_loss": 0.0016457058379264924
     },
     {
+      "campaign": "beta1_beta2",
       "lr": 0.008,
+      "beta1": 0.975,
+      "beta2": 0.95,
+      "seeds": 3,
+      "mean_loss": 3.693063704393002,
+      "std_loss": 0.006425030446256643
+    },
+    {
+      "campaign": "lr_beta2",
+      "lr": 0.008,
+      "beta1": 0.9,
       "beta2": 0.999,
       "seeds": 3,
       "mean_loss": 3.6987123297802116,
       "std_loss": 0.062198977561497844
     },
     {
+      "campaign": "lr_beta2",
       "lr": 0.0112,
+      "beta1": 0.9,
       "beta2": 0.98,
       "seeds": 3,
       "mean_loss": 3.703556888107519,
       "std_loss": 0.03692026645335101
     },
     {
+      "campaign": "lr_beta2",
       "lr": 0.016,
+      "beta1": 0.9,
       "beta2": 0.95,
       "seeds": 3,
       "mean_loss": 3.7989865029288383,
       "std_loss": 0.023771155315347528
     },
     {
+      "campaign": "lr_beta2",
       "lr": 0.016,
+      "beta1": 0.9,
       "beta2": 0.98,
       "seeds": 3,
       "mean_loss": 3.85866048045364,
       "std_loss": 0.06792162388260821
     },
     {
+      "campaign": "lr_beta2",
       "lr": 0.0112,
+      "beta1": 0.9,
       "beta2": 0.999,
       "seeds": 3,
       "mean_loss": 4.04203187663618,
       "std_loss": 0.138063347351202
     },
     {
+      "campaign": "lr_beta2",
       "lr": 0.0224,
+      "beta1": 0.9,
       "beta2": 0.95,
       "seeds": 3,
       "mean_loss": 4.191663593788752,
       "std_loss": 0.13331231196398693
     },
     {
+      "campaign": "lr_beta2",
       "lr": 0.0224,
+      "beta1": 0.9,
       "beta2": 0.98,
       "seeds": 3,
       "mean_loss": 4.43106516608285,
       "std_loss": 0.1672527056074952
     },
     {
+      "campaign": "lr_beta2",
       "lr": 0.016,
+      "beta1": 0.9,
       "beta2": 0.999,
       "seeds": 3,
       "mean_loss": 4.6264823408273505,
       "std_loss": 0.08338557332805668
     },
     {
+      "campaign": "lr_beta2",
       "lr": 0.0224,
+      "beta1": 0.9,
       "beta2": 0.999,
       "seeds": 3,
       "mean_loss": 4.801929521286845,
       "std_loss": 0.036562385625326155
     },
     {
+      "campaign": "lr_beta2",
       "lr": 0.032,
+      "beta1": 0.9,
       "beta2": 0.98,
       "seeds": 3,
       "mean_loss": 4.985745770945328,
       "std_loss": 0.2787770729756797
     },
     {
+      "campaign": "lr_beta2",
       "lr": 0.032,
+      "beta1": 0.9,
       "beta2": 0.95,
       "seeds": 3,
       "mean_loss": 5.001662616944271,
       "std_loss": 0.03259909965464278
     },
     {
+      "campaign": "lr_beta2",
       "lr": 0.032,
+      "beta1": 0.9,
       "beta2": 0.999,
       "seeds": 3,
       "mean_loss": 5.528157135463166,
@@ -292,7 +550,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 1,
@@ -332,7 +593,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 2,
@@ -372,7 +636,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 3,
@@ -412,7 +679,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 4,
@@ -452,7 +722,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 5,
@@ -492,7 +765,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 6,
@@ -532,7 +808,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 7,
@@ -572,7 +851,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 8,
@@ -612,7 +894,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 9,
@@ -652,7 +937,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 10,
@@ -692,7 +980,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 11,
@@ -732,7 +1023,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 12,
@@ -772,7 +1066,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 13,
@@ -812,7 +1109,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 14,
@@ -852,7 +1152,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 15,
@@ -892,7 +1195,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 16,
@@ -932,7 +1238,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 17,
@@ -972,7 +1281,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 18,
@@ -1012,7 +1324,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 19,
@@ -1052,7 +1367,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 20,
@@ -1092,7 +1410,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 21,
@@ -1132,7 +1453,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 22,
@@ -1172,7 +1496,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 23,
@@ -1212,7 +1539,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 24,
@@ -1252,7 +1582,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 25,
@@ -1292,7 +1625,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 26,
@@ -1332,7 +1668,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 27,
@@ -1372,7 +1711,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 28,
@@ -1412,7 +1754,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 29,
@@ -1452,7 +1797,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 30,
@@ -1492,7 +1840,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 31,
@@ -1532,7 +1883,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 32,
@@ -1572,7 +1926,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 33,
@@ -1612,7 +1969,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 34,
@@ -1652,7 +2012,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 35,
@@ -1692,7 +2055,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 36,
@@ -1732,7 +2098,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 37,
@@ -1772,7 +2141,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 38,
@@ -1812,7 +2184,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 39,
@@ -1852,7 +2227,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 40,
@@ -1892,7 +2270,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 41,
@@ -1932,7 +2313,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 42,
@@ -1972,7 +2356,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 43,
@@ -2012,7 +2399,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 44,
@@ -2052,7 +2442,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 45,
@@ -2092,7 +2485,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 46,
@@ -2132,7 +2528,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 47,
@@ -2172,7 +2571,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 48,
@@ -2212,7 +2614,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 49,
@@ -2252,7 +2657,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 50,
@@ -2292,7 +2700,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 51,
@@ -2332,7 +2743,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 52,
@@ -2372,7 +2786,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 53,
@@ -2412,7 +2829,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 54,
@@ -2452,7 +2872,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 55,
@@ -2492,7 +2915,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 56,
@@ -2532,7 +2958,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 57,
@@ -2572,7 +3001,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 58,
@@ -2612,7 +3044,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 59,
@@ -2652,7 +3087,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 60,
@@ -2692,7 +3130,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 61,
@@ -2732,7 +3173,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 62,
@@ -2772,7 +3216,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 63,
@@ -2812,7 +3259,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 64,
@@ -2852,7 +3302,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 65,
@@ -2892,7 +3345,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 66,
@@ -2932,7 +3388,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 67,
@@ -2972,7 +3431,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 68,
@@ -3012,7 +3474,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 69,
@@ -3052,7 +3517,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 70,
@@ -3092,7 +3560,10 @@
         "tokens_per_model": 102017024,
         "topology": "one_peer_exponential"
       },
-      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
     },
     {
       "index": 71,
@@ -3127,6 +3598,1170 @@
         "elapsed_tokens_per_second": 1226016.9305471636,
         "peak_memory_bytes": 63208612864,
         "recipe_identity": "44d05fa1ea307abce2e26f899b20f07103d41a2de712699ba9796956f2b5c736",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248",
+      "campaign": "lr_beta2",
+      "beta1": 0.9,
+      "archive": "runs/packed4-20m-batch128k-micro32-20260911"
+    },
+    {
+      "index": 0,
+      "run_id": "packed4-beta10.95-beta2-0.98-seed42",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.95,
+      "beta2": 0.98,
+      "seed": 42,
+      "directory": "experiments/packed4-beta10.95-beta2-0.98-seed42",
+      "job_id": "2315431_0",
+      "loss": 3.5892806301466837,
+      "seconds": 437.8229670310393,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.5882275492052553,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.5892806301466837,
+          "perplexity": 36.20801959778453,
+          "tokens": 197411295,
+          "seconds": 101.5513731809333,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 437.8229670310393,
+        "training_seconds": 299.8670986322686,
+        "training_elapsed_seconds": 336.2155852690339,
+        "training_tokens_per_second": 1360829.8404901694,
+        "elapsed_tokens_per_second": 1213709.637146865,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "a7ce79760e1f4a4ffdea77e1876a0efe912fb50120be3580db0ef462a5afb96d",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 1,
+      "run_id": "packed4-beta10.925-beta2-0.95-seed42",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.925,
+      "beta2": 0.95,
+      "seed": 42,
+      "directory": "experiments/packed4-beta10.925-beta2-0.95-seed42",
+      "job_id": "2315432_1",
+      "loss": 3.602624317552061,
+      "seconds": 433.7761105769314,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.6028325949716264,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.602624317552061,
+          "perplexity": 36.69440596982024,
+          "tokens": 197411295,
+          "seconds": 101.17413945798762,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 433.7761105769314,
+        "training_seconds": 302.25390599598177,
+        "training_elapsed_seconds": 332.50487179588526,
+        "training_tokens_per_second": 1350083.7802421153,
+        "elapsed_tokens_per_second": 1227254.4874184602,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "b53bd676ebd1a2f07cc529fe0010bfa5d546062386e9b640e5747aa25061d20e",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 2,
+      "run_id": "packed4-beta10.925-beta2-0.95-seed43",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.925,
+      "beta2": 0.95,
+      "seed": 43,
+      "directory": "experiments/packed4-beta10.925-beta2-0.95-seed43",
+      "job_id": "2315432_2",
+      "loss": 3.6203019706355803,
+      "seconds": 433.7989729689434,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.6239982266151767,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.6203019706355803,
+          "perplexity": 37.34884437364794,
+          "tokens": 197411295,
+          "seconds": 100.71949751698412,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 433.7989729689434,
+        "training_seconds": 299.61210486642085,
+        "training_elapsed_seconds": 333.0310093560256,
+        "training_tokens_per_second": 1361988.0150768047,
+        "elapsed_tokens_per_second": 1225315.6148704346,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "2c746620646bce9a1d6bddabbcd4ab2c338c54512d4dce8dbcb23adeae0306d8",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 3,
+      "run_id": "packed4-beta10.925-beta2-0.95-seed44",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.925,
+      "beta2": 0.95,
+      "seed": 44,
+      "directory": "experiments/packed4-beta10.925-beta2-0.95-seed44",
+      "job_id": "2315432_3",
+      "loss": 3.613581604095284,
+      "seconds": 431.0980674159946,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.6160634769203077,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.613581604095284,
+          "perplexity": 37.09868796247886,
+          "tokens": 197411295,
+          "seconds": 101.76360958896112,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 431.0980674159946,
+        "training_seconds": 302.00339792924933,
+        "training_elapsed_seconds": 329.2511779710185,
+        "training_tokens_per_second": 1351203.6579654596,
+        "elapsed_tokens_per_second": 1239382.34181783,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "235bb78a87056c949011fdbb4d88c3c9248f9dd4d024559cafaa04b6f1f4d919",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 4,
+      "run_id": "packed4-beta10.925-beta2-0.98-seed42",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.925,
+      "beta2": 0.98,
+      "seed": 42,
+      "directory": "experiments/packed4-beta10.925-beta2-0.98-seed42",
+      "job_id": "2315432_4",
+      "loss": 3.608435405781798,
+      "seconds": 432.97030942805577,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.6069135196891255,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.608435405781798,
+          "perplexity": 36.908261164349064,
+          "tokens": 197411295,
+          "seconds": 102.01283425395377,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 432.97030942805577,
+        "training_seconds": 303.0141765525332,
+        "training_elapsed_seconds": 330.8870123709785,
+        "training_tokens_per_second": 1346696.3844487118,
+        "elapsed_tokens_per_second": 1233255.1014196016,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "b3b80893b478d51f81f4f5868b197ecdf9a2360c8ff2a2fcff729e468fda09f4",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 5,
+      "run_id": "packed4-beta10.925-beta2-0.98-seed43",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.925,
+      "beta2": 0.98,
+      "seed": 43,
+      "directory": "experiments/packed4-beta10.925-beta2-0.98-seed43",
+      "job_id": "2315432_5",
+      "loss": 3.6036127804224556,
+      "seconds": 429.2288806869183,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.6064534501668715,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.6036127804224556,
+          "perplexity": 36.73069495987752,
+          "tokens": 197411295,
+          "seconds": 100.27721590397414,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 429.2288806869183,
+        "training_seconds": 299.8094870712375,
+        "training_elapsed_seconds": 328.90185763908084,
+        "training_tokens_per_second": 1361091.3383239245,
+        "elapsed_tokens_per_second": 1240698.6659460948,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "9ccdaf8f7d9afe93df4d016acca8898738e95abd19ec998eead70cb46e2f2944",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 6,
+      "run_id": "packed4-beta10.925-beta2-0.98-seed44",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.925,
+      "beta2": 0.98,
+      "seed": 44,
+      "directory": "experiments/packed4-beta10.925-beta2-0.98-seed44",
+      "job_id": "2315432_6",
+      "loss": 3.600412161572182,
+      "seconds": 431.94052367517725,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.6007845790685535,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.600412161572182,
+          "perplexity": 36.61332193855459,
+          "tokens": 197411295,
+          "seconds": 100.96552633889951,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 431.94052367517725,
+        "training_seconds": 301.28649796079844,
+        "training_elapsed_seconds": 330.92540384898894,
+        "training_tokens_per_second": 1354418.7966003553,
+        "elapsed_tokens_per_second": 1233112.0284322854,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "13add338a288e26df509d3472c4b969d4919425f82048c897e4618c8ac3aa2ca",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 7,
+      "run_id": "packed4-beta10.925-beta2-0.999-seed42",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.925,
+      "beta2": 0.999,
+      "seed": 42,
+      "directory": "experiments/packed4-beta10.925-beta2-0.999-seed42",
+      "job_id": "2315432_7",
+      "loss": 3.636504664287374,
+      "seconds": 437.4653259150218,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.635825300304635,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.636504664287374,
+          "perplexity": 37.958925388323664,
+          "tokens": 197411295,
+          "seconds": 102.5866327630356,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 437.4653259150218,
+        "training_seconds": 305.3362195332302,
+        "training_elapsed_seconds": 334.8220787870232,
+        "training_tokens_per_second": 1336454.9303185088,
+        "elapsed_tokens_per_second": 1218761.0132471814,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "e7b5bc57f4036a8004d97aea24a8b13bb640ac65fae120b5a40ebea25be87360",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 8,
+      "run_id": "packed4-beta10.925-beta2-0.999-seed43",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.925,
+      "beta2": 0.999,
+      "seed": 43,
+      "directory": "experiments/packed4-beta10.925-beta2-0.999-seed43",
+      "job_id": "2315432_8",
+      "loss": 3.620115303729385,
+      "seconds": 443.9854502421804,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.620414745304098,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.620115303729385,
+          "perplexity": 37.34187323107979,
+          "tokens": 197411295,
+          "seconds": 101.44068331900053,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 443.9854502421804,
+        "training_seconds": 305.610710702138,
+        "training_elapsed_seconds": 342.48660249402747,
+        "training_tokens_per_second": 1335254.5631089532,
+        "elapsed_tokens_per_second": 1191486.3034886634,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "67d0602677cf18c60f73767a9a48fa086e585a5607e7e821ae2726fea6e77083",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 9,
+      "run_id": "packed4-beta10.925-beta2-0.999-seed44",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.925,
+      "beta2": 0.999,
+      "seed": 44,
+      "directory": "experiments/packed4-beta10.925-beta2-0.999-seed44",
+      "job_id": "2315432_9",
+      "loss": 3.625677914645191,
+      "seconds": 439.5588739180239,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.623937711776976,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.625677914645191,
+          "perplexity": 37.55017034352241,
+          "tokens": 197411295,
+          "seconds": 102.87299434002489,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 439.5588739180239,
+        "training_seconds": 307.51323476224206,
+        "training_elapsed_seconds": 336.6305166010279,
+        "training_tokens_per_second": 1326993.605057367,
+        "elapsed_tokens_per_second": 1212213.6166390385,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "b3b202f2314fd790ede1e55c9c286f00b27f11a37f1b1c9f9003220d20dddede",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 10,
+      "run_id": "packed4-beta10.95-beta2-0.95-seed42",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.95,
+      "beta2": 0.95,
+      "seed": 42,
+      "directory": "experiments/packed4-beta10.95-beta2-0.95-seed42",
+      "job_id": "2315432_10",
+      "loss": 3.6131776766289283,
+      "seconds": 430.22053006800706,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.612120698023281,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.6131776766289283,
+          "perplexity": 37.083705809500316,
+          "tokens": 197411295,
+          "seconds": 99.50210648201755,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 430.22053006800706,
+        "training_seconds": 301.12342363083735,
+        "training_elapsed_seconds": 330.6612876029976,
+        "training_tokens_per_second": 1355152.2863271893,
+        "elapsed_tokens_per_second": 1234096.9786881718,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "e8685de45fbce4f0f1178e72968c3986ee06203ec4e8cc468791cf2266afdca0",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 11,
+      "run_id": "packed4-beta10.95-beta2-0.95-seed43",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.95,
+      "beta2": 0.95,
+      "seed": 43,
+      "directory": "experiments/packed4-beta10.95-beta2-0.95-seed43",
+      "job_id": "2315432_11",
+      "loss": 3.6325388444324647,
+      "seconds": 428.3935127489967,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.634892117659887,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.6325388444324647,
+          "perplexity": 37.8086852379446,
+          "tokens": 197411295,
+          "seconds": 100.46689240494743,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 428.3935127489967,
+        "training_seconds": 298.5252259684494,
+        "training_elapsed_seconds": 327.86488494090736,
+        "training_tokens_per_second": 1366946.7787058237,
+        "elapsed_tokens_per_second": 1244622.7538931107,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "43a83d7a8ac19fb4817efafb237e33a702f029b83b2f6c1c9f6791db3f625e64",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 12,
+      "run_id": "packed4-beta10.95-beta2-0.95-seed44",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.95,
+      "beta2": 0.95,
+      "seed": 44,
+      "directory": "experiments/packed4-beta10.95-beta2-0.95-seed44",
+      "job_id": "2315432_12",
+      "loss": 3.6135931788398135,
+      "seconds": 429.27449063491076,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.6173327445193935,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.6135931788398135,
+          "perplexity": 37.09911737279956,
+          "tokens": 197411295,
+          "seconds": 101.31053678295575,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 429.27449063491076,
+        "training_seconds": 298.56458937283605,
+        "training_elapsed_seconds": 327.910669272067,
+        "training_tokens_per_second": 1366766.5574714895,
+        "elapsed_tokens_per_second": 1244448.974185181,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "bf7941b34e63ade5ec75b95d9d15a11cd7d7de66c41d04c7e1e87ebc9984a5a7",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 13,
+      "run_id": "packed4-beta10.95-beta2-0.98-seed43",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.95,
+      "beta2": 0.98,
+      "seed": 43,
+      "directory": "experiments/packed4-beta10.95-beta2-0.98-seed43",
+      "job_id": "2315432_13",
+      "loss": 3.6149460466671512,
+      "seconds": 424.3048483908642,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.6156214111977194,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.6149460466671512,
+          "perplexity": 37.149341540786125,
+          "tokens": 197411295,
+          "seconds": 100.89228685200214,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 424.3048483908642,
+        "training_seconds": 292.1229205597192,
+        "training_elapsed_seconds": 323.3572173200082,
+        "training_tokens_per_second": 1396905.4369925002,
+        "elapsed_tokens_per_second": 1261973.0568628635,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "686bfef1d3e2210b291498eb951e6df65daf1c90b2c6a15ea3c47533cd0c6e8b",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 14,
+      "run_id": "packed4-beta10.95-beta2-0.98-seed44",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.95,
+      "beta2": 0.98,
+      "seed": 44,
+      "directory": "experiments/packed4-beta10.95-beta2-0.98-seed44",
+      "job_id": "2315432_14",
+      "loss": 3.6041548539382435,
+      "seconds": 428.14055456907954,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.605155207747137,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.6041548539382435,
+          "perplexity": 36.75061109434858,
+          "tokens": 197411295,
+          "seconds": 101.95308394101448,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 428.14055456907954,
+        "training_seconds": 296.19153939792886,
+        "training_elapsed_seconds": 326.12997939193156,
+        "training_tokens_per_second": 1377716.9220615942,
+        "elapsed_tokens_per_second": 1251243.7426355032,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "0a6c8ea06d77875e9d982456d88cbf6c00012fdccdbaf1cb6c6a94f7fb6c81a8",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 15,
+      "run_id": "packed4-beta10.95-beta2-0.999-seed42",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.95,
+      "beta2": 0.999,
+      "seed": 42,
+      "directory": "experiments/packed4-beta10.95-beta2-0.999-seed42",
+      "job_id": "2315432_15",
+      "loss": 3.6235080270902267,
+      "seconds": 420.76603463396896,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.622963713713927,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.6235080270902267,
+          "perplexity": 37.46877903313826,
+          "tokens": 197411295,
+          "seconds": 100.37301463901531,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 420.76603463396896,
+        "training_seconds": 289.7985327343922,
+        "training_elapsed_seconds": 320.33251891995315,
+        "training_tokens_per_second": 1408109.5999682127,
+        "elapsed_tokens_per_second": 1273889.0743152143,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "8495b2954eec47950b3d35772fb25b47c973734a95a19c7a0acc3eb479e536a5",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 16,
+      "run_id": "packed4-beta10.95-beta2-0.999-seed43",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.95,
+      "beta2": 0.999,
+      "seed": 43,
+      "directory": "experiments/packed4-beta10.95-beta2-0.999-seed43",
+      "job_id": "2315432_16",
+      "loss": 3.630440410840382,
+      "seconds": 412.1720765529899,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.630282822712343,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.630440410840382,
+          "perplexity": 37.72942940839944,
+          "tokens": 197411295,
+          "seconds": 101.51877641491592,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 412.1720765529899,
+        "training_seconds": 283.9779861542629,
+        "training_elapsed_seconds": 310.5949509420898,
+        "training_tokens_per_second": 1436970.8776592587,
+        "elapsed_tokens_per_second": 1313827.204087693,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "d538265fb1d25cc74e2aaa8c49fcc1641ee55138d378d133a181d1ce70feea64",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 17,
+      "run_id": "packed4-beta10.95-beta2-0.999-seed44",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.95,
+      "beta2": 0.999,
+      "seed": 44,
+      "directory": "experiments/packed4-beta10.95-beta2-0.999-seed44",
+      "job_id": "2315432_17",
+      "loss": 3.6691430574582298,
+      "seconds": 432.38293528801296,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.666604296099506,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.6691430574582298,
+          "perplexity": 39.218283640540015,
+          "tokens": 197411295,
+          "seconds": 101.31157818203792,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 432.38293528801296,
+        "training_seconds": 304.12702704651747,
+        "training_elapsed_seconds": 331.0194090460427,
+        "training_tokens_per_second": 1341768.602293884,
+        "elapsed_tokens_per_second": 1232761.8406908591,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "7e482df28a6460086c17f7c1cb332f663f37b5ed7f06ab9bf02e02953a8620b4",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 18,
+      "run_id": "packed4-beta10.975-beta2-0.95-seed42",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.975,
+      "beta2": 0.95,
+      "seed": 42,
+      "directory": "experiments/packed4-beta10.975-beta2-0.95-seed42",
+      "job_id": "2315432_18",
+      "loss": 3.6948285489363926,
+      "seconds": 443.601421196945,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.694211826108671,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.6948285489363926,
+          "perplexity": 40.238673033230846,
+          "tokens": 197411295,
+          "seconds": 103.71811780706048,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 443.601421196945,
+        "training_seconds": 311.2810805812478,
+        "training_elapsed_seconds": 339.8267105941195,
+        "training_tokens_per_second": 1310931.2497824284,
+        "elapsed_tokens_per_second": 1200812.306032607,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "72397d6e0e547b30b319b05c6b74afee0add25c16896cb6008ff2fbb8802ff72",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 19,
+      "run_id": "packed4-beta10.975-beta2-0.95-seed43",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.975,
+      "beta2": 0.95,
+      "seed": 43,
+      "directory": "experiments/packed4-beta10.975-beta2-0.95-seed43",
+      "job_id": "2315432_19",
+      "loss": 3.6859406884765824,
+      "seconds": 441.6913085079286,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.68707097820578,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.6859406884765824,
+          "perplexity": 39.88262193229824,
+          "tokens": 197411295,
+          "seconds": 100.65319037996233,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 441.6913085079286,
+        "training_seconds": 311.07258466945495,
+        "training_elapsed_seconds": 340.97424106893595,
+        "training_tokens_per_second": 1311809.8993957061,
+        "elapsed_tokens_per_second": 1196771.0367819236,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "5096441533d524ce822da9538556bd4149a1556a5d3a5ff62f259879bbe7e30d",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 20,
+      "run_id": "packed4-beta10.975-beta2-0.95-seed44",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.975,
+      "beta2": 0.95,
+      "seed": 44,
+      "directory": "experiments/packed4-beta10.975-beta2-0.95-seed44",
+      "job_id": "2315432_20",
+      "loss": 3.698421875766031,
+      "seconds": 434.0821343200514,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.700400463852705,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.698421875766031,
+          "perplexity": 40.38352382889599,
+          "tokens": 197411295,
+          "seconds": 101.10955524700694,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 434.0821343200514,
+        "training_seconds": 303.9652145059081,
+        "training_elapsed_seconds": 332.9148845509626,
+        "training_tokens_per_second": 1342482.8780599448,
+        "elapsed_tokens_per_second": 1225743.0200226838,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "c9d88ad58c947a9ed04d3bb04071d5e98ed78f7efcbd10082f20157e57a06d51",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 21,
+      "run_id": "packed4-beta10.975-beta2-0.98-seed42",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.975,
+      "beta2": 0.98,
+      "seed": 42,
+      "directory": "experiments/packed4-beta10.975-beta2-0.98-seed42",
+      "job_id": "2315432_21",
+      "loss": 3.6515993349618583,
+      "seconds": 437.1897306148894,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.649881734203164,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.6515993349618583,
+          "perplexity": 38.536249160474945,
+          "tokens": 197411295,
+          "seconds": 101.71910920902155,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 437.1897306148894,
+        "training_seconds": 307.14721636567265,
+        "training_elapsed_seconds": 335.4159192238003,
+        "training_tokens_per_second": 1328574.9447072197,
+        "elapsed_tokens_per_second": 1216603.2457383866,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "1a3ea52ad7446eade15a3e4bdb2c451c6459de942c87498607dff336a63af1d4",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 22,
+      "run_id": "packed4-beta10.975-beta2-0.98-seed43",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.975,
+      "beta2": 0.98,
+      "seed": 43,
+      "directory": "experiments/packed4-beta10.975-beta2-0.98-seed43",
+      "job_id": "2315432_22",
+      "loss": 3.6660972990202882,
+      "seconds": 438.7794346549781,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.6662113629401136,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.6660972990202882,
+          "perplexity": 39.099015944716044,
+          "tokens": 197411295,
+          "seconds": 101.7939868789399,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 438.7794346549781,
+        "training_seconds": 309.3498454981018,
+        "training_elapsed_seconds": 336.9323707249714,
+        "training_tokens_per_second": 1319115.241007948,
+        "elapsed_tokens_per_second": 1211127.607365143,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "6eb04480f971241a3e96f5e18610ff93e3f529c9717aa6ba2a001cc7b61b8548",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 23,
+      "run_id": "packed4-beta10.975-beta2-0.98-seed44",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.975,
+      "beta2": 0.98,
+      "seed": 44,
+      "directory": "experiments/packed4-beta10.975-beta2-0.98-seed44",
+      "job_id": "2315432_23",
+      "loss": 3.671021443228994,
+      "seconds": 426.6661361330189,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.671660035466555,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.671021443228994,
+          "perplexity": 39.2920199374091,
+          "tokens": 197411295,
+          "seconds": 99.55343494308181,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 426.6661361330189,
+        "training_seconds": 300.0201197913848,
+        "training_elapsed_seconds": 327.0522945530247,
+        "training_tokens_per_second": 1360135.7678403202,
+        "elapsed_tokens_per_second": 1247715.1293425348,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "61ed622dd68f1f1978768e3fd218a9fb7c1de9ab7947e00da076ad3f9545b5da",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 24,
+      "run_id": "packed4-beta10.975-beta2-0.999-seed42",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.975,
+      "beta2": 0.999,
+      "seed": 42,
+      "directory": "experiments/packed4-beta10.975-beta2-0.999-seed42",
+      "job_id": "2315432_24",
+      "loss": 3.6840659433437213,
+      "seconds": 441.6829188539414,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.6835682190403976,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.6840659433437213,
+          "perplexity": 39.807922224280674,
+          "tokens": 197411295,
+          "seconds": 100.76509927993175,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 441.6829188539414,
+        "training_seconds": 307.52166472619865,
+        "training_elapsed_seconds": 340.8640709579922,
+        "training_tokens_per_second": 1326957.2287315845,
+        "elapsed_tokens_per_second": 1197157.8431634994,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "c1804f7d6bc6c1a9b6aba9aafb2e3b308fcbd635f56b2331ac65254c3f3de730",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 25,
+      "run_id": "packed4-beta10.975-beta2-0.999-seed43",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.975,
+      "beta2": 0.999,
+      "seed": 43,
+      "directory": "experiments/packed4-beta10.975-beta2-0.999-seed43",
+      "job_id": "2315432_25",
+      "loss": 3.678963832315723,
+      "seconds": 426.0473297929857,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.67819829392078,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.678963832315723,
+          "perplexity": 39.60533503593351,
+          "tokens": 197411295,
+          "seconds": 100.92789810197428,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 426.0473297929857,
+        "training_seconds": 296.7972050284734,
+        "training_elapsed_seconds": 325.04143896198366,
+        "training_tokens_per_second": 1374905.4542506617,
+        "elapsed_tokens_per_second": 1255434.0680473268,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "8587ce4d7c751f767f1b9d93da7855d5354282501774231d82a9897ccfaeb518",
+        "num_models": 4,
+        "total_parameters": 81614080,
+        "tokens_per_model": 102017024,
+        "topology": "one_peer_exponential"
+      },
+      "source_hash": "c6adc6270a9095e156c9072b50f95ead71197e3915553c1f1f9f9bdda576b248"
+    },
+    {
+      "index": 26,
+      "run_id": "packed4-beta10.975-beta2-0.999-seed44",
+      "campaign": "beta1_beta2",
+      "archive": "runs/packed4-20m-beta1-beta2-20260911",
+      "lr": 0.008,
+      "beta1": 0.975,
+      "beta2": 0.999,
+      "seed": 44,
+      "directory": "experiments/packed4-beta10.975-beta2-0.999-seed44",
+      "job_id": "2315432_26",
+      "loss": 3.657190602442735,
+      "seconds": 409.75463441899046,
+      "result": {
+        "status": "complete",
+        "parameters": 20403520,
+        "tokens": 408068096,
+        "step": 3119,
+        "epochs": 40,
+        "best_subset_loss": 3.6558093721543314,
+        "best_epoch": 40,
+        "final_validation": {
+          "loss": 3.657190602442735,
+          "perplexity": 38.75231912682623,
+          "tokens": 197411295,
+          "seconds": 100.20951118390076,
+          "split": "full",
+          "validation_complete": true
+        },
+        "seconds_this_session": 409.75463441899046,
+        "training_seconds": 282.4907606947236,
+        "training_elapsed_seconds": 309.4913649610244,
+        "training_tokens_per_second": 1444536.0796807893,
+        "elapsed_tokens_per_second": 1318512.0562293874,
+        "peak_memory_bytes": 63208612864,
+        "recipe_identity": "02cd2f2868b40de55d797f136c38087b1cbb46e18ddc425ef680de709a1fa7d9",
         "num_models": 4,
         "total_parameters": 81614080,
         "tokens_per_model": 102017024,

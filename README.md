@@ -273,7 +273,7 @@ normal exit, failure, or catchable termination.
 - [Synchronous 20M tuning at 128K tokens](doc/recipe_sweep_20m_128k.md):
   72 runs, tuning plots, and the current 20M preset.
 - [Packed-4 20M tuning at 128K tokens](doc/recipe_sweep_packed4_20m_128k.md):
-  72 runs with exponential topology and the current decentralized preset.
+  99 runs tuning LR, beta1, and beta2, with response plots and a beta heatmap.
 - [Three-seed 20M recipe benchmark](doc/recipe_sweep_20m.md): synchronous and
   packed training results across 324 runs.
 - [Campaign results](doc/campaign_results.md) and
