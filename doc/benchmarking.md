@@ -5,8 +5,10 @@ Submit jobs from the repository root using the [Slurm launcher](../README.md#slu
 ## GH200 execution and profiling
 
 Use the [SLURM launcher](../README.md#slurm-jobs) on Arrhenius.
-The 20M, 50M, and 90M default recipes use the measured optimized settings:
-microbatch 32, compilation in `default` mode, automatic SDPA, and eight CPU threads.
+The synchronous 20M default uses microbatch 128 and a 131,072-token batch from
+the [latest recipe sweep](recipe_sweep_20m_128k.md); 50M/90M use microbatch 32
+and a 32,768-token batch. All use compilation in `default` mode, automatic SDPA,
+and eight CPU threads.
 Validation uses a separate batch size of 128 sequences (131,072 targets at context
 1024), with no gradient accumulation. Override `evaluation.batch_size` for devices
 with less memory. Loss remains weighted by valid tokens; batch size can cause small

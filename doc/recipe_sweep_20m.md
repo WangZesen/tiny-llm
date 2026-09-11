@@ -25,8 +25,10 @@ packed-8 LR 0.0052 beats LR 0.0048 by 0.001538 nats. Both differences are small
 relative to the observed seed variation. The rankings alone do not establish
 statistically reliable improvements.
 
-The selected configurations are recorded alternatives. **Preset optimizer
-settings remain unchanged.** The earlier single-seed, multi-size campaign is
+These configurations record the 32,768-token-batch benchmark. This campaign
+left preset optimizer settings unchanged at the time. The synchronous 20M
+preset now uses the [128K-token sweep winner](recipe_sweep_20m_128k.md).
+The earlier single-seed, multi-size campaign is
 reported separately in [campaign_results.md](campaign_results.md).
 
 ## Search grid and fixed settings

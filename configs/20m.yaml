@@ -11,9 +11,9 @@ model:
 data:
   cache_dir: data/c4
   dataset: allenai/c4
-  revision: main
+  revision: 1588ec454efa1a09f29cd18ddd04fe05fc8653a2
   tokenizer: TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T
-  tokenizer_revision: main
+  tokenizer_revision: 59f6f375b26bde864a6ca194a9a3044570490064
   shuffle_seed: 42
   shuffle_buffer: 10000
   buffer_size_mib: 64
@@ -23,9 +23,9 @@ data:
   prepare_train_tokens: null
   prepare_validation_tokens: null
 optimizer:
-  lr: 0.001
+  lr: 0.0056
   beta1: 0.9
-  beta2: 0.999
+  beta2: 0.98
   eps: 1.0e-08
   weight_decay: 0.1
   grad_clip: 1.0
@@ -34,9 +34,10 @@ optimizer:
 training:
   tokens_per_parameter: 20.0
   epoch_tokens_per_parameter: 0.5
-  batch_tokens: 32768
-  micro_batch_size: 32
+  batch_tokens: 131072
+  micro_batch_size: 128
   checkpoint_every: 500
+  checkpoint_policy: final
   log_every: 20
   max_tokens: null
   epoch_tokens: null

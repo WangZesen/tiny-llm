@@ -2,8 +2,9 @@
 
 This repository targets validation loss for 20M–92M Llama-style models on English
 C4, trained from scratch for 20 prediction targets per **unique trainable
-parameter**. The default presets adopt the best recipes from a bounded,
-single-seed search; see [campaign results](campaign_results.md). These selections
+parameter**. The synchronous 20M preset uses the winner of the
+[three-seed 128K-token sweep](recipe_sweep_20m_128k.md). The 50M/90M presets
+follow the earlier [single-seed campaign](campaign_results.md). These selections
 do not establish optimality outside the tested settings.
 
 ## Published precedents
@@ -18,20 +19,22 @@ do not establish optimality outside the tested settings.
 The [original Llama paper](https://arxiv.org/abs/2302.13971) motivates pre-RMSNorm,
 RoPE, SwiGLU and bias-free projections. Embedding tying, exact small-model
 dimensions, context 1024, initialization std 0.02 with residual projection
-scaling, and a 32,768-target effective batch are engineering choices. They are
+scaling, and the effective batch sizes are engineering choices. They are
 not directly established as optimal by these papers.
 
 ## Selected recipe
 
 - BF16 autocast for CUDA operations; FP32 parameters, gradients, optimizer moments,
   normalization reductions, and cross-entropy. No FP16 gradient scaler.
-- AdamW: LR 0.001, beta1 0.9, beta2 0.95 for 20M and 0.99 for 50M/90M,
-  epsilon 1e-8, weight decay 0.1.
+- AdamW: LR 0.0056 and beta2 0.98 for synchronous 20M; LR 0.001 and beta2 0.99
+  for 50M/90M. All use beta1 0.9, epsilon 1e-8, and weight decay 0.1.
   Matrix weights, including tied embeddings, receive decay; norm scales do not.
 - Global raw-gradient clipping at norm 1.0, after accumulation and before AdamW.
 - Linear token-based warmup for 5% of training, then cosine decay to 10% of peak.
-- 32,768 prediction targets per update. Smaller accumulation groups at virtual
-  epoch boundaries use their actual target count as the gradient denominator.
+- Synchronous 20M: 131,072 prediction targets per update, microbatch 128,
+  without accumulation. 50M/90M: 32,768 targets per update, microbatch 32.
+  Shortened batches at virtual epoch boundaries use their actual target count
+  as the gradient denominator.
 - Zero dropout; seed 42; `runtime.deterministic: false`.
 
 The schedule is evaluated at the end-token position of each optimizer update.
@@ -64,9 +67,11 @@ Validation data is explicitly used for recipe selection.
 
 ## Precision, reproducibility, and performance
 
-The 20M, 50M, and 90M recipes default to microbatch 32, `runtime.compile=true`,
-`runtime.compile_mode=default`, automatic SDPA, and eight CPU threads, as measured
-on GH200. The effective batch remains 32,768 targets per optimizer update.
+The synchronous 20M recipe uses microbatch 128 and a 131,072-target batch,
+validated in the [128K-token sweep](recipe_sweep_20m_128k.md) on GH200.
+The 50M/90M recipes use microbatch 32 and a 32,768-target batch. All three use
+`runtime.compile=true`, `runtime.compile_mode=default`, automatic SDPA,
+and eight CPU threads.
 
 Validation defaults to 128 sequences per forward pass for all three sizes, without
 gradient accumulation. Both subset and full validation sum losses over valid tokens

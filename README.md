@@ -267,6 +267,8 @@ normal exit, failure, or catchable termination.
 - [Benchmarking, profiling, and sweeps](doc/benchmarking.md)
 - Measurements: [training](doc/gh200_performance.md),
   [packed training](doc/packed_benchmarks.md), [analysis](doc/analysis_performance.md)
+- [Synchronous 20M tuning at 128K tokens](doc/recipe_sweep_20m_128k.md):
+  72 runs, tuning plots, and the current 20M preset.
 - [Three-seed 20M recipe benchmark](doc/recipe_sweep_20m.md): synchronous and
   packed training results across 324 runs.
 - [Campaign results](doc/campaign_results.md) and
