@@ -7,6 +7,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.patches import Rectangle
 
 
@@ -17,10 +18,10 @@ def main():
             {k: float(v) for k, v in row.items() if k != "campaign"}
             for row in csv.DictReader(handle)
         ]
-    assert len(rows) == 33 and all(row["seeds"] == 3 for row in rows)
+    assert len(rows) == 43 and all(row["seeds"] == 3 for row in rows)
     all_rows = rows
     rows = [row for row in rows if row["beta1"] == 0.9]
-    assert len(rows) == 24
+    assert len(rows) == 31
     winner = min(rows, key=lambda r: (r["mean_loss"], r["lr"], r["beta2"]))
     lrs = sorted({row["lr"] for row in rows})
     plt.rcParams.update(
@@ -35,14 +36,16 @@ def main():
     )
     plot_betas(all_rows, root)
     fig, axes = plt.subplots(1, 2, figsize=(11.5, 4.7), layout="constrained")
-    colors = ["#0072B2", "#D55E00", "#009E73"]
+    colors = ["#0072B2", "#D55E00", "#009E73", "#CC79A7"]
     for ax, title, limit in zip(
         axes,
         ["Full search range", "Detail: lower learning rates"],
         [max(lrs), 0.008],
         strict=True,
     ):
-        for beta2, color, marker in zip([0.95, 0.98, 0.999], colors, ["o", "s", "^"], strict=True):
+        for beta2, color, marker in zip(
+            [0.95, 0.98, 0.99, 0.999], colors, ["o", "s", "^", "D"], strict=True
+        ):
             group = sorted(
                 (r for r in rows if r["beta2"] == beta2 and r["lr"] <= limit),
                 key=lambda r: r["lr"],
@@ -67,7 +70,7 @@ def main():
             edgecolor="#333333",
             linewidth=0.8,
             zorder=5,
-            label="Selected recipe",
+            label="Best at β₁ = 0.9",
         )
         ax.set_xscale("log")
         ticks = [lr for lr in lrs if lr <= limit]
@@ -80,7 +83,8 @@ def main():
         ax.margins(x=0.08, y=0.12)
     axes[0].legend(loc="upper left", frameon=False, fontsize=9)
     axes[1].annotate(
-        "Winner: LR 0.008, β₂ 0.98\n3.60191 ± 0.00684",
+        f"Best at β₁ = 0.9: LR {winner['lr']:g}, β₂ {winner['beta2']:g}\n"
+        f"{winner['mean_loss']:.5f} ± {winner['std_loss']:.5f}",
         xy=(winner["lr"], winner["mean_loss"]),
         xytext=(0.0045, 3.73),
         fontsize=9,
@@ -89,7 +93,7 @@ def main():
     )
     fig.suptitle(
         "Packed-4 20M · 131,072 tokens per batch · microbatch 32 per model\n"
-        "β₁ = 0.9 · 24 configurations · 72 runs · mean ± sample SD (three seeds)",
+        "β₁ = 0.9 · 31 configurations · 93 runs · mean ± sample SD (three seeds)",
         fontsize=12,
     )
     for suffix in ["pdf", "png"]:
@@ -98,15 +102,15 @@ def main():
 
 
 def plot_betas(rows, root):
-    """Plot the 12 tested beta1/beta2 configurations at fixed LR 0.008."""
+    """Plot the 16 tested beta1/beta2 configurations at fixed LR 0.008."""
     rows = [r for r in rows if r["lr"] == 0.008]
-    assert len(rows) == 12
+    assert len(rows) == 16
     beta1s = sorted({r["beta1"] for r in rows})
     beta2s = sorted({r["beta2"] for r in rows})
     winner = min(rows, key=lambda r: (r["mean_loss"], r["beta1"], r["beta2"]))
     fig, (ax, heat) = plt.subplots(1, 2, figsize=(12, 4.8), layout="constrained")
     for b2, color, marker in zip(
-        beta2s, ["#0072B2", "#D55E00", "#009E73"], ["o", "s", "^"], strict=True
+        beta2s, ["#0072B2", "#D55E00", "#009E73", "#CC79A7"], ["o", "s", "^", "D"], strict=True
     ):
         group = sorted((r for r in rows if r["beta2"] == b2), key=lambda r: r["beta1"])
         ax.errorbar(
@@ -138,10 +142,21 @@ def plot_betas(rows, root):
     ax.margins(x=0.12, y=0.15)
     ax.legend(frameon=False, fontsize=9, loc="upper right")
     lookup = {(r["beta1"], r["beta2"]): r for r in rows}
-    values = [[lookup[(b1, b2)]["mean_loss"] for b1 in beta1s] for b2 in beta2s]
-    color = heat.imshow(values, cmap="cividis_r", aspect="auto")
+    assert len(lookup) == len(beta1s) * len(beta2s) == 16
+    values = np.ma.masked_invalid(
+        [
+            [lookup.get((b1, b2), {}).get("mean_loss", float("nan")) for b1 in beta1s]
+            for b2 in beta2s
+        ]
+    )
+    cmap = plt.get_cmap("cividis_r").copy()
+    cmap.set_bad("#eeeeee")
+    color = heat.imshow(values, cmap=cmap, aspect="auto")
     for y, b2 in enumerate(beta2s):
         for x, b1 in enumerate(beta1s):
+            if (b1, b2) not in lookup:
+                heat.text(x, y, "not tested", ha="center", va="center", fontsize=9, color="#666666")
+                continue
             r = lookup[(b1, b2)]
             rgb = color.cmap(color.norm(r["mean_loss"]))[:3]
             luminance = sum(a * b for a, b in zip(rgb, [0.2126, 0.7152, 0.0722], strict=True))
@@ -172,7 +187,7 @@ def plot_betas(rows, root):
     fig.colorbar(color, ax=heat, label="Mean loss (nats)", shrink=0.85)
     fig.suptitle(
         "Packed-4 20M · fixed LR 0.008 · 131,072 tokens per batch\n"
-        "12 configurations · 36 runs · mean ± sample SD (three seeds) · lower is better",
+        "16 configurations · 48 runs · mean ± sample SD (three seeds) · lower is better",
         fontsize=12,
     )
     for suffix in ["pdf", "png"]:

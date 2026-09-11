@@ -98,7 +98,7 @@ aarch64 compute nodes:
 
 ```bash
 mkdir -p runs
-sbatch scripts/slurm.sh train --config configs/packed-20m.yaml
+sbatch scripts/slurm.sh train --config configs/packed4-20m-awc.yaml
 sbatch scripts/slurm.sh benchmark-packed --config configs/20m.yaml \
   --num-models 4 8 --output runs/packed-benchmarks
 ```

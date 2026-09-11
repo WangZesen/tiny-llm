@@ -7,7 +7,7 @@ import torch
 from safetensors.torch import load_file
 from torch.func import functional_call
 
-from tiny_llm.config import Config, ModelConfig
+from tiny_llm.config import Config, ModelConfig, load_config
 from tiny_llm.data import BufferedTokenLoader, TokenCache, fingerprint
 from tiny_llm.model import Llama, token_losses
 from tiny_llm.packed import PackedLlama, local_mean_losses
@@ -67,7 +67,8 @@ def matrix(n, topology, step, device="cpu", dtype=torch.float64):
     ],
 )
 @pytest.mark.parametrize("adaptive", [False, True])
-def test_independent_worker_parity(tiny_config, backend, topology, adaptive):
+@pytest.mark.parametrize("scheme", ["awc", "atc"])
+def test_independent_worker_parity(tiny_config, backend, topology, adaptive, scheme):
     n = 3
     schedule = None
     if adaptive:
@@ -115,6 +116,10 @@ def test_independent_worker_parity(tiny_config, backend, topology, adaptive):
         optimizer.clip_grad_norm_(0.5)
         for model in locals_:
             torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
+        if scheme == "atc":
+            optimizer.step()
+            for local_optimizer in optimizers:
+                local_optimizer.step()
         moments_before = optimizer.first_moment_storage.clone()
         packed.mix_(topology, step, gamma=gamma)
         assert torch.equal(moments_before, optimizer.first_moment_storage)
@@ -125,9 +130,10 @@ def test_independent_worker_parity(tiny_config, backend, topology, adaptive):
                 mixed = (w @ old.flatten(1)).view_as(old)
                 for i, model in enumerate(locals_):
                     model.get_parameter(name).copy_(mixed[i])
-        optimizer.step()
-        for local_optimizer in optimizers:
-            local_optimizer.step()
+        if scheme == "awc":
+            optimizer.step()
+            for local_optimizer in optimizers:
+                local_optimizer.step()
         for i, (model, local_optimizer) in enumerate(zip(locals_, optimizers, strict=True)):
             for entry, p in zip(packed.layout, model.parameters(), strict=True):
                 torch.testing.assert_close(
@@ -308,10 +314,12 @@ def assert_nested_equal(left, right):
         assert left == right
 
 
-def test_training_resume(tiny_config, cache_dir, monkeypatch):
+@pytest.mark.parametrize("scheme", ["awc", "atc"])
+def test_training_resume(tiny_config, cache_dir, monkeypatch, scheme):
     tiny_config.training.checkpoint_policy = "all"
     topology = "one_peer_exponential"
     config = decentralized_config(tiny_config, n=4, topology=topology)
+    config.decentralized.scheme = scheme
     config.runtime.deterministic = True
     # Cross buffer boundaries inside packed steps and switch prefetch on resume.
     config.data.buffer_size_mib = 24 / 2**20
@@ -345,15 +353,14 @@ def test_training_resume(tiny_config, cache_dir, monkeypatch):
     monkeypatch.setattr(PackedAdamW, "step", record_update)
     config.data.prefetch = False
     resumed = train(config, config.runtime.output_dir / "latest.pt")
-    assert events == [
-        ("mix", 0),
-        ("mix", 1),
-        ("update", None),
-        ("mix", 2),
-        ("update", None),
-        ("mix", 3),
-        ("update", None),
-    ]
+    expected_events = [("mix", 0)]
+    for mixing_step in range(1, 4):
+        pair = [("mix", mixing_step), ("update", None)]
+        expected_events.extend(pair if scheme == "awc" else reversed(pair))
+    assert events == expected_events
+    assert result["scheme"] == resumed["scheme"] == scheme
+    metadata = json.loads((complete.runtime.output_dir / "environment.json").read_text())
+    assert metadata["scheme"] == scheme
     assert result["final_validation"]["loss"] == resumed["final_validation"]["loss"]
     a = torch.load(complete.runtime.output_dir / "final.pt", weights_only=False)
     b = torch.load(config.runtime.output_dir / "final.pt", weights_only=False)
@@ -361,6 +368,8 @@ def test_training_resume(tiny_config, cache_dir, monkeypatch):
     assert_nested_equal(a["optimizer"], b["optimizer"])
     assert a["step"] == b["step"] == 4
     assert a["version"] == b["version"] == 3
+    assert a["config"]["decentralized"]["scheme"] == scheme
+    assert b["config"]["decentralized"]["scheme"] == scheme
     assert a["loader"] == b["loader"]
     assert a["loader"]["cursor"] == a["cursor"] == 24
     expected = evaluate_checkpoint(config, config.runtime.output_dir / "final.pt", True)
@@ -461,11 +470,31 @@ def test_checkpoint_format_detection(tiny_config, cache_dir):
 
 
 @pytest.mark.parametrize("execution", ["packed", "sequential"])
-def test_benchmark_worker(tiny_config, tmp_path, execution):
+@pytest.mark.parametrize("scheme", ["awc", "atc"])
+def test_benchmark_worker(tiny_config, tmp_path, execution, scheme, monkeypatch):
     config = decentralized_config(tiny_config)
+    config.decentralized.scheme = scheme
+    events = []
+    original_mix = PackedLlama.mix_
+    original_step = PackedAdamW.step if execution == "packed" else torch.optim.AdamW.step
+
+    def mix(self, *args, **kwargs):
+        events.append("mix")
+        return original_mix(self, *args, **kwargs)
+
+    def update(self, *args, **kwargs):
+        events.append("update")
+        return original_step(self, *args, **kwargs)
+
+    monkeypatch.setattr(PackedLlama, "mix_", mix)
+    monkeypatch.setattr(PackedAdamW if execution == "packed" else torch.optim.AdamW, "step", update)
     destination = tmp_path / f"{execution}.json"
     result = benchmark_packed_worker(config, destination, execution, warmup=1, steps=1)
     assert result["status"] == "ok"
+    assert result["scheme"] == scheme
+    updates = ["update"] * (1 if execution == "packed" else config.decentralized.num_models)
+    pair = ["mix", *updates] if scheme == "awc" else [*updates, "mix"]
+    assert events == pair * 3  # Warmup, throughput, and component timing passes.
     assert result["tokens_per_second"] > 0
     assert result["global_batch_tokens"] == config.training.batch_tokens
     assert set(result["component_seconds"]) == {"compute", "clipping", "mixing", "optimizer"}
@@ -579,3 +608,54 @@ def test_cuda_bf16_and_fused_optimizer(tiny_config):
                     rtol=1e-6,
                     atol=1e-8,
                 )
+
+
+def test_scheme_config_and_identity(tiny_config, cache_dir, tmp_path):
+    config = decentralized_config(tiny_config)
+    path = tmp_path / "config.json"
+    raw = config.model_dump(mode="json")
+    raw["decentralized"].pop("scheme")
+    path.write_text(json.dumps(raw))
+    assert load_config(path) == config
+    assert config.decentralized.scheme == "awc"
+    assert load_config(path, ["decentralized.scheme=awc"]) == config
+    atc = load_config(path, ["decentralized.scheme=atc"])
+    assert atc.decentralized.scheme == "atc"
+    with pytest.raises(ValueError):
+        load_config(path, ["decentralized.scheme=invalid"])
+    cache = TokenCache(cache_dir)
+    assert recipe_identity(atc, cache) != recipe_identity(config, cache)
+    config.training.checkpoint_policy = "all"
+    train(config)
+    with pytest.raises(ValueError, match="recipe"):
+        train(atc, config.runtime.output_dir / "final.pt")
+
+
+@pytest.mark.parametrize("scheme", ["awc", "atc"])
+def test_benchmark_scheme_propagation(tiny_config, tmp_path, monkeypatch, scheme):
+    from types import SimpleNamespace
+
+    import tiny_llm.packed_benchmark as module
+
+    config = decentralized_config(tiny_config)
+    config.decentralized.scheme = scheme
+    executions = []
+
+    def run(command, **kwargs):
+        candidate = load_config(command[command.index("--config") + 1])
+        assert candidate.decentralized.scheme == scheme
+        execution = command[command.index("--execution") + 1]
+        executions.append(execution)
+        destination = module.Path(command[command.index("--output") + 1])
+        destination.write_text(
+            json.dumps(
+                dict(status="ok", seconds_per_step=1.0, scheme=candidate.decentralized.scheme)
+            )
+        )
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr(module.subprocess, "run", run)
+    result = module.benchmark_packed(config, tmp_path / "benchmark", num_models=[1, 2])
+    assert executions == ["sequential", "packed"] * 2
+    for row in result["comparisons"]:
+        assert row["packed"]["scheme"] == row["sequential"]["scheme"] == scheme

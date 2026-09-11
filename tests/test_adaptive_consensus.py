@@ -144,6 +144,7 @@ def test_identity_and_benchmark_guards(tiny_config, cache_dir, tmp_path):
     disabled = recipe_identity(config, cache)
     legacy = config.model_dump(mode="json")
     legacy["decentralized"].pop("adaptive_consensus")
+    legacy["decentralized"].pop("scheme")
     for key in RETENTION_FIELDS:
         legacy["training"].pop(key)
     for key in ("output_dir", "device", "cpu_threads", "compile_mode", "sdpa_backend"):
@@ -165,8 +166,10 @@ def test_identity_and_benchmark_guards(tiny_config, cache_dir, tmp_path):
 
 
 @pytest.mark.parametrize("resume_at", ["before", "after", "epoch"])
-def test_adaptive_resume(tiny_config, cache_dir, monkeypatch, resume_at):
+@pytest.mark.parametrize("scheme", ["awc", "atc"])
+def test_adaptive_resume(tiny_config, cache_dir, monkeypatch, resume_at, scheme):
     config = adaptive_config(tiny_config)
+    config.decentralized.scheme = scheme
     config.training.checkpoint_policy = "all"
     config.runtime.deterministic = True
     config.optimizer.warmup_fraction = 0.6

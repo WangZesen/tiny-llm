@@ -55,16 +55,25 @@ def test_boundary_rounding(tiny_config):
     assert training_boundaries(tiny_config, 100) == [6, 12, 17]
 
 
-@pytest.mark.parametrize("preset", ["20m", "50m", "90m"])
+@pytest.mark.parametrize(
+    "preset,packed_preset",
+    [
+        ("20m", "packed4-20m-awc"),
+        ("20m", "packed4-20m-atc"),
+        ("20m", "packed4-20m-awc-beta99"),
+        ("50m", "packed-50m"),
+        ("90m", "packed-90m"),
+    ],
+)
 @pytest.mark.parametrize("workers", [4, 8])
-def test_packed_presets_fit_ordinary_cache(preset, workers):
+def test_packed_presets_fit_ordinary_cache(preset, packed_preset, workers):
     directory = Path(__file__).resolve().parents[1] / "configs"
     ordinary = load_config(directory / f"{preset}.yaml")
-    base_packed = load_config(directory / f"packed-{preset}.yaml")
+    base_packed = load_config(directory / f"{packed_preset}.yaml")
     batch_sequences = base_packed.training.batch_tokens // base_packed.model.context_length
     assert batch_sequences % workers == 0
     packed = load_config(
-        directory / f"packed-{preset}.yaml",
+        directory / f"{packed_preset}.yaml",
         [
             f"decentralized.num_models={workers}",
             f"training.micro_batch_size={batch_sequences // workers}",

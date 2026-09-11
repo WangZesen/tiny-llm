@@ -253,8 +253,11 @@ def recipe_identity(config: Config, cache: TokenCache) -> str:
         value["training"].pop(key)
     if value["decentralized"] is None:
         value.pop("decentralized")  # Keep pre-feature single-model recipe identities.
-    elif value["decentralized"]["adaptive_consensus"] is None:
-        value["decentralized"].pop("adaptive_consensus")
+    else:
+        if value["decentralized"]["adaptive_consensus"] is None:
+            value["decentralized"].pop("adaptive_consensus")
+        if value["decentralized"]["scheme"] == "awc":
+            value["decentralized"].pop("scheme")  # Preserve existing AWC recipe identities.
     # Default execution controls retain the identity of existing v2 checkpoints.
     for name, default in (("compile_mode", "default"), ("sdpa_backend", "auto")):
         if value["runtime"][name] == default:
@@ -396,6 +399,7 @@ def _train(config: Config, resume: Path | None) -> dict:
             num_models=num_models,
             total_parameters=model.parameter_count,
             topology=decentralized.topology,
+            scheme=decentralized.scheme,
             storage_numel=model.storage_numel,
         )
     if consensus_schedule is not None:
@@ -484,8 +488,11 @@ def _train(config: Config, resume: Path | None) -> dict:
                     if not torch.isfinite(step_loss).item():
                         raise FloatingPointError(f"nonfinite training loss at step {step}")
                     mixing_gamma = consensus_schedule.gamma(step, lr) if consensus_schedule else 1.0
+                    if decentralized.scheme == "atc":
+                        optimizer.step()
                     model.mix_(decentralized.topology, step, gamma=mixing_gamma)
-                    optimizer.step()
+                    if decentralized.scheme == "awc":
+                        optimizer.step()
                 else:
                     step_loss, grad_norm = optimizer_update(
                         model,
@@ -648,6 +655,7 @@ def _train(config: Config, resume: Path | None) -> dict:
                 total_parameters=model.parameter_count,
                 tokens_per_model=cursor * length // num_models,
                 topology=decentralized.topology,
+                scheme=decentralized.scheme,
             )
         append_metric(
             metrics_path,

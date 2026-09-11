@@ -77,6 +77,13 @@ def benchmark_packed_worker(
         for optimizer in optimizers:
             optimizer.step()
 
+    def combine(step):
+        packed.mix_(config.decentralized.topology, step)
+
+    def update_operations(step):
+        operations = (("mixing", lambda: combine(step)), ("optimizer", update))
+        return operations if config.decentralized.scheme == "awc" else operations[::-1]
+
     def synchronize():
         if device.type == "cuda":
             torch.cuda.synchronize(device)
@@ -85,8 +92,8 @@ def benchmark_packed_worker(
     for step in range(warmup):
         compute()
         clip()
-        packed.mix_(config.decentralized.topology, step)
-        update()
+        for _, operation in update_operations(step):
+            operation()
     synchronize()
     warmup_seconds = time.monotonic() - start
     if device.type == "cuda":
@@ -95,8 +102,8 @@ def benchmark_packed_worker(
     for step in range(warmup, warmup + steps):
         value = compute()
         clip()
-        packed.mix_(config.decentralized.topology, step)
-        update()
+        for _, operation in update_operations(step):
+            operation()
     synchronize()
     elapsed = time.monotonic() - start
     peak = torch.cuda.max_memory_allocated(device) if device.type == "cuda" else 0
@@ -110,8 +117,7 @@ def benchmark_packed_worker(
         for key, operation in (
             ("compute", compute),
             ("clipping", clip),
-            ("mixing", lambda step=step: packed.mix_(config.decentralized.topology, step)),
-            ("optimizer", update),
+            *update_operations(step),
         ):
             synchronize()
             start = time.monotonic()
@@ -139,6 +145,7 @@ def benchmark_packed_worker(
         execution=execution,
         num_models=n,
         topology=config.decentralized.topology,
+        scheme=config.decentralized.scheme,
         global_batch_tokens=config.training.batch_tokens,
         local_micro_batch_size=batch,
         steps=steps,
@@ -169,6 +176,7 @@ def benchmark_packed(
         raw["decentralized"] = {
             "num_models": n,
             "topology": (config.decentralized.topology if config.decentralized else "complete"),
+            "scheme": config.decentralized.scheme if config.decentralized else "awc",
         }
         raw["training"]["micro_batch_size"] = config.training.batch_tokens // (
             n * config.model.context_length

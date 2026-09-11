@@ -112,6 +112,7 @@ class AdaptiveConsensusConfig(StrictModel):
 class DecentralizedConfig(StrictModel):
     num_models: int = Field(..., gt=0)
     topology: Literal["complete", "one_peer_ring", "one_peer_exponential"] = "complete"
+    scheme: Literal["awc", "atc"] = "awc"
     adaptive_consensus: AdaptiveConsensusConfig | None = None
 
 

@@ -54,9 +54,9 @@ shared state and references to those files. Keep the complete set together.
 To branch from an earlier epoch, use its root checkpoint and a new output directory:
 
 ```bash
-uv run tiny-llm train --config runs/packed-20m/resolved.yaml \
-  --resume runs/packed-20m/epoch-010.pt \
-  --set runtime.output_dir=runs/packed-20m-from-epoch010
+uv run tiny-llm train --config runs/packed4-20m-awc/resolved.yaml \
+  --resume runs/packed4-20m-awc/epoch-010.pt \
+  --set runtime.output_dir=runs/packed4-20m-awc-from-epoch010
 ```
 
 Resume allows device, output-directory, and prefetch changes; keep the training
@@ -73,16 +73,30 @@ The smoke configuration truncates C4, so its evaluation is marked incomplete.
 
 ### Packed training
 
-The packed baseline runs four local models together on one GPU, with 32
-sequences per model and a global batch of 131,072 tokens. It uses the
-[packed-4 sweep winner](doc/recipe_sweep_packed4_20m_128k.md).
-To use eight workers while preserving the baseline's global batch:
+The tuned packed recipes run four local models together on one GPU, with 32
+sequences per model and a global batch of 131,072 tokens. The `4` in each config
+filename denotes the number of local models.
+
+| Scheme | Recipe | Learning rate | Beta1 | Beta2 |
+|---|---|---:|---:|---:|
+| AWC | [packed4-20m-awc.yaml](configs/packed4-20m-awc.yaml) | 0.008 | 0.95 | 0.99 |
+| ATC | [packed4-20m-atc.yaml](configs/packed4-20m-atc.yaml) | 0.0056 | 0.9 | 0.99 |
+
+These are the best tested settings in the [AWC](doc/recipe_sweep_packed4_20m_128k.md)
+and [ATC](doc/recipe_sweep_packed4_atc_20m_128k.md) studies. Each recipe explicitly
+sets its scheme and uses a separate output directory.
 
 ```bash
-uv run tiny-llm train --config configs/packed-20m.yaml
-uv run tiny-llm train --config configs/packed-20m.yaml \
+uv run tiny-llm train --config configs/packed4-20m-awc.yaml
+uv run tiny-llm train --config configs/packed4-20m-atc.yaml
+```
+
+To use eight workers while preserving the AWC recipe's global batch:
+
+```bash
+uv run tiny-llm train --config configs/packed4-20m-awc.yaml \
   --set decentralized.num_models=8 --set training.micro_batch_size=16 \
-  --set runtime.output_dir=runs/packed-20m-n8
+  --set runtime.output_dir=runs/packed8-20m-awc
 ```
 
 The global batch must equal `num_models * micro_batch_size * context_length`,
@@ -91,6 +105,11 @@ and epoch boundaries must divide evenly across workers. With checkpoint policy
 under `node-NNN/`. The default `final.pt` retains all local training states.
 [Packed implementation details](doc/training_details.md#packed-decentralized-training)
 cover topologies and optimizer behavior.
+
+Packed training defaults to adapt-while-combine (AWC): local gradients are computed
+and clipped, then parameters are mixed before the AdamW update. Set
+`--set decentralized.scheme=atc` for adapt-then-combine (ATC), which applies
+the AdamW update before mixing. Optimizer moments remain local in both schemes.
 
 Optional adaptive consensus weakens mixing as the learning rate falls. The sample
 config retains its separate 32,768-token recipe and uses four workers,
@@ -180,7 +199,7 @@ before the launcher starts:
 ```bash
 mkdir -p runs
 sbatch scripts/slurm.sh train --config configs/20m.yaml
-sbatch scripts/slurm.sh train --config configs/packed-20m.yaml
+sbatch scripts/slurm.sh train --config configs/packed4-20m-awc.yaml
 sbatch scripts/slurm.sh evaluate --config runs/20m/resolved.yaml \
   --checkpoint runs/20m/final.pt --full
 ```
@@ -273,7 +292,11 @@ normal exit, failure, or catchable termination.
 - [Synchronous 20M tuning at 128K tokens](doc/recipe_sweep_20m_128k.md):
   72 runs, tuning plots, and the current 20M preset.
 - [Packed-4 20M tuning at 128K tokens](doc/recipe_sweep_packed4_20m_128k.md):
-  99 runs tuning LR, beta1, and beta2, with response plots and a beta heatmap.
+  129 runs tuning LR, beta1, and beta2, with response plots and a beta heatmap.
+- [AWC beta2 0.99 analysis](doc/recipe_sweep_packed4_awc_beta99_20m_128k.md):
+  30 runs covering LR response, beta1 sensitivity, and matched ATC comparisons.
+- [ATC packed-4 20M tuning at 128K tokens](doc/recipe_sweep_packed4_atc_20m_128k.md):
+  72 runs tuning LR and beta2 up to LR 0.016, with comparisons to AWC.
 - [Three-seed 20M recipe benchmark](doc/recipe_sweep_20m.md): synchronous and
   packed training results across 324 runs.
 - [Campaign results](doc/campaign_results.md) and

@@ -43,16 +43,17 @@ seed produces exactly the ordinary Llama initialization in every worker. Each
 step uses one local microbatch, one parameter-mixing event, and one local AdamW
 update; decentralized training does not accumulate gradients.
 
-Packed presets use four workers with local microbatch 8. They inherit compilation
-in `default` mode, automatic SDPA, and global evaluation batch size 128. Cached
+The tuned 20M AWC and ATC presets use four workers with local microbatch 32
+and a global batch of 131,072 tokens. They inherit compilation in `default` mode,
+automatic SDPA, and global evaluation batch size 128. Cached
 RoPE is shared across workers; shortened local batches run eagerly.
 
 ```bash
-uv run tiny-llm train --config configs/packed-20m.yaml
+uv run tiny-llm train --config configs/packed4-20m-awc.yaml
 # Eight workers at the same global batch size:
-uv run tiny-llm train --config configs/packed-20m.yaml \
-  --set decentralized.num_models=8 --set training.micro_batch_size=4 \
-  --set runtime.output_dir=runs/packed-20m-n8
+uv run tiny-llm train --config configs/packed4-20m-awc.yaml \
+  --set decentralized.num_models=8 --set training.micro_batch_size=16 \
+  --set runtime.output_dir=runs/packed8-20m-awc
 ```
 
 The global batch must equal `num_models * micro_batch_size * context_length`.
@@ -66,8 +67,19 @@ worker i receives every Nth sample, including across buffer and epoch boundaries
 
 Each worker computes a mean loss over its own valid tokens. The sum of these
 local means supplies independent gradients, with no division by the worker
-count. Gradients are clipped locally; parameters are then mixed before local
-AdamW updates. Moments remain local. Available `decentralized.topology` values:
+count. Gradients are clipped locally before either update scheme, selected with
+`decentralized.scheme`:
+
+- `awc` (default, adapt-while-combine): mix parameters, then apply local AdamW updates.
+- `atc` (adapt-then-combine): apply complete local AdamW updates, including weight
+  decay, then mix the updated parameters.
+
+Use `--set decentralized.scheme=atc` with training or packed benchmarks. Gradients
+and optimizer moments remain local in both schemes. The scheme is saved in run
+configuration, metadata, summaries, and benchmark results. Existing configurations
+and checkpoints retain AWC behavior; resuming with a different scheme is rejected.
+
+Available `decentralized.topology` values:
 
 - `complete`: globally average parameters each step.
 - `one_peer_ring`: half self, half left/right neighbor, alternating each step.
@@ -126,7 +138,8 @@ during warmup is supported. Step fractions and token fractions need not coincide
 
 Mixing uses `W' = gamma * W + (1 - gamma) * I`. Smaller gamma weakens averaging;
 gamma zero leaves parameters unchanged at the mixing event. Backward and local
-clipping still precede mixing, and each worker's AdamW update follows it. Gradients
+clipping precede both operations. AWC mixes before each worker's AdamW update;
+ATC mixes after it. Both use the same gamma and topology step schedule. Gradients
 and moments stay local. Evaluation always uses the full global average.
 The Python API also accepts a constant `model.mix_(topology, step, gamma=...)`.
 
@@ -211,7 +224,7 @@ padding and other workers' backing storage are excluded.
 ```python
 import torch
 
-local = torch.load("runs/packed-20m/node-000/epoch-010.pt", map_location="cpu", weights_only=False)
+local = torch.load("runs/packed4-20m-awc/node-000/epoch-010.pt", map_location="cpu", weights_only=False)
 name = "embedding.weight"
 weights = local["model"][name]
 first_moment = local["optimizer"]["state"][name]["exp_avg"]
