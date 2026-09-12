@@ -197,7 +197,8 @@ def test_compiled_partial_epoch_resume(tiny_config, cache_dir, monkeypatch):
 
 @pytest.mark.parametrize("workers", [1, 4, 8])
 @pytest.mark.parametrize("interrupt", [False, True])
-def test_final_only_policy(tiny_config, cache_dir, monkeypatch, workers, interrupt):
+@pytest.mark.parametrize("policy", ["final", "none"])
+def test_minimal_checkpoint_policy(tiny_config, cache_dir, monkeypatch, workers, interrupt, policy):
     import tiny_llm.train as module
     from tiny_llm.config import Config
     from tiny_llm.train import evaluate_checkpoint, recipe_identity
@@ -209,6 +210,7 @@ def test_final_only_policy(tiny_config, cache_dir, monkeypatch, workers, interru
         raw["decentralized"] = dict(num_models=workers, topology="one_peer_ring")
     config = Config.model_validate(raw)
     assert config.training.checkpoint_policy == "final"
+    config.training.checkpoint_policy = policy
     identity = recipe_identity(config, TokenCache(cache_dir))
     other = config.model_copy(deep=True)
     other.training.checkpoint_policy = "all"
@@ -233,12 +235,18 @@ def test_final_only_policy(tiny_config, cache_dir, monkeypatch, workers, interru
     output = config.runtime.output_dir
     assert not list(output.rglob("*.safetensors"))
     assert not (output / "latest.pt").exists()
-    assert saved == ([] if interrupt else ["final.pt"])
+    assert saved == ([] if interrupt or policy == "none" else ["final.pt"])
+    if policy == "none":
+        assert not list(output.rglob("*.pt"))
     if interrupt:
         assert result["status"] == "interrupted"
     else:
         assert result["status"] == "complete"
         assert json.loads((output / "best.json").read_text())["weights"] is None
+        assert result["final_validation"]["validation_complete"]
+        assert json.loads((output / "result.json").read_text()) == result
+        if policy == "none":
+            return
         evaluated = evaluate_checkpoint(config, output / "final.pt", full=True)
         assert evaluated["loss"] == pytest.approx(result["final_validation"]["loss"])
         resumed = train(config, output / "final.pt")

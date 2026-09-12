@@ -34,8 +34,13 @@ uv run tiny-llm train --config configs/50m.yaml \
   --set optimizer.lr=0.0003 --set runtime.output_dir=runs/50m-low-lr
 ```
 
-Each run saves `resolved.yaml`, logs (`run.log`, `metrics.jsonl`), final state
+By default, each run saves `resolved.yaml`, logs (`run.log`, `metrics.jsonl`), final state
 (`final.pt`), best subset statistics (`best.json`), and final metrics (`result.json`).
+For disk-saving sweeps, set `--set training.checkpoint_policy=none` to disable
+all checkpoint and weight files, including the final checkpoint. Training still
+saves configuration, logs, and full-validation results; interrupted runs restart
+from scratch.
+
 `training.checkpoint_policy` defaults to `final`: no periodic, epoch, or interruption
 checkpoints are written. Interrupted training must restart unless `final.pt` exists.
 To retain epoch weights and rolling recovery states, train with
@@ -73,30 +78,25 @@ The smoke configuration truncates C4, so its evaluation is marked incomplete.
 
 ### Packed training
 
-The tuned packed recipes run four local models together on one GPU, with 32
-sequences per model and a global batch of 131,072 tokens. The `4` in each config
-filename denotes the number of local models.
+The tuned packed recipes run four or eight local models together on one GPU.
+They use a global batch of 131,072 tokens, with 32 sequences per model for four
+workers and 16 for eight. The number after `packed` denotes the local model count.
 
-| Scheme | Recipe | Learning rate | Beta1 | Beta2 |
-|---|---|---:|---:|---:|
-| AWC | [packed4-20m-awc.yaml](configs/packed4-20m-awc.yaml) | 0.008 | 0.95 | 0.99 |
-| ATC | [packed4-20m-atc.yaml](configs/packed4-20m-atc.yaml) | 0.0056 | 0.9 | 0.99 |
+| Workers | Scheme | Recipe | Learning rate | Beta1 | Beta2 |
+|---:|---|---|---:|---:|---:|
+| 4 | AWC | [packed4-20m-awc.yaml](configs/packed4-20m-awc.yaml) | 0.008 | 0.95 | 0.99 |
+| 4 | ATC | [packed4-20m-atc.yaml](configs/packed4-20m-atc.yaml) | 0.0056 | 0.9 | 0.99 |
+| 8 | AWC | [packed8-20m-awc.yaml](configs/packed8-20m-awc.yaml) | 0.0056 | 0.95 | 0.999 |
 
-These are the best tested settings in the [AWC](doc/recipe_sweep_packed4_20m_128k.md)
-and [ATC](doc/recipe_sweep_packed4_atc_20m_128k.md) studies. Each recipe explicitly
-sets its scheme and uses a separate output directory.
+These are the best tested settings in the [four-worker AWC](doc/recipe_sweep_packed4_20m_128k.md),
+[four-worker ATC](doc/recipe_sweep_packed4_atc_20m_128k.md), and
+[eight-worker AWC](doc/recipe_sweep_packed8_awc_20m_128k.md) studies.
+Each recipe explicitly sets its scheme and uses a separate output directory.
 
 ```bash
 uv run tiny-llm train --config configs/packed4-20m-awc.yaml
 uv run tiny-llm train --config configs/packed4-20m-atc.yaml
-```
-
-To use eight workers while preserving the AWC recipe's global batch:
-
-```bash
-uv run tiny-llm train --config configs/packed4-20m-awc.yaml \
-  --set decentralized.num_models=8 --set training.micro_batch_size=16 \
-  --set runtime.output_dir=runs/packed8-20m-awc
+uv run tiny-llm train --config configs/packed8-20m-awc.yaml
 ```
 
 The global batch must equal `num_models * micro_batch_size * context_length`,
@@ -293,6 +293,8 @@ normal exit, failure, or catchable termination.
   72 runs, tuning plots, and the current 20M preset.
 - [Packed-4 20M tuning at 128K tokens](doc/recipe_sweep_packed4_20m_128k.md):
   129 runs tuning LR, beta1, and beta2, with response plots and a beta heatmap.
+- [AWC packed-8 20M tuning at 128K tokens](doc/recipe_sweep_packed8_awc_20m_128k.md):
+  240 runs covering the complete LR/beta1/beta2 grid, with heatmaps and worker-count comparisons.
 - [AWC beta2 0.99 analysis](doc/recipe_sweep_packed4_awc_beta99_20m_128k.md):
   30 runs covering LR response, beta1 sensitivity, and matched ATC comparisons.
 - [ATC packed-4 20M tuning at 128K tokens](doc/recipe_sweep_packed4_atc_20m_128k.md):

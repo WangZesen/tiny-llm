@@ -1,0 +1,25 @@
+# Tuned packed-8 AWC recipe; see doc/recipe_sweep_packed8_awc_20m_128k.md.
+data:
+  revision: 1588ec454efa1a09f29cd18ddd04fe05fc8653a2
+  tokenizer_revision: 59f6f375b26bde864a6ca194a9a3044570490064
+decentralized:
+  num_models: 8
+  topology: one_peer_exponential
+  scheme: awc
+training:
+  batch_tokens: 131072
+  micro_batch_size: 16
+  checkpoint_policy: final
+  epoch_tokens: 10207232
+  max_tokens: 408068096
+runtime:
+  output_dir: runs/packed8-20m-awc
+optimizer:
+  lr: 0.0056
+  beta1: 0.95
+  beta2: 0.999
+  eps: 1.0e-08
+  weight_decay: 0.1
+  grad_clip: 1.0
+  warmup_fraction: 0.05
+  min_lr_ratio: 0.1

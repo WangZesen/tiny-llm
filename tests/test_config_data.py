@@ -59,6 +59,7 @@ def test_boundary_rounding(tiny_config):
     "preset,packed_preset",
     [
         ("20m", "packed4-20m-awc"),
+        ("20m", "packed8-20m-awc"),
         ("20m", "packed4-20m-atc"),
         ("20m", "packed4-20m-awc-beta99"),
         ("50m", "packed-50m"),

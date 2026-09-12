@@ -428,6 +428,8 @@ def _train(config: Config, resume: Path | None) -> dict:
     previous_handlers = {sig: signal.signal(sig, stop) for sig in (signal.SIGINT, signal.SIGTERM)}
 
     def checkpoint(name="latest.pt", *, epoch=False):
+        if config.training.checkpoint_policy == "none":
+            return
         if config.training.checkpoint_policy == "final" and name != "final.pt":
             return
         state = dict(

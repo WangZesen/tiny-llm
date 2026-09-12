@@ -76,7 +76,7 @@ class TrainingConfig(StrictModel):
     batch_tokens: int = Field(32768, gt=0)
     micro_batch_size: int = Field(32, gt=0)
     checkpoint_every: int = Field(500, gt=0)
-    checkpoint_policy: Literal["all", "final"] = "final"
+    checkpoint_policy: Literal["all", "final", "none"] = "final"
     save_epoch_training_state: bool = True
     log_every: int = Field(20, gt=0)
     # Explicit short-run overrides. Stored in configs; never silently applied by sweep.

@@ -159,13 +159,18 @@ configurations because they use a constant LR rather than the training schedule.
 
 ## Checkpoints and artifacts
 
+For disk-saving sweeps, set `--set training.checkpoint_policy=none` to disable
+all checkpoint and weight files, including the final checkpoint. Training still
+saves configuration, logs, and full-validation results; interrupted runs restart
+from scratch.
+
 By default, `training.checkpoint_policy: final` saves only the final training
 checkpoint. No periodic, epoch, worker-weight, or interruption checkpoints are
 written. Set `training.checkpoint_policy: all` to enable the previous behavior.
 With policy `all`, `training.save_epoch_training_state: true` (the default)
 also retains complete epoch snapshots. Set the new field to `false` to disable
 these archives while preserving weight exports and rolling recovery saves.
-The field has no effect under policy `final`.
+The field has no effect under policy `final` or `none`.
 
 Each run contains:
 
@@ -175,7 +180,8 @@ Each run contains:
   or shared packed state with references to separate worker files.
 - `best.json`: best epoch and subset loss; `weights` is null under policy `final`.
 - `latest.pt` (policy `all`): model, AdamW, RNG states, data cursor, and schedule progress.
-- `final.pt` and `result.json`: final training state and full-validation metrics.
+- `final.pt` (policy `all` or `final`): final training state.
+- `result.json`: full-validation metrics under every checkpoint policy.
 
 Resume using the saved configuration. Device and output-directory changes are
 allowed, as are changes to `data.prefetch` and checkpoint retention policy. Recipe, precision, data identity, batch,
