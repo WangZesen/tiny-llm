@@ -1,0 +1,18 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { url } from '../lib/links';
+---
+
+<Layout title="Page not found">
+  <p class="eyebrow">404</p>
+  <h1>This page has moved.</h1>
+  <p>Browse the current research or look for an older report in the archive.</p>
+  <div class="actions">
+    <a class="button" href={url()}>
+      Back to tiny-llm →
+    </a>
+    <a class="button secondary" href={url('archive/')}>
+      Historical archive
+    </a>
+  </div>
+</Layout>

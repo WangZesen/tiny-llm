@@ -1,0 +1,164 @@
+---
+import '../styles/global.css';
+import '@fontsource/dm-sans/latin-400.css';
+import '@fontsource/dm-sans/latin-500.css';
+import '@fontsource/dm-sans/latin-600.css';
+import '@fontsource/newsreader/latin-400.css';
+import 'katex/dist/katex.min.css';
+import { url } from '../lib/links';
+interface Props {
+  title: string;
+  description?: string;
+  wide?: boolean;
+  archive?: boolean;
+}
+const {
+  title,
+  description = 'Small language models. Inspectable training. Reproducible experiments.',
+  wide = false,
+  archive = false,
+} = Astro.props;
+const current = Astro.url.pathname;
+const navigation = [
+  ['Results', 'results/overview/'],
+  ['Explorer', 'explorer/'],
+  ['Methods', 'methods/protocol/'],
+  ['Guides', 'guides/training/'],
+  ['Performance', 'performance/training/'],
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#f8f9f6" />
+    <title>{title === 'tiny-llm' ? title : `${title} — tiny-llm`}</title>
+    <link rel="icon" type="image/svg+xml" href={url('favicon.svg')} />
+    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+    <script is:inline>
+      try {
+        document.documentElement.dataset.theme = localStorage.getItem('tiny-llm-theme') || 'light';
+      } catch {}
+    </script>
+  </head>
+  <body data-pagefind-ignore={archive ? 'all' : undefined}>
+    <a class="skip" href="#main">
+      Skip to content
+    </a>
+    <header class="site-header">
+      <a class="wordmark" href={url()} aria-label="tiny-llm home">
+        <span class="brand-mark">
+          t<span>·</span>
+        </span>
+        tiny-llm
+      </a>
+      <nav aria-label="Main navigation">
+        {navigation.map(([label, route]) => (
+          <a
+            href={url(route)}
+            aria-current={current.includes('/' + route.split('/')[0] + '/') ? 'page' : undefined}
+          >
+            {label}
+          </a>
+        ))}
+      </nav>
+      <div class="header-actions">
+        <button id="search-open" aria-label="Search documentation">
+          Search <kbd>/</kbd>
+        </button>
+        <button id="theme-toggle" aria-label="Switch to dark theme">
+          ◐
+        </button>
+        <a class="github" href="https://github.com/WangZesen/tiny-llm">
+          GitHub ↗
+        </a>
+      </div>
+    </header>
+    <main id="main" class:list={['page', { wide }]} data-pagefind-ignore={archive ? '' : undefined}>
+      <slot />
+    </main>
+    <footer>
+      <div>
+        <a class="wordmark" href={url()}>
+          tiny-llm
+        </a>
+        <p>Small models. Open measurements.</p>
+      </div>
+      <div>
+        <a href={url('archive/')}>Historical archive</a>
+        <a href={url('guides/website/')}>Maintain this site</a>
+        <a href="https://github.com/WangZesen/tiny-llm">Source on GitHub ↗</a>
+      </div>
+    </footer>
+    <dialog id="search-dialog" aria-label="Search documentation">
+      <div class="dialog-top">
+        <strong>Search current documentation</strong>
+        <button id="search-close" aria-label="Close search">
+          ✕
+        </button>
+      </div>
+      <div id="search"></div>
+      <p class="muted small">Historical reports are available in the archive.</p>
+    </dialog>
+    <script>
+      const theme = document.querySelector<HTMLButtonElement>('#theme-toggle')!;
+      const label = () =>
+        theme.setAttribute(
+          'aria-label',
+          `Switch to ${document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'} theme`,
+        );
+      label();
+      theme.addEventListener('click', () => {
+        const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = next;
+        try {
+          localStorage.setItem('tiny-llm-theme', next);
+        } catch {}
+        label();
+        window.dispatchEvent(new Event('themechange'));
+      });
+      const dialog = document.querySelector<HTMLDialogElement>('#search-dialog')!;
+      let initialized = false;
+      async function openSearch() {
+        dialog.showModal();
+        if (!initialized) {
+          initialized = true;
+          const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+          const css = document.createElement('link');
+          css.rel = 'stylesheet';
+          css.href = `${base}/pagefind/pagefind-ui.css`;
+          document.head.append(css);
+          const script = document.createElement('script');
+          script.src = `${base}/pagefind/pagefind-ui.js`;
+          script.onload = () => {
+            new (window as any).PagefindUI({
+              element: '#search',
+              showSubResults: true,
+              showImages: false,
+            });
+            dialog.querySelector<HTMLInputElement>('input')?.focus();
+          };
+          script.onerror = () => {
+            document.querySelector('#search')!.textContent =
+              'Search is available in the production build. Use the navigation to browse.';
+          };
+          document.head.append(script);
+        } else dialog.querySelector<HTMLInputElement>('input')?.focus();
+      }
+      document.querySelector('#search-open')!.addEventListener('click', openSearch);
+      document.querySelector('#search-close')!.addEventListener('click', () => dialog.close());
+      window.addEventListener('keydown', (e) => {
+        if (
+          e.key === '/' &&
+          !['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement).tagName)
+        ) {
+          e.preventDefault();
+          openSearch();
+        }
+      });
+    </script>
+  </body>
+</html>

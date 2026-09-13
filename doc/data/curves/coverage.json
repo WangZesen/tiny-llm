@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "available": 726,
+  "missing": [
+    {
+      "id": "awc4--0.008--0.95--0.98--42",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.95-beta2-0.98-seed42/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.95--0.98--43",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.95-beta2-0.98-seed43/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.95--0.98--44",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.95-beta2-0.98-seed44/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.925--0.98--42",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.925-beta2-0.98-seed42/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.925--0.98--43",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.925-beta2-0.98-seed43/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.925--0.98--44",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.925-beta2-0.98-seed44/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.925--0.95--42",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.925-beta2-0.95-seed42/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.925--0.95--43",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.925-beta2-0.95-seed43/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.925--0.95--44",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.925-beta2-0.95-seed44/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.95--0.95--42",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.95-beta2-0.95-seed42/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.95--0.95--43",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.95-beta2-0.95-seed43/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.95--0.95--44",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.95-beta2-0.95-seed44/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.925--0.999--42",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.925-beta2-0.999-seed42/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.925--0.999--43",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.925-beta2-0.999-seed43/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.925--0.999--44",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.925-beta2-0.999-seed44/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.95--0.999--42",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.95-beta2-0.999-seed42/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.95--0.999--43",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.95-beta2-0.999-seed43/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.95--0.999--44",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.95-beta2-0.999-seed44/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.975--0.98--42",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.975-beta2-0.98-seed42/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.975--0.98--43",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.975-beta2-0.98-seed43/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.975--0.98--44",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.975-beta2-0.98-seed44/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.975--0.999--42",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.975-beta2-0.999-seed42/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.975--0.999--43",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.975-beta2-0.999-seed43/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.975--0.999--44",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.975-beta2-0.999-seed44/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.975--0.95--42",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.975-beta2-0.95-seed42/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.975--0.95--43",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.975-beta2-0.95-seed43/metrics.jsonl",
+      "reason": "Source log unavailable"
+    },
+    {
+      "id": "awc4--0.008--0.975--0.95--44",
+      "source": "runs/packed4-20m-beta1-beta2-20260911/experiments/packed4-beta10.975-beta2-0.95-seed44/metrics.jsonl",
+      "reason": "Source log unavailable"
+    }
+  ],
+  "note": "Train loss is the logged token-weighted window loss. Validation curves use the fixed epoch subset. Final full-validation loss is separate. Source paths are historical provenance, not website URLs."
+}

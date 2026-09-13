@@ -1,0 +1,233 @@
+---
+import Layout from '../layouts/Layout.astro';
+import studies from '../generated/studies.json';
+import { url } from '../lib/links';
+const total = studies.reduce((n, s) => n + s.runs, 0);
+const configurations = studies.reduce((n, s) => n + s.configurations, 0);
+const xpos = (loss: number) => 165 + ((loss - 3.54) / 0.2) * 275;
+---
+
+<Layout title="tiny-llm" wide>
+  <section class="hero" data-pagefind-body>
+    <div>
+      <p class="eyebrow">A small language model research lab</p>
+      <h1>
+        Small models.
+        <br />
+        <em>Inspectable</em>
+        <br />
+        training.
+      </h1>
+      <p class="lead">
+        Train Llama-style models from scratch. Explore how optimizer settings, decentralized
+        updates, and gradient clipping shape their learning.
+      </p>
+      <div class="actions">
+        <a class="button" href={url('explorer/')}>
+          Explore the results <span>↗</span>
+        </a>
+        <a class="button secondary" href={url('guides/training/')}>
+          Start training <span>→</span>
+        </a>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="chart-heading">
+        <h3>Best tested validation loss</h3>
+        <span class="tag">20M · C4</span>
+      </div>
+      <svg viewBox="0 0 480 330" role="img" aria-labelledby="chart-title chart-description">
+        <title id="chart-title">Five separately tuned recipes</title>
+        <desc id="chart-description">
+          Mean final full-validation cross-entropy with sample standard deviations across three
+          seeds. Lower loss is better.
+        </desc>
+        {[3.55, 3.6, 3.65, 3.7].map((v) => (
+          <g>
+            <line
+              x1={xpos(v)}
+              y1="26"
+              x2={xpos(v)}
+              y2="276"
+              stroke="var(--line)"
+              stroke-dasharray="3 5"
+            />
+            <text x={xpos(v)} y="300" text-anchor="middle" fill="var(--muted)" font-size="11">
+              {v.toFixed(2)}
+            </text>
+          </g>
+        ))}
+        {studies.map((s, i) => {
+          const y = 48 + i * 49,
+            g = s.groups[0];
+          return (
+            <g>
+              <text x="0" y={y + 4} fill="var(--ink)" font-size="12">
+                {s.title}
+              </text>
+              <line
+                x1={xpos(g.mean - g.sd)}
+                y1={y}
+                x2={xpos(g.mean + g.sd)}
+                y2={y}
+                stroke={s.color}
+                stroke-width="2"
+              />
+              <line
+                x1={xpos(g.mean - g.sd)}
+                y1={y - 5}
+                x2={xpos(g.mean - g.sd)}
+                y2={y + 5}
+                stroke={s.color}
+              />
+              <line
+                x1={xpos(g.mean + g.sd)}
+                y1={y - 5}
+                x2={xpos(g.mean + g.sd)}
+                y2={y + 5}
+                stroke={s.color}
+              />
+              <circle cx={xpos(g.mean)} cy={y} r="5" fill={s.color} />
+              <text
+                x={xpos(g.mean)}
+                y={y - 12}
+                text-anchor="middle"
+                fill="var(--muted)"
+                font-size="10"
+              >
+                {g.mean.toFixed(4)}
+              </text>
+            </g>
+          );
+        })}
+        <text x="302" y="327" text-anchor="middle" font-size="10" fill="var(--muted)">
+          Final full-validation loss (nats) · lower is better
+        </text>
+      </svg>
+      <p class="hero-caption">
+        Three seeds per configuration. Error bars show sample SD.
+        <br />
+        Separately tuned recipes; differences do not isolate one design choice.
+      </p>
+    </div>
+  </section>
+  <section class="metrics-strip" aria-label="Experiment scope">
+    <div>
+      <strong>{total}</strong>
+      <span>completed tuning runs</span>
+    </div>
+    <div>
+      <strong>{configurations}</strong>
+      <span>measured configurations</span>
+    </div>
+    <div>
+      <strong>20.4M</strong>
+      <span>unique parameters per model</span>
+    </div>
+    <div>
+      <strong>128K</strong>
+      <span>global batch tokens</span>
+    </div>
+  </section>
+  <section>
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Read the evidence</p>
+        <h2>Three ways into the results.</h2>
+      </div>
+      <a href={url('methods/protocol/')}>Shared experimental protocol ↗</a>
+    </div>
+    <div class="cards">
+      <a class="card" href={url('results/overview/')}>
+        <span class="number">01 / RESULTS OVERVIEW</span>
+        <h3>
+          From baseline to
+          <br />
+          decentralized training.
+        </h3>
+        <p>
+          Compare the best tested recipes, understand the evaluation, and find a starting
+          configuration.
+        </p>
+        <span class="arrow">Read the findings →</span>
+      </a>
+      <a class="card" href={url('results/optimizer-tuning/')}>
+        <span class="number">02 / OPTIMIZER TUNING</span>
+        <h3>
+          Learning rates.
+          <br />
+          Moments. Mixing order.
+        </h3>
+        <p>Inspect response surfaces and compare AWC with ATC at matched optimizer settings.</p>
+        <span class="arrow">Explore the tradeoffs →</span>
+      </a>
+      <a class="card" href={url('results/ablations/')}>
+        <span class="number">03 / CONTROLLED COMPARISONS</span>
+        <h3>
+          Clipping gradients.
+          <br />
+          Adding workers.
+        </h3>
+        <p>
+          Separate tuned winners from matched comparisons and see where the search leaves open
+          questions.
+        </p>
+        <span class="arrow">Follow the comparisons →</span>
+      </a>
+    </div>
+  </section>
+  <section>
+    <div class="section-heading">
+      <h2>A recipe to start with.</h2>
+      <a href={url('explorer/')}>Inspect all {configurations} configurations ↗</a>
+    </div>
+    <div class="table-wrap">
+      <table aria-label="Best tested recipes">
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>LR</th>
+            <th>Beta 1</th>
+            <th>Beta 2</th>
+            <th>Full-validation loss ± SD</th>
+            <th>Recipe</th>
+          </tr>
+        </thead>
+        <tbody>
+          {studies.map((s) => (
+            <tr>
+              <td>
+                <span class="dot" style={`background:${s.color}`} />
+                {s.title}
+              </td>
+              <td>{s.groups[0].lr}</td>
+              <td>{s.groups[0].beta1}</td>
+              <td>{s.groups[0].beta2}</td>
+              <td>
+                {s.groups[0].mean.toFixed(6)} ± {s.groups[0].sd.toFixed(6)}
+              </td>
+              <td>
+                {s.preset ? (
+                  <a href={url('assets/configs/' + s.preset)}>YAML ↗</a>
+                ) : (
+                  'Ablation only'
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <p class="small muted" style="margin-top:15px">
+      Validation was used for recipe selection. Rankings do not establish statistical significance
+      or a global optimum.
+    </p>
+  </section>
+  <section class="note">
+    <strong>Built to be inspected.</strong> Results link to per-seed measurements, resolved recipes,
+    and experimental provenance. Read the{' '}
+    <a href={url('methods/algorithms/')}>algorithm definitions</a>, browse{' '}
+    <a href={url('performance/training/')}>performance measurements</a>, or open the{' '}
+    <a href={url('methods/adaptive-consensus/')}>adaptive-consensus investigation</a>.
+  </section>
+</Layout>

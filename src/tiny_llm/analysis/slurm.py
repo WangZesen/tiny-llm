@@ -59,7 +59,7 @@ def allocation_hours(seconds):
 
 
 def measured_timing(config, data, options):
-    """Conservative GH200 timings; see doc/analysis_performance.md for measurements.
+    """Conservative GH200 timings; see doc/performance/checkpoint-analysis.md for measurements.
 
     Full passes scale by microbatch counts, including padded boundary batches.
     Other execution recipes require an explicit wall time, not extrapolation.

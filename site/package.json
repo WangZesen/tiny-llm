@@ -1,0 +1,46 @@
+{
+  "name": "tiny-llm-research",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "tsx tools/data.ts && astro dev --host 127.0.0.1",
+    "build": "tsx tools/data.ts && astro build && pagefind --site dist --glob '**/*.html' && tsx tools/check-links.ts",
+    "preview": "astro preview --host 127.0.0.1",
+    "check": "astro check && tsc --noEmit",
+    "data:check": "tsx tools/data.ts",
+    "data:refresh": "tsx tools/export-curves.ts",
+    "test": "tsx --test tests/data.test.ts",
+    "test:browser": "playwright test"
+  },
+  "dependencies": {
+    "@astrojs/markdown-remark": "^7.3.1",
+    "@astrojs/react": "6.0.5",
+    "@fontsource/dm-sans": "^5.3.0",
+    "@fontsource/newsreader": "^5.3.0",
+    "astro": "7.3.2",
+    "katex": "^0.16.22",
+    "plotly.js-cartesian-dist-min": "^4.1.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "rehype-katex": "^7.0.1",
+    "remark-math": "^6.0.0",
+    "yaml": "^2.8.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.9",
+    "@playwright/test": "1.63.0",
+    "@types/node": "^24.0.0",
+    "@types/plotly.js": "^3.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "cheerio": "^1.1.0",
+    "pagefind": "^1.4.0",
+    "prettier": "^3.9.6",
+    "prettier-plugin-astro": "^1.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  }
+}

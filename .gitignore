@@ -11,8 +11,17 @@ wheels/
 .venv-*
 
 # Training artifacts and local tools
-data/
-runs/
+/data/
+/runs/
 .pytest_cache/
 .ruff_cache/
 *.log
+
+# Website build products (source data and curve snapshots are committed)
+site/node_modules/
+site/.astro/
+site/dist/
+site/src/generated/
+site/public/assets/
+site/test-results/
+site/playwright-report/

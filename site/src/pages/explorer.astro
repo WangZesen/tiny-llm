@@ -1,0 +1,63 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Explorer from '../components/Explorer';
+import data from '../generated/studies.json';
+import type { Study } from '../lib/types';
+import { url } from '../lib/links';
+const studies = data as Study[];
+---
+
+<Layout title="Results explorer" wide>
+  <div class="explorer-intro">
+    <div>
+      <p class="eyebrow">753 runs · 251 configurations · five studies</p>
+      <h1>Explore the measurements.</h1>
+      <p class="lead">
+        From response surfaces to individual seeds. Every point is a recorded experiment; every
+        ranking uses final full-validation loss.
+      </p>
+    </div>
+    <a href={url('methods/protocol/')}>Protocol & interpretation ↗</a>
+  </div>
+  <Explorer studies={studies} client:load />
+  <details>
+    <summary>Static summary and source downloads</summary>
+    <p>
+      726 runs have recorded trajectories. The other 27 retain final results with unavailable
+      curves. Error bars and ± values denote sample standard deviations across three seeds.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Study</th>
+            <th>Runs</th>
+            <th>Best mean ± SD</th>
+            <th>Data</th>
+          </tr>
+        </thead>
+        <tbody>
+          {studies.map((s) => (
+            <tr>
+              <td>{s.title}</td>
+              <td>{s.runs}</td>
+              <td>
+                {s.groups[0].mean.toFixed(6)} ± {s.groups[0].sd.toFixed(6)}
+              </td>
+              <td>
+                <a href={url('assets/data/' + s.directory + '/summary.csv')}>Summary CSV</a> ·{' '}
+                <a href={url('assets/data/' + s.directory + '/results.json')}>JSON & provenance</a>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </details>
+  <noscript>
+    <p class="note">
+      Enable JavaScript to filter results and inspect charts. The summary, source downloads, and
+      research articles remain available.
+    </p>
+  </noscript>
+</Layout>

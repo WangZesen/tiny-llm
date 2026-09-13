@@ -1,0 +1,7 @@
+[
+  {"id":"sync","title":"Synchronous","label":"1 model · synchronous","directory":"recipe_sweep_20m_128k","workers":1,"scheme":"synchronous","clip":1,"color":"#2867b2","preset":"20m.yaml","runs":72,"configurations":24},
+  {"id":"awc4","title":"AWC · 4 workers","label":"4 models · adapt while combine","directory":"recipe_sweep_packed4_20m_128k","workers":4,"scheme":"awc","clip":1,"color":"#127d72","preset":"packed4-20m-awc.yaml","runs":129,"configurations":43},
+  {"id":"atc4","title":"ATC · 4 workers","label":"4 models · adapt then combine","directory":"recipe_sweep_packed4_atc_20m_128k","workers":4,"scheme":"atc","clip":1,"color":"#8754ad","preset":"packed4-20m-atc.yaml","runs":72,"configurations":24},
+  {"id":"awc8","title":"AWC · 8 workers","label":"8 models · adapt while combine","directory":"recipe_sweep_packed8_awc_20m_128k","workers":8,"scheme":"awc","clip":1,"color":"#bb6330","preset":"packed8-20m-awc.yaml","runs":240,"configurations":80},
+  {"id":"noclip4","title":"AWC · no clipping","label":"4 models · unclipped gradients","directory":"recipe_sweep_packed4_awc_noclip_20m_128k","workers":4,"scheme":"awc","clip":null,"color":"#b64965","preset":null,"runs":240,"configurations":80}
+]

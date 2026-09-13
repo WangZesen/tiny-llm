@@ -1,4 +1,4 @@
-# Tuned packed-4 AWC recipe; see doc/recipe_sweep_packed4_20m_128k.md.
+# Tuned packed-4 AWC recipe; see doc/results/optimizer-tuning.md.
 data:
   revision: 1588ec454efa1a09f29cd18ddd04fe05fc8653a2
   tokenizer_revision: 59f6f375b26bde864a6ca194a9a3044570490064

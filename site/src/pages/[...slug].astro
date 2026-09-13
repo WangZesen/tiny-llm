@@ -1,0 +1,53 @@
+---
+import { getCollection, render } from 'astro:content';
+import Layout from '../layouts/Layout.astro';
+import { url } from '../lib/links';
+export async function getStaticPaths() {
+  return (await getCollection('articles')).map((article) => ({
+    params: { slug: article.id },
+    props: { article },
+  }));
+}
+const { article } = Astro.props;
+const { Content, headings } = await render(article);
+const section = article.id.split('/')[0];
+const siblings = (await getCollection('articles')).filter((p) => p.id.startsWith(section + '/'));
+---
+
+<Layout
+  title={article.data.title}
+  description={article.data.description}
+  archive={article.data.archive}
+>
+  <div class="article-grid">
+    <aside class="section-nav" aria-label="Section navigation">
+      <a class="eyebrow" href={url()}>
+        {section}
+      </a>
+      {siblings.map((p) => (
+        <a href={url(p.id + '/')} aria-current={p.id === article.id ? 'page' : undefined}>
+          {p.data.title}
+        </a>
+      ))}
+    </aside>
+    <article class="prose" data-pagefind-body={article.data.archive ? undefined : ''}>
+      <p class="eyebrow">{article.data.archive ? 'Research archive' : section}</p>
+      <h1>{article.data.title}</h1>
+      {article.data.description && <p class="lead">{article.data.description}</p>}
+      <Content />
+      <div class="article-end">
+        <a href={`https://github.com/WangZesen/tiny-llm/blob/main/doc/${article.id}.md`}>
+          View Markdown source ↗
+        </a>
+      </div>
+    </article>
+    <aside class="toc" aria-label="On this page">
+      <strong>On this page</strong>
+      {headings
+        .filter((h) => h.depth === 2)
+        .map((h) => (
+          <a href={'#' + h.slug}>{h.text}</a>
+        ))}
+    </aside>
+  </div>
+</Layout>

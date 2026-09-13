@@ -1,0 +1,33 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import { url } from '../../lib/links';
+const reports = (await getCollection('articles')).filter((p) => p.data.archive);
+---
+
+<Layout title="Historical archive" archive>
+  <div class="prose" style="max-width:850px;margin:auto">
+    <p class="eyebrow">Historical evidence</p>
+    <h1>
+      Keep the record.
+      <br />
+      Follow the current work.
+    </h1>
+    <p class="lead">
+      These reports preserve earlier experiments and detailed campaign narratives. Their settings,
+      commands, and implementation status describe the time of measurement.
+    </p>
+    <p>
+      For maintained conclusions, start with the{' '}
+      <a href={url('results/overview/')}>results overview</a>. The current explorer excludes
+      superseded studies and counts each experiment once.
+    </p>
+    <ul class="archive-list">
+      {reports.map((p) => (
+        <li>
+          <a href={url(p.id + '/')}>{p.data.title} ↗</a>
+        </li>
+      ))}
+    </ul>
+  </div>
+</Layout>
