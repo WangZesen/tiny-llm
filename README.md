@@ -111,6 +111,12 @@ and clipped, then parameters are mixed before the AdamW update. Set
 `--set decentralized.scheme=atc` for adapt-then-combine (ATC), which applies
 the AdamW update before mixing. Optimizer moments remain local in both schemes.
 
+Set `--set optimizer.grad_clip=null` to disable gradient clipping. Gradient norms
+are still logged and nonfinite gradients still stop training. The default is
+`1.0`; positive thresholds retain local clipping. This setting also applies to
+ordinary training and packed/sequential benchmarks. Changing it changes the
+recipe identity, so resuming requires the same clipping setting.
+
 Optional adaptive consensus weakens mixing as the learning rate falls. The sample
 config retains its separate 32,768-token recipe and uses four workers,
 `start_frac=0.5`, and `p=1.0`:
@@ -293,6 +299,8 @@ normal exit, failure, or catchable termination.
   72 runs, tuning plots, and the current 20M preset.
 - [Packed-4 20M tuning at 128K tokens](doc/recipe_sweep_packed4_20m_128k.md):
   129 runs tuning LR, beta1, and beta2, with response plots and a beta heatmap.
+- [Four-worker AWC without gradient clipping](doc/recipe_sweep_packed4_awc_noclip_20m_128k.md):
+  240 runs, complete tuning plots, and 28 matched comparisons against clipping at norm 1.0.
 - [AWC packed-8 20M tuning at 128K tokens](doc/recipe_sweep_packed8_awc_20m_128k.md):
   240 runs covering the complete LR/beta1/beta2 grid, with heatmaps and worker-count comparisons.
 - [AWC beta2 0.99 analysis](doc/recipe_sweep_packed4_awc_beta99_20m_128k.md):

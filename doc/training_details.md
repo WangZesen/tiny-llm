@@ -79,6 +79,12 @@ and optimizer moments remain local in both schemes. The scheme is saved in run
 configuration, metadata, summaries, and benchmark results. Existing configurations
 and checkpoints retain AWC behavior; resuming with a different scheme is rejected.
 
+Set `--set optimizer.grad_clip=null` to disable gradient clipping. Gradient norms
+are still logged and nonfinite gradients still stop training. The default is
+`1.0`; positive thresholds retain local clipping. This setting also applies to
+ordinary training and packed/sequential benchmarks. Changing it changes the
+recipe identity, so resuming requires the same clipping setting.
+
 Available `decentralized.topology` values:
 
 - `complete`: globally average parameters each step.

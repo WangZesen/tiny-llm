@@ -18,6 +18,15 @@ from loguru import logger
 from tiny_llm.config import Config
 
 
+def clip_grad_norm_(parameters, maximum: float | None):
+    """Return the gradient norm and reject nonfinite values; null disables scaling."""
+    if maximum is None:
+        return torch.nn.utils.get_total_norm(
+            [p.grad for p in parameters if p.grad is not None], error_if_nonfinite=True
+        )
+    return torch.nn.utils.clip_grad_norm_(parameters, maximum, error_if_nonfinite=True)
+
+
 def setup_logging(path: Path | None = None):
     logger.remove()
     fmt = "{time:YYYY-MM-DD HH:mm:ss} | {level: <7} | {message}"

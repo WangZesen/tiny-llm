@@ -36,6 +36,7 @@ from tiny_llm.runtime import (
     atomic_json,
     attention_kernels,
     autocast,
+    clip_grad_norm_,
     environment,
     preserve_rng,
     restore_rng,
@@ -170,9 +171,7 @@ def optimizer_update(
             (summed_loss / (step_blocks * config.model.context_length)).backward()
         step_loss += summed_loss.detach()
     with region("clipping_and_finite_check"):
-        grad_norm = torch.nn.utils.clip_grad_norm_(
-            model.parameters(), config.optimizer.grad_clip, error_if_nonfinite=True
-        )
+        grad_norm = clip_grad_norm_(model.parameters(), config.optimizer.grad_clip)
         if not torch.isfinite(step_loss).item():
             raise FloatingPointError("nonfinite training loss")
     with region("optimizer"):

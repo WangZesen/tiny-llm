@@ -11,7 +11,14 @@ import torch
 from tiny_llm.config import Config, save_config
 from tiny_llm.model import Llama
 from tiny_llm.packed import PackedLlama
-from tiny_llm.runtime import actual_backend, atomic_json, environment, preserve_rng, setup_runtime
+from tiny_llm.runtime import (
+    actual_backend,
+    atomic_json,
+    clip_grad_norm_,
+    environment,
+    preserve_rng,
+    setup_runtime,
+)
 from tiny_llm.train import loss_function, make_optimizer
 
 
@@ -69,9 +76,7 @@ def benchmark_packed_worker(
             optimizers[0].clip_grad_norm_(config.optimizer.grad_clip)
         else:
             for model in models:
-                torch.nn.utils.clip_grad_norm_(
-                    model.parameters(), config.optimizer.grad_clip, error_if_nonfinite=True
-                )
+                clip_grad_norm_(model.parameters(), config.optimizer.grad_clip)
 
     def update():
         for optimizer in optimizers:

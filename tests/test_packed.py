@@ -68,7 +68,8 @@ def matrix(n, topology, step, device="cpu", dtype=torch.float64):
 )
 @pytest.mark.parametrize("adaptive", [False, True])
 @pytest.mark.parametrize("scheme", ["awc", "atc"])
-def test_independent_worker_parity(tiny_config, backend, topology, adaptive, scheme):
+@pytest.mark.parametrize("grad_clip", [0.5, None])
+def test_independent_worker_parity(tiny_config, backend, topology, adaptive, scheme, grad_clip):
     n = 3
     schedule = None
     if adaptive:
@@ -113,9 +114,10 @@ def test_independent_worker_parity(tiny_config, backend, topology, adaptive, sch
             loss.backward()
             for p, q in zip(packed.parameters(), model.parameters(), strict=True):
                 torch.testing.assert_close(p.grad[i], q.grad, rtol=1e-9, atol=1e-11)
-        optimizer.clip_grad_norm_(0.5)
-        for model in locals_:
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
+        optimizer.clip_grad_norm_(grad_clip)
+        if grad_clip is not None:
+            for model in locals_:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
         if scheme == "atc":
             optimizer.step()
             for local_optimizer in optimizers:
@@ -315,11 +317,13 @@ def assert_nested_equal(left, right):
 
 
 @pytest.mark.parametrize("scheme", ["awc", "atc"])
-def test_training_resume(tiny_config, cache_dir, monkeypatch, scheme):
+@pytest.mark.parametrize("grad_clip", [1.0, None])
+def test_training_resume(tiny_config, cache_dir, monkeypatch, scheme, grad_clip):
     tiny_config.training.checkpoint_policy = "all"
     topology = "one_peer_exponential"
     config = decentralized_config(tiny_config, n=4, topology=topology)
     config.decentralized.scheme = scheme
+    config.optimizer.grad_clip = grad_clip
     config.runtime.deterministic = True
     # Cross buffer boundaries inside packed steps and switch prefetch on resume.
     config.data.buffer_size_mib = 24 / 2**20
@@ -471,9 +475,11 @@ def test_checkpoint_format_detection(tiny_config, cache_dir):
 
 @pytest.mark.parametrize("execution", ["packed", "sequential"])
 @pytest.mark.parametrize("scheme", ["awc", "atc"])
-def test_benchmark_worker(tiny_config, tmp_path, execution, scheme, monkeypatch):
+@pytest.mark.parametrize("grad_clip", [1.0, None])
+def test_benchmark_worker(tiny_config, tmp_path, execution, scheme, monkeypatch, grad_clip):
     config = decentralized_config(tiny_config)
     config.decentralized.scheme = scheme
+    config.optimizer.grad_clip = grad_clip
     events = []
     original_mix = PackedLlama.mix_
     original_step = PackedAdamW.step if execution == "packed" else torch.optim.AdamW.step
@@ -632,18 +638,21 @@ def test_scheme_config_and_identity(tiny_config, cache_dir, tmp_path):
 
 
 @pytest.mark.parametrize("scheme", ["awc", "atc"])
-def test_benchmark_scheme_propagation(tiny_config, tmp_path, monkeypatch, scheme):
+@pytest.mark.parametrize("grad_clip", [1.0, None])
+def test_benchmark_scheme_propagation(tiny_config, tmp_path, monkeypatch, scheme, grad_clip):
     from types import SimpleNamespace
 
     import tiny_llm.packed_benchmark as module
 
     config = decentralized_config(tiny_config)
     config.decentralized.scheme = scheme
+    config.optimizer.grad_clip = grad_clip
     executions = []
 
     def run(command, **kwargs):
         candidate = load_config(command[command.index("--config") + 1])
         assert candidate.decentralized.scheme == scheme
+        assert candidate.optimizer.grad_clip == grad_clip
         execution = command[command.index("--execution") + 1]
         executions.append(execution)
         destination = module.Path(command[command.index("--output") + 1])

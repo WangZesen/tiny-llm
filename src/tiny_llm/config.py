@@ -65,7 +65,7 @@ class OptimizerConfig(StrictModel):
     beta2: float = Field(0.95, ge=0, lt=1)
     eps: float = Field(1e-8, gt=0)
     weight_decay: float = Field(0.1, ge=0)
-    grad_clip: float = Field(1.0, gt=0)
+    grad_clip: float | None = Field(1.0, gt=0)
     warmup_fraction: float = Field(0.05, ge=0, lt=1)
     min_lr_ratio: float = Field(0.1, ge=0, le=1)
 

@@ -5,6 +5,7 @@ from torch import nn
 
 from tiny_llm.config import Config
 from tiny_llm.packed import PackedLlama
+from tiny_llm.runtime import clip_grad_norm_
 
 
 class PackedAdamW:
@@ -72,13 +73,10 @@ class PackedAdamW:
             for local, packed in zip(parameters, self._parameters, strict=True):
                 local.grad = None if packed.grad is None else packed.grad[worker]
 
-    def clip_grad_norm_(self, maximum: float):
+    def clip_grad_norm_(self, maximum: float | None):
         self.bind_gradients()
         return torch.stack(
-            [
-                torch.nn.utils.clip_grad_norm_(parameters, maximum, error_if_nonfinite=True)
-                for parameters in self.local_parameters
-            ]
+            [clip_grad_norm_(parameters, maximum) for parameters in self.local_parameters]
         )
 
     def step(self):

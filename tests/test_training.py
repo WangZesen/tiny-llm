@@ -77,11 +77,13 @@ def test_evaluation_state_and_weighting(tiny_config, cache_dir, full):
         ),
     ],
 )
-def test_offline_train_and_resume(tiny_config, cache_dir, monkeypatch, device):
+@pytest.mark.parametrize("grad_clip", [1.0, None])
+def test_offline_train_and_resume(tiny_config, cache_dir, monkeypatch, device, grad_clip):
     import tiny_llm.train as module
 
     tiny_config.training.checkpoint_policy = "all"
     tiny_config.data.buffer_size_mib = 24 / 2**20
+    tiny_config.optimizer.grad_clip = grad_clip
     tiny_config.runtime.device = device
     tiny_config.runtime.amp = device != "cpu"
     tiny_config.runtime.deterministic = device == "cpu"
@@ -192,7 +194,7 @@ def test_compiled_partial_epoch_resume(tiny_config, cache_dir, monkeypatch):
     tiny_config.runtime.compile = True
     # Nine blocks in epoch one exercise one-block and uneven accumulated updates.
     tiny_config.training.epoch_tokens = 36
-    test_offline_train_and_resume(tiny_config, cache_dir, monkeypatch, "cuda:0")
+    test_offline_train_and_resume(tiny_config, cache_dir, monkeypatch, "cuda:0", 1.0)
 
 
 @pytest.mark.parametrize("workers", [1, 4, 8])
