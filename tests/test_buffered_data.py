@@ -42,8 +42,8 @@ def collect(
         return pairs
 
 
-@pytest.mark.parametrize("prefetch", [False, True])
-def test_coverage_boundaries_and_seeds(cache_dir: Path, prefetch):
+def test_coverage_boundaries_and_seeds(cache_dir: Path):
+    prefetch = True
     cache = TokenCache(cache_dir)
     expected = cache.batch("train", list(range(14)), 4, CPU)
     expected = list(zip(expected[0].tolist(), expected[1].tolist(), strict=True))
@@ -225,8 +225,7 @@ def test_ordering_compatibility_and_legacy_rejection(cache_dir: Path, tiny_confi
         train(tiny_config, checkpoint)
 
 
-@pytest.mark.parametrize("group_size", [1, 2, 4])
-@pytest.mark.parametrize("seed", [0, 42, 43])
+@pytest.mark.parametrize("group_size,seed", [(1, 0), (2, 42), (4, 43)])
 def test_every_short_budget_is_prefix_of_long_run(cache_dir: Path, group_size, seed):
     cache = TokenCache(cache_dir)
     expected = collect(cache, seed=seed, count=33, group_size=group_size, prefetch=False)

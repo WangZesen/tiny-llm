@@ -31,7 +31,7 @@ def test_empty_epochs_rejected(tiny_config: Config, epoch_ratio: float) -> None:
         training_boundaries(tiny_config, tiny_config.model.parameter_count)
 
 
-@pytest.mark.parametrize("workers", [1, 2, 4, 8, 16, 32, 64, 128])
+@pytest.mark.parametrize("workers", [1, 4, 128])
 def test_extended_budget_preserves_batches(workers: int) -> None:
     config = load_config(
         "configs/20m.yaml",

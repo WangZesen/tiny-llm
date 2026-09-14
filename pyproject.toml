@@ -29,7 +29,12 @@ build-backend = "uv_build"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = ["cuda: requires a CUDA GPU"]
+addopts = "--disable-plugin-autoload"
+markers = [
+    "cuda: requires a CUDA GPU",
+    "integration: starts tokenizer worker processes; enable with --run-integration",
+    "slow: CPU compilation and figure rendering; enable with --run-slow",
+]
 
 [tool.ruff]
 line-length = 100

@@ -293,6 +293,7 @@ def recipe_identity(config: Config, cache: TokenCache) -> str:
         value["runtime"].pop(name)
     value["data"].pop("cache_dir")
     value["data"].pop("prefetch")  # Scheduling changes do not alter sample order.
+    value["data"].pop("prepare_workers")  # Tokenization scheduling does not alter cache contents.
     value["cache_identity"] = cache.manifest["identity"]
     value["loader_version"] = BufferedTokenLoader.VERSION
     return fingerprint(value)

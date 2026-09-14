@@ -10,14 +10,64 @@ from tiny_llm.data import TokenWriter, fingerprint
 from tiny_llm.state import CacheContent, CacheManifest
 
 
+def pytest_addoption(parser: pytest.Parser) -> None:
+    parser.addoption(
+        "--run-integration",
+        action="store_true",
+        default=False,
+        help="Run integration tests that start tokenizer worker processes",
+    )
+    parser.addoption(
+        "--run-slow",
+        action="store_true",
+        default=False,
+        help="Run CPU compiler and figure-rendering checks",
+    )
+
+
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    for marker in ("integration", "slow"):
+        option = f"--run-{marker}"
+        if not config.getoption(option):
+            skip = pytest.mark.skip(reason=f"enable with {option}")
+            for item in items:
+                if item.get_closest_marker(marker) is not None:
+                    item.add_marker(skip)
+
+
+@pytest.fixture(scope="session")
+def single_threaded_session():
+    threads = torch.get_num_threads()
+    torch.set_num_threads(1)
+    yield
+    torch.set_num_threads(threads)
+
+
 @pytest.fixture(autouse=True)
-def runtime_policy():
+def runtime_policy(single_threaded_session):
     deterministic = torch.are_deterministic_algorithms_enabled()
     threads = torch.get_num_threads()
     torch.set_num_threads(1)
     yield
-    torch.use_deterministic_algorithms(deterministic)
-    torch.set_num_threads(threads)
+    if torch.are_deterministic_algorithms_enabled() != deterministic:
+        torch.use_deterministic_algorithms(deterministic)
+    if torch.get_num_threads() != threads:
+        torch.set_num_threads(threads)
+
+
+@pytest.fixture(autouse=True)
+def cpu_run_metadata(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest):
+    """Keep host and profiler diagnostics out of CPU checkpoint/resume checks."""
+    if request.node.get_closest_marker("cuda") is not None:
+        return
+
+    def environment():
+        return dict(source_hash="fixture", versions={"torch": torch.__version__}, gpu=None)
+
+    for module in ("train", "benchmark", "packed_benchmark"):
+        monkeypatch.setattr(f"tiny_llm.{module}.environment", environment)
+    # Benchmark tests exercise the real profiler and dispatch metadata.
+    monkeypatch.setattr("tiny_llm.train.attention_kernels", lambda *args: ["fixture"])
 
 
 @pytest.fixture
@@ -64,7 +114,10 @@ def cache_dir(tiny_config: Config) -> Path:
         eos_token_id=2,
         dtype="<u2",
         preprocessing=dict(
-            shuffle_seed=42, shuffle_buffer=10000, append_eos=True, add_special_tokens=False
+            shuffle_seed=tiny_config.data.shuffle_seed,
+            shuffle_buffer=tiny_config.data.shuffle_buffer,
+            append_eos=True,
+            add_special_tokens=False,
         ),
         validation_complete=True,
         splits={},

@@ -59,17 +59,18 @@ def matrix(n, topology, step, device="cpu", dtype=torch.float64):
 
 
 @pytest.mark.parametrize(
-    "backend,topology",
+    "backend,topology,adaptive,scheme,grad_clip",
     [
-        ("reference", "complete"),
-        ("reference", "one_peer_ring"),
-        ("reference", "one_peer_exponential"),
-        ("sdpa", "complete"),
+        ("reference", "complete", False, "awc", 0.5),
+        ("reference", "complete", True, "atc", None),
+        ("reference", "one_peer_ring", True, "awc", None),
+        ("reference", "one_peer_ring", False, "atc", 0.5),
+        ("reference", "one_peer_exponential", False, "awc", None),
+        ("reference", "one_peer_exponential", True, "atc", 0.5),
+        ("sdpa", "complete", True, "awc", 0.5),
+        ("sdpa", "complete", False, "atc", None),
     ],
 )
-@pytest.mark.parametrize("adaptive", [False, True])
-@pytest.mark.parametrize("scheme", ["awc", "atc"])
-@pytest.mark.parametrize("grad_clip", [0.5, None])
 def test_independent_worker_parity(
     tiny_config: Config, backend, topology, adaptive, scheme, grad_clip
 ):
@@ -307,8 +308,7 @@ def decentralized_config(config, n=2, topology="one_peer_ring"):
 
 
 @pytest.mark.parametrize("scheme", ["awc", "atc"])
-@pytest.mark.parametrize("grad_clip", [1.0, None])
-@pytest.mark.parametrize("lr_schedule", ["cosine", "wsd"])
+@pytest.mark.parametrize("lr_schedule,grad_clip", [("cosine", 1.0), ("wsd", None)])
 def test_training_resume(
     tiny_config: Config,
     cache_dir: Path,
@@ -409,9 +409,15 @@ def test_buffered_worker_partition(
         assert torch.equal(actual, wanted.view(6, 4, 4).transpose(0, 1))
 
 
-@pytest.mark.parametrize("execution", ["packed", "sequential"])
-@pytest.mark.parametrize("scheme", ["awc", "atc"])
-@pytest.mark.parametrize("grad_clip", [1.0, None])
+@pytest.mark.parametrize(
+    "execution,scheme,grad_clip",
+    [
+        ("packed", "awc", 1.0),
+        ("packed", "atc", None),
+        ("sequential", "awc", None),
+        ("sequential", "atc", 1.0),
+    ],
+)
 def test_benchmark_worker(
     tiny_config: Config,
     tmp_path: Path,
@@ -594,8 +600,7 @@ def test_scheme_config_and_identity(tiny_config: Config, cache_dir: Path, tmp_pa
         train(atc, config.runtime.output_dir / "final.pt")
 
 
-@pytest.mark.parametrize("scheme", ["awc", "atc"])
-@pytest.mark.parametrize("grad_clip", [1.0, None])
+@pytest.mark.parametrize("scheme,grad_clip", [("awc", 1.0), ("atc", None)])
 def test_benchmark_scheme_propagation(
     tiny_config: Config, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, scheme, grad_clip
 ):

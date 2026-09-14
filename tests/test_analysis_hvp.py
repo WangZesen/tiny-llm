@@ -10,14 +10,15 @@ from tiny_llm.config import Config
 from tiny_llm.model import Llama
 
 
-def test_functional_quadratic_and_padding(tiny_config: Config):
+@pytest.mark.parametrize("compiled", [False, pytest.param(True, marks=pytest.mark.slow)])
+def test_functional_quadratic_and_padding(tiny_config: Config, compiled):
     torch.manual_seed(19)
     model = Llama(tiny_config.model, "reference").double()
     x, y = torch.randint(17, (3, 4)), torch.randint(17, (3, 4))
     y[-1, -1] = -100
     direction = rademacher(tuple(model.parameters()), 42, 0)
     expected = hessian_quadratic(model, [(x, y)], 11, direction)
-    kernel = QuadraticKernel(model, 4, compile=True, backend="aot_eager")
+    kernel = QuadraticKernel(model, 4, compile=compiled, backend="aot_eager")
     assert kernel(x, y, direction).item() / 11 == pytest.approx(expected, rel=1e-9, abs=1e-9)
     # New parameter values and directions must not be captured as constants.
     with torch.no_grad():
@@ -42,7 +43,7 @@ def test_independent_hvp_batches_preserve_statistics(tiny_config: Config, cache_
     opts = AnalysisOptions(device="cpu", dtype="float64", noise_samples=2, random_samples=2)
     baseline = measure(model, data, opts, torch.device("cpu"))
     sizes = []
-    inner = QuadraticKernel(model, 5, compile=True, backend="aot_eager")
+    inner = QuadraticKernel(model, 5, compile=False)
 
     def kernel(x, y, direction):
         sizes.append(len(x))

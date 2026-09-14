@@ -18,12 +18,19 @@ uv run tiny-llm prepare --config configs/90m.yaml
 uv run tiny-llm train --config configs/20m.yaml
 ```
 
-Preparation downloads and caches C4 once; smaller models reuse prefixes of the
-same cache. Training visits shard groups in file order and shuffles within each
-group. `data.shuffle_group_size` defaults to 2 shards (about 64 MiB); it replaces
+Preparation downloads and caches C4 once, using 8 tokenizer processes by default;
+set `--set data.prepare_workers=1` for serial preparation. The training document
+shuffle buffer defaults to 100,000 documents; its token coverage depends on document
+lengths. Smaller models reuse prefixes of the same cache. Training visits shard
+groups in file order and shuffles within each group. Each shard holds 33,554,432
+tokens. `data.shuffle_group_size` defaults to 2 shards (about 128 MiB); it replaces
 `data.buffer_size_mib`. Keeping the same seed and data settings preserves earlier
 samples when increasing the training budget. Preparation includes the whole final
 group and lookahead.
+
+Existing caches require matching preprocessing settings. To use the new shuffle
+default with an older cache present, set `--set data.cache_dir=data/c4-large` on
+both preparation and training; completed caches are never rewritten.
 
 To run the tuned four-worker AWC recipe:
 
@@ -54,7 +61,7 @@ resume behavior, alternate recipes, clipping, and checkpoint retention.
 
 ```bash
 uv run pyright
-uv run pytest -q
+CUDA_VISIBLE_DEVICES='' uv run pytest -q -m 'not cuda' --durations=10
 uv run ruff check .
 uv run ruff format --check .
 ```
@@ -62,6 +69,33 @@ uv run ruff format --check .
 Type checks cover `src`, `tests`, and `scripts`. Ruff leaves archived research
 sources under `doc/archive`, `doc/data`, and `doc/adaptive-consensus-investigation`
 unchanged.
+
+The default CPU suite targets less than 60 seconds. It uses one PyTorch CPU thread
+and fixed machine metadata; benchmark tests cover actual profiling. Numerical,
+resume, corruption, and orchestration checks remain in the default run. Third-party
+pytest plugins require explicit loading with `-p`.
+
+On shared filesystems, dependency imports can take longer than the tests. For a
+short total command time, create the environment on node-local storage once per node:
+
+```bash
+export UV_PROJECT_ENVIRONMENT="/tmp/tiny-llm-dev-$(id -u)"
+uv sync --locked --link-mode copy
+CUDA_VISIBLE_DEVICES='' uv run pytest -q -m 'not cuda' --durations=10
+```
+
+CPU compilation and figure rendering are optional:
+
+```bash
+CUDA_VISIBLE_DEVICES='' uv run pytest -q --run-slow -m slow
+```
+
+The multiprocessing cache comparison is skipped before loading its tokenizer
+fixture; run it separately when changing preparation or worker code:
+
+```bash
+CUDA_VISIBLE_DEVICES='' uv run pytest -q --run-integration -m integration
+```
 
 GPU tests require a CUDA allocation. The website uses an independent Node 24+
 environment and builds entirely from committed Markdown and data:

@@ -50,9 +50,10 @@ class DataConfig(StrictModel):
     tokenizer: str = "TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T"
     tokenizer_revision: str = "main"
     shuffle_seed: int = Field(default=42, ge=0, lt=2**32)
-    shuffle_buffer: int = Field(default=10000, gt=0)
-    shard_tokens: int = Field(default=16_777_216, gt=0)
+    shuffle_buffer: int = Field(default=100_000, gt=0)
+    shard_tokens: int = Field(default=33_554_432, gt=0)
     tokenize_batch_size: int = Field(default=256, gt=0)
+    prepare_workers: int = Field(default=8, gt=0, strict=True)
     # Runtime buffering; separate from the document shuffle used during preparation.
     shuffle_group_size: int = Field(default=2, gt=0, strict=True)
     prefetch: bool = True

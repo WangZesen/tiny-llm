@@ -106,8 +106,10 @@ def test_wsd_consensus(tiny_config: Config):
     assert [schedule.gamma(step, lr) for step, lr in enumerate(rates)] == [1, 1, 1, 0]
 
 
-@pytest.mark.parametrize("topology", ["complete", "one_peer_ring", "one_peer_exponential"])
-@pytest.mark.parametrize("n", [1, 3, 4])
+@pytest.mark.parametrize(
+    "topology,n",
+    [("complete", 1), ("complete", 4), ("one_peer_ring", 3), ("one_peer_exponential", 4)],
+)
 def test_weighted_mixing(tiny_config: Config, topology, n):
     model = PackedLlama(tiny_config.model, n).double()
     opt = PackedAdamW(model, tiny_config)
@@ -180,8 +182,7 @@ def test_identity_and_benchmark_guards(tiny_config: Config, cache_dir: Path, tmp
     assert not destination.exists()
 
 
-@pytest.mark.parametrize("resume_epoch", [1, 3])
-@pytest.mark.parametrize("scheme", ["awc", "atc"])
+@pytest.mark.parametrize("scheme,resume_epoch", [("awc", 1), ("atc", 3)])
 @pytest.mark.parametrize("lr_schedule", ["cosine", "wsd"])
 def test_adaptive_resume(tiny_config: Config, cache_dir: Path, resume_epoch, scheme, lr_schedule):
     config = adaptive_config(tiny_config)

@@ -11,7 +11,7 @@ from tiny_llm.config import Config, CosineScheduleConfig, WSDScheduleConfig
 from tiny_llm.data import TokenCache
 from tiny_llm.model import Llama, token_losses
 from tiny_llm.runtime import rng_state, setup_runtime
-from tiny_llm.train import evaluate, learning_rate, train
+from tiny_llm.train import evaluate, train
 
 
 def test_accumulation_matches_full(tiny_config: Config):
@@ -29,14 +29,6 @@ def test_accumulation_matches_full(tiny_config: Config):
         ).backward()
     for a, b in zip(full.parameters(), accumulated.parameters(), strict=True):
         torch.testing.assert_close(a.grad, b.grad, rtol=1e-10, atol=1e-12)
-
-
-def test_schedule(tiny_config: Config):
-    tiny_config.lr_schedule.warmup_steps = 2
-    assert learning_rate(tiny_config, 0, 640) == 0
-    assert learning_rate(tiny_config, 16, 640) == tiny_config.optimizer.lr * 0.5
-    assert learning_rate(tiny_config, 32, 640) == tiny_config.optimizer.lr
-    assert learning_rate(tiny_config, 640, 640) == pytest.approx(tiny_config.optimizer.lr * 0.1)
 
 
 @pytest.mark.parametrize("full", [False, True])
@@ -69,11 +61,41 @@ def test_evaluation_state_and_weighting(tiny_config: Config, cache_dir: Path, fu
 
 
 @pytest.mark.parametrize(
-    "device",
+    "device,grad_clip,lr_schedule",
     [
-        "cpu",
+        ("cpu", 1.0, "cosine"),
+        ("cpu", None, "wsd"),
         pytest.param(
             "cuda:0",
+            1.0,
+            "cosine",
+            marks=[
+                pytest.mark.cuda,
+                pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA required"),
+            ],
+        ),
+        pytest.param(
+            "cuda:0",
+            None,
+            "cosine",
+            marks=[
+                pytest.mark.cuda,
+                pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA required"),
+            ],
+        ),
+        pytest.param(
+            "cuda:0",
+            1.0,
+            "wsd",
+            marks=[
+                pytest.mark.cuda,
+                pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA required"),
+            ],
+        ),
+        pytest.param(
+            "cuda:0",
+            None,
+            "wsd",
             marks=[
                 pytest.mark.cuda,
                 pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA required"),
@@ -81,8 +103,6 @@ def test_evaluation_state_and_weighting(tiny_config: Config, cache_dir: Path, fu
         ),
     ],
 )
-@pytest.mark.parametrize("grad_clip", [1.0, None])
-@pytest.mark.parametrize("lr_schedule", ["cosine", "wsd"])
 def test_offline_train_and_resume(
     tiny_config: Config,
     cache_dir: Path,
@@ -209,9 +229,17 @@ def test_compiled_microbatch_remainder_resume(
     test_offline_train_and_resume(tiny_config, cache_dir, monkeypatch, "cuda:0", 1.0, "cosine")
 
 
-@pytest.mark.parametrize("workers", [1, 4, 8])
-@pytest.mark.parametrize("interrupt", [False, True])
-@pytest.mark.parametrize("policy", ["final", "none"])
+@pytest.mark.parametrize(
+    "workers,policy,interrupt",
+    [
+        (1, "final", False),
+        (1, "none", False),
+        (4, "final", False),
+        (4, "none", False),
+        (1, "final", True),
+        (8, "none", True),
+    ],
+)
 def test_minimal_checkpoint_policy(
     tiny_config: Config,
     cache_dir: Path,

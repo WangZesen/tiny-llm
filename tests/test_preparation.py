@@ -57,7 +57,7 @@ def test_preparation_eos_determinism_and_reuse(
 
     class Stream:
         def shuffle(self, seed, buffer_size):
-            assert seed == 42 and buffer_size == 10000
+            assert seed == 42 and buffer_size == 100000
             return self
 
         def iter(self, batch_size):
@@ -80,6 +80,7 @@ def test_preparation_eos_determinism_and_reuse(
     monkeypatch.setitem(sys.modules, "datasets", SimpleNamespace(load_dataset=load))
     tiny_config.data.shard_tokens = shard_tokens
     tiny_config.data.shuffle_group_size = group_size
+    tiny_config.data.prepare_workers = 1
     first = prepare(tiny_config)
     cache = TokenCache(tiny_config.data.cache_dir)
     np.testing.assert_array_equal(cache.read("train", 0, 8), [3, 4, 5, 2, 2, 6, 7, 2])

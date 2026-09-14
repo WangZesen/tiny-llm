@@ -24,14 +24,36 @@ uv run tiny-llm prepare --config configs/90m.yaml
 uv run tiny-llm train --config configs/20m.yaml
 ```
 
+Preparation uses `data.prepare_workers=8` tokenizer processes, each loading the
+saved tokenizer locally. Set `--set data.prepare_workers=1` for serial preparation,
+or another positive integer to change the process count. Worker count does not
+change cache contents or checkpoint compatibility. Results are written in source
+order, with at most two batches per worker in flight; `data.tokenize_batch_size`
+defaults to 256 documents.
+
+The preparation-time training shuffle uses `data.shuffle_seed` and
+`data.shuffle_buffer`, which defaults to 100,000 documents. This larger buffer
+provides approximate token coverage; document lengths determine whether it holds
+more tokens than one shard. Validation keeps its original order.
+
+Completed caches are immutable. A cache prepared with the former 10,000-document
+shuffle requires `--set data.shuffle_buffer=10000` to reuse it. To prepare with the
+new defaults, select a new path for both preparation and training:
+
+```bash
+uv run tiny-llm prepare --config configs/90m.yaml --set data.cache_dir=data/c4-large
+uv run tiny-llm train --config configs/20m.yaml --set data.cache_dir=data/c4-large
+```
+
 Training reads groups of consecutive cache shards in file order and shuffles
 sequences within each group. Set `--set data.shuffle_group_size=4` on preparation
-and training to use four shards per group; the default is 2 (about 64 MiB with
-default shards). This positive integer replaces `data.buffer_size_mib`, which is
-no longer accepted. Larger groups provide wider mixing and use more memory.
+and training to use four shards per group; the default is 2 (67,108,864 tokens,
+about 128 MiB with the default 33,554,432-token shards). Prefetching a second group
+uses about 256 MiB of token storage. This positive integer replaces
+`data.buffer_size_mib`, which is no longer accepted. Larger groups provide wider
+mixing and use more memory.
 A shorter run uses the exact sample prefix of a longer run under the same seed
-and data settings, even when it stops partway through a group. Preparation-time
-document shuffling remains controlled by `data.shuffle_seed` and `data.shuffle_buffer`.
+and data settings, even when it stops partway through a group.
 See [loader details](../methods/implementation.md#sequential-buffered-loading).
 
 Use `configs/50m.yaml` or `configs/90m.yaml` for larger models. Repeat `--config`

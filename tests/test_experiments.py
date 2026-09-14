@@ -1,11 +1,12 @@
 import json
 import math
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 
 from tiny_llm.config import Config, save_config
-from tiny_llm.experiments import sweep
+from tiny_llm.experiments import report, sweep
 from tiny_llm.runtime import atomic_json
 
 
@@ -50,7 +51,8 @@ def test_stage_resumes_latest_retained_state(
         assert command[command.index("--resume") + 1] == str(output / expected)
 
 
-def test_twelve_run_promotions_and_report(
+@pytest.fixture
+def completed_sweep(
     tiny_config: Config, cache_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     import tiny_llm.experiments as module
@@ -95,17 +97,33 @@ def test_twelve_run_promotions_and_report(
                 json.dumps({"event": "validation", "tokens": 64, "loss": loss}) + "\n"
             )
 
+    render = Mock()
+    monkeypatch.setattr(module, "report", render)
     monkeypatch.setattr(module, "run_stage", stage)
     sweep(tiny_config, root, benchmarks, ["0", "1"])
+    return root, benchmarks, stages, render
+
+
+def test_twelve_run_promotions(tiny_config: Config, completed_sweep):
+    root, benchmarks, stages, render = completed_sweep
     assert list(map(len, stages)) == [6, 4, 2]
     assert {c.optimizer.lr for c in stages[1]} == {0.001}
     assert {c.optimizer.weight_decay for c in stages[1]} == {0, 0.1}
     assert {c.optimizer.beta2 for c in stages[1]} == {0.95, 0.99}
     assert {c.optimizer.beta2 for c in stages[2]} == {0.99}
     assert json.loads((root / "complete.json").read_text())["runs"] == 12
-    assert len(json.loads((root / "comparison.json").read_text())) == 12
-    assert (root / "learning-curves.png").exists()
-    assert (root / "selected-90m.yaml").exists()
+    assert render.call_count == 3
+    render.assert_called_with(root)
     tiny_config.optimizer.beta1 = 0.8
     with pytest.raises(ValueError, match="settings changed"):
         sweep(tiny_config, root, benchmarks, ["0", "1"])
+
+
+@pytest.mark.slow
+def test_sweep_report(completed_sweep):
+    root, _, _, _ = completed_sweep
+    # The fixture stubs the three intermediate reports; render just the final one.
+    report(root)
+    assert len(json.loads((root / "comparison.json").read_text())) == 12
+    assert (root / "learning-curves.png").exists()
+    assert (root / "selected-90m.yaml").exists()

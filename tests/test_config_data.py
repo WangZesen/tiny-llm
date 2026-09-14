@@ -29,6 +29,37 @@ def test_strict_overrides(tmp_path: Path):
         load_config(path, ["model.heads=7"])
 
 
+def test_preparation_defaults_and_presets():
+    configs = [Config()]
+    directory = Path(__file__).resolve().parents[1] / "configs"
+    configs.extend(load_config(path) for path in directory.glob("*.yaml"))
+    for config in configs:
+        assert config.data.shard_tokens == 33_554_432
+        assert config.data.shuffle_group_size == 2
+        assert config.data.shuffle_buffer == 100_000
+        assert config.data.prepare_workers == 8
+        assert config.data.tokenize_batch_size == 256
+    config = load_config(directory / "20m.yaml", ["data.prepare_workers=3"])
+    assert config.data.prepare_workers == 3
+    assert Config.model_validate(config.model_dump()).data.prepare_workers == 3
+
+
+@pytest.mark.parametrize("invalid", [0, True])
+def test_prepare_workers_must_be_positive_integer(invalid):
+    with pytest.raises(ValidationError, match="prepare_workers"):
+        Config.model_validate({"data": {"prepare_workers": invalid}})
+
+
+def test_prepare_workers_do_not_change_recipe_or_cache(cache_dir: Path, tiny_config: Config):
+    from tiny_llm.train import recipe_identity
+
+    cache = TokenCache(cache_dir)
+    identity = recipe_identity(tiny_config, cache)
+    tiny_config.data.prepare_workers = 1
+    cache.validate_config(tiny_config)
+    assert recipe_identity(tiny_config, cache) == identity
+
+
 @pytest.mark.parametrize(
     "preset,expected", [("20m", 20403520), ("50m", 48507392), ("90m", 91605120)]
 )
@@ -57,20 +88,15 @@ def test_parameters_and_epochs(preset, expected):
         ("90m", "packed-90m"),
     ],
 )
-@pytest.mark.parametrize("workers", [4, 8])
-def test_packed_presets_fit_ordinary_cache(preset, packed_preset, workers):
+def test_packed_presets_fit_ordinary_cache(preset, packed_preset):
     directory = Path(__file__).resolve().parents[1] / "configs"
     ordinary = load_config(directory / f"{preset}.yaml")
-    base_packed = load_config(directory / f"{packed_preset}.yaml")
-    batch_sequences = base_packed.training.batch_tokens // base_packed.model.context_length
+    packed = load_config(directory / f"{packed_preset}.yaml")
+    assert packed.decentralized is not None
+    workers = packed.decentralized.num_models
+    batch_sequences = packed.training.batch_tokens // packed.model.context_length
     assert batch_sequences % workers == 0
-    packed = load_config(
-        directory / f"{packed_preset}.yaml",
-        [
-            f"decentralized.num_models={workers}",
-            f"training.micro_batch_size={batch_sequences // workers}",
-        ],
-    )
+    assert packed.training.micro_batch_size == batch_sequences // workers
     assert packed.model == ordinary.model
     length, parameters = packed.model.context_length, packed.model.parameter_count
     normal_boundaries = training_boundaries(ordinary, parameters)

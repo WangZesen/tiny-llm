@@ -3,13 +3,17 @@
 import hashlib
 import json
 import math
+import multiprocessing
 import os
 import shutil
 import time
 from bisect import bisect_right
-from collections.abc import Callable, Sequence
-from concurrent.futures import Future, ThreadPoolExecutor
+from collections import deque
+from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
+from concurrent.futures import Executor, Future, ProcessPoolExecutor, ThreadPoolExecutor, wait
+from contextlib import closing, nullcontext
 from fractions import Fraction
+from itertools import islice
 from pathlib import Path
 from typing import BinaryIO, Protocol
 
@@ -70,17 +74,97 @@ class TokenWriter:
     def _close_shard(self) -> None:
         if self.handle is None:
             return
-        self.handle.flush()
-        os.fsync(self.handle.fileno())
-        self.handle.close()
+        try:
+            self.handle.flush()
+            os.fsync(self.handle.fileno())
+        finally:
+            self.close()
         self.shards.append(
             Shard(file=self.path.name, tokens=self.in_shard, sha256=file_digest(self.path))
         )
-        self.handle = None
+
+    def close(self) -> None:
+        """Release an open shard, including when preparation fails."""
+        if self.handle is not None:
+            handle, self.handle = self.handle, None
+            handle.close()
 
     def finish(self) -> SplitManifest:
         self._close_shard()
         return SplitManifest(tokens=self.count, shards=self.shards)
+
+
+class _DocumentTokenizer(Protocol):
+    @property
+    def eos_token_id(self) -> int | None: ...
+
+    def __call__(
+        self, texts: list[str], *, add_special_tokens: bool, return_attention_mask: bool
+    ) -> Mapping[str, Sequence[Sequence[int]]]: ...
+
+
+_worker_tokenizer: _DocumentTokenizer | None = None
+
+
+def _initialize_tokenizer(tokenizer_path: str) -> None:
+    # Each spawned worker owns one tokenizer and uses a single tokenizer thread.
+    os.environ["TOKENIZERS_PARALLELISM"] = "false"
+    from transformers import AutoTokenizer
+
+    global _worker_tokenizer
+    _worker_tokenizer = AutoTokenizer.from_pretrained(
+        tokenizer_path, use_fast=True, local_files_only=True
+    )
+
+
+def _tokenize_documents(tokenizer: _DocumentTokenizer, texts: list[str]) -> TokenArray:
+    eos = tokenizer.eos_token_id
+    if eos is None:
+        raise ValueError("tokenizer must define EOS")
+    encoded = tokenizer(texts, add_special_tokens=False, return_attention_mask=False)["input_ids"]
+    values = np.asarray(
+        [token for document in encoded for token in (*document, eos)], dtype=np.int64
+    )
+    if values.size and (values.min() < 0 or values.max() > 65535):
+        raise ValueError("token ID cannot be represented as uint16")
+    return values.astype("<u2")
+
+
+def _tokenize_worker(texts: list[str]) -> TokenArray:
+    if _worker_tokenizer is None:
+        raise RuntimeError("tokenizer worker is not initialized")
+    return _tokenize_documents(_worker_tokenizer, texts)
+
+
+def _tokenized_batches(
+    batches: Iterable[list[str]],
+    tokenizer: _DocumentTokenizer,
+    pool: Executor | None,
+    workers: int,
+) -> Generator[TokenArray, None, None]:
+    """Consume bounded parallel work in source order, independent of worker timing."""
+    if pool is None:
+        for batch in batches:
+            yield _tokenize_documents(tokenizer, batch)
+        return
+
+    source = iter(batches)
+    pending: deque[Future[TokenArray]] = deque()
+    try:
+        for batch in islice(source, 2 * workers):
+            pending.append(pool.submit(_tokenize_worker, batch))
+        while pending:
+            # Keep the current future in the queue until it completes so an
+            # interruption also drains this task before the next split starts.
+            values = pending[0].result()
+            pending.popleft()
+            yield values
+            for batch in islice(source, 1):
+                pending.append(pool.submit(_tokenize_worker, batch))
+    finally:
+        for future in pending:
+            future.cancel()
+        wait([future for future in pending if not future.cancelled()])
 
 
 def training_boundaries(config: Config, parameters: int) -> list[int]:
@@ -184,45 +268,62 @@ def prepare(config: Config) -> CacheManifest:
             "validation_complete": cfg.prepare_validation_tokens is None,
             "splits": {},
         }
-        for split, limit in (
-            ("train", train_limit),
-            ("validation", cfg.prepare_validation_tokens),
-        ):
-            selected = [
-                p for p in paths if p.startswith(f"en/c4-{split}.") and p.endswith(".json.gz")
-            ]
-            if not selected:
-                raise ValueError(f"no English C4 {split} shards at {dataset_sha}")
-            urls = [f"hf://datasets/{cfg.dataset}@{dataset_sha}/{p}" for p in selected]
-            stream = load_dataset("json", data_files={split: urls}, split=split, streaming=True)
-            if split == "train":
-                stream = stream.shuffle(seed=cfg.shuffle_seed, buffer_size=cfg.shuffle_buffer)
-            writer = TokenWriter(temporary, split, cfg.shard_tokens)
-            start, last_log = time.monotonic(), 0.0
-            for batch in stream.iter(batch_size=cfg.tokenize_batch_size):
-                encoded = tokenizer(
-                    batch["text"], add_special_tokens=False, return_attention_mask=False
-                )["input_ids"]
-                flattened = [
-                    token for document in encoded for token in (*document, tokenizer.eos_token_id)
+        pool_context = (
+            ProcessPoolExecutor(
+                max_workers=cfg.prepare_workers,
+                mp_context=multiprocessing.get_context("spawn"),
+                initializer=_initialize_tokenizer,
+                initargs=(str((temporary / "tokenizer").resolve()),),
+            )
+            if cfg.prepare_workers > 1
+            else nullcontext(None)
+        )
+        with pool_context as pool:
+            for split, limit in (
+                ("train", train_limit),
+                ("validation", cfg.prepare_validation_tokens),
+            ):
+                selected = [
+                    p for p in paths if p.startswith(f"en/c4-{split}.") and p.endswith(".json.gz")
                 ]
-                if limit is not None:
-                    flattened = flattened[: max(0, limit - writer.count)]
-                writer.write(flattened)
-                now = time.monotonic()
-                if now - last_log > 15:
-                    logger.info(
-                        "Preparing {}: {:,} tokens ({:,.0f} tokens/s)",
-                        split,
-                        writer.count,
-                        writer.count / (now - start),
-                    )
-                    last_log = now
-                if limit is not None and writer.count >= limit:
-                    break
-            manifest["splits"][split] = writer.finish()
-            if writer.count < 2 or (limit is not None and writer.count < limit):
-                raise ValueError(f"insufficient {split} tokens: {writer.count}")
+                if not selected:
+                    raise ValueError(f"no English C4 {split} shards at {dataset_sha}")
+                urls = [f"hf://datasets/{cfg.dataset}@{dataset_sha}/{p}" for p in selected]
+                stream = load_dataset("json", data_files={split: urls}, split=split, streaming=True)
+                if split == "train":
+                    stream = stream.shuffle(seed=cfg.shuffle_seed, buffer_size=cfg.shuffle_buffer)
+                writer = TokenWriter(temporary, split, cfg.shard_tokens)
+                start, last_log = time.monotonic(), 0.0
+                with (
+                    closing(stream.iter(batch_size=cfg.tokenize_batch_size)) as source,
+                    closing(
+                        _tokenized_batches(
+                            (batch["text"] for batch in source),
+                            tokenizer,
+                            pool,
+                            cfg.prepare_workers,
+                        )
+                    ) as batches,
+                    closing(writer),
+                ):
+                    for flattened in batches:
+                        if limit is not None:
+                            flattened = flattened[: max(0, limit - writer.count)]
+                        writer.write(flattened)
+                        now = time.monotonic()
+                        if now - last_log > 15:
+                            logger.info(
+                                "Preparing {}: {:,} tokens ({:,.0f} tokens/s)",
+                                split,
+                                writer.count,
+                                writer.count / (now - start),
+                            )
+                            last_log = now
+                        if limit is not None and writer.count >= limit:
+                            break
+                    manifest["splits"][split] = writer.finish()
+                if writer.count < 2 or (limit is not None and writer.count < limit):
+                    raise ValueError(f"insufficient {split} tokens: {writer.count}")
         completed_manifest = CacheManifest(**manifest, identity=fingerprint(manifest))
         (temporary / "manifest.json").write_text(json.dumps(completed_manifest, indent=2) + "\n")
         temporary.rename(destination)

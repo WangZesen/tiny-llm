@@ -19,6 +19,27 @@ zero dropout, and a 1024-token context. The default budget is 20 prediction targ
 per unique trainable parameter, split into 40 virtual epochs. Seeds are saved;
 `deterministic=false` is the default. See [recipe and papers](recipe.md).
 
+## Cache preparation
+
+Preparation streams C4 in the parent process and shuffles training documents with
+`data.shuffle_buffer=100000` and `data.shuffle_seed`. The buffer counts documents,
+so its token coverage depends on document lengths and has no enforced token floor.
+Validation remains in source order. Shards default to 33,554,432 `uint16` tokens
+(64 MiB per full shard).
+
+`data.prepare_workers=8` controls a spawned tokenizer process pool; setting it to
+1 uses serial tokenization. Each worker loads the saved, resolved tokenizer once,
+without network access or tokenizer-internal parallelism. The queue holds at most
+two batches per worker, with 256 documents per batch by default. Results reach one
+shard writer in submission order, preserving EOS placement and identical bytes
+across worker counts.
+Pending tasks are canceled and active tasks drained on early completion or failure.
+Both splits and their manifest are published atomically only after success.
+
+Worker count affects neither cache nor training recipe identity. Shuffle settings
+remain part of cache compatibility: use a new cache path to change them, or retain
+the matching settings to reuse an existing immutable cache.
+
 ## Sequential buffered loading
 
 Training visits consecutive groups of cache shards in file order. Each group is
@@ -29,9 +50,9 @@ token. Reads align to the original sequence boundaries and include next-token
 lookahead, preserving targets even across shard boundaries.
 
 `data.shuffle_group_size: 2` sets the positive integer number of shards per group.
-With the default shard size this is about 64 MiB per active buffer. With
+With the default shard size this is about 128 MiB per active buffer. With
 `data.prefetch: true`, one background reader loads the next group, using about
-128 MiB of token storage (plus sequence alignment/lookahead, row indices, the
+256 MiB of token storage (plus sequence alignment/lookahead, row indices, the
 validation subset, and microbatch tensors). Set prefetch to false for one-buffer
 loading. `data.shuffle_buffer` remains the separate preparation-time document
 shuffle setting. The former `data.buffer_size_mib` field is rejected.

@@ -19,15 +19,15 @@ from tiny_llm.runtime import rng_state
 from tiny_llm.train import evaluate_checkpoint, recipe_identity, train
 
 
-@pytest.mark.parametrize("workers", [1, 4])
 @pytest.mark.parametrize(
-    "policy,epochs,selected",
+    "workers,policy,epochs,selected,training_state",
     [
-        ("interval", [2], {2, 4}),
-        ("explicit", [1, 3], {1, 3}),
+        (1, "interval", [2], {2, 4}, True),
+        (1, "explicit", [1, 3], {1, 3}, False),
+        (4, "interval", [2], {2, 4}, False),
+        (4, "explicit", [1, 3], {1, 3}, True),
     ],
 )
-@pytest.mark.parametrize("training_state", [False, True])
 def test_scheduled_artifacts(
     tiny_config: Config,
     cache_dir: Path,

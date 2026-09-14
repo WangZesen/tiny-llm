@@ -5,6 +5,7 @@ from dataclasses import asdict
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
+from unittest.mock import Mock
 
 import pytest
 from safetensors.torch import save_file
@@ -213,7 +214,9 @@ def test_collect_matches_serial_and_ignores_worker_provenance(
     saved_shards, monkeypatch: pytest.MonkeyPatch
 ):
     plan = saved_shards
-    # Only this integration test performs actual analysis and plotting.
+    # Compare real analysis results; figure rendering has its own optional check.
+    plot = Mock()
+    monkeypatch.setattr(jobs, "plot_analysis", plot)
     for shard in plan["jobs"]:
         directory = jobs.Path(shard["output"])
         for path in directory.glob("*.json"):
@@ -232,8 +235,7 @@ def test_collect_matches_serial_and_ignores_worker_provenance(
     combined = jobs.collect_results(plan)
     assert len(combined["workers"]) == 2 and len(combined["checkpoints"]) == 2
     root = jobs.Path(plan["output"])
-    assert len(list(root.glob("*.png"))) == len(list(root.glob("*.pdf"))) == 3
-    assert (root / "summary.csv").is_file()
+    plot.assert_called_once_with(root)
     serial = root / "serial"
     analyze(
         jobs.Path(plan["run"]), ["all"], serial, AnalysisOptions(**plan["options"]), plots=False
@@ -257,6 +259,15 @@ def test_collect_matches_serial_and_ignores_worker_provenance(
     analyze(
         jobs.Path(plan["run"]), ["all"], serial, AnalysisOptions(**plan["options"]), plots=False
     )
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("saved_shards", [True], indirect=True)
+def test_collection_plots(saved_shards):
+    jobs.collect_results(saved_shards)
+    root = jobs.Path(saved_shards["output"])
+    assert len(list(root.glob("*.png"))) == len(list(root.glob("*.pdf"))) == 3
+    assert (root / "summary.csv").is_file()
 
 
 @pytest.mark.parametrize("saved_shards", [True], indirect=True)
