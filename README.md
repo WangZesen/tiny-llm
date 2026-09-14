@@ -61,7 +61,7 @@ resume behavior, alternate recipes, clipping, and checkpoint retention.
 
 ```bash
 uv run pyright
-CUDA_VISIBLE_DEVICES='' uv run pytest -q -m 'not cuda' --durations=10
+scripts/test-cpu.sh
 uv run ruff check .
 uv run ruff format --check .
 ```
@@ -75,26 +75,30 @@ and fixed machine metadata; benchmark tests cover actual profiling. Numerical,
 resume, corruption, and orchestration checks remain in the default run. Third-party
 pytest plugins require explicit loading with `-p`.
 
-On shared filesystems, dependency imports can take longer than the tests. For a
-short total command time, create the environment on node-local storage once per node:
+The CPU launcher copies locked dependencies into a reusable node-local environment
+and compiles their Python bytecode. This avoids slow dependency imports from shared
+filesystems, including PyTorch's first-optimizer initialization. The first invocation
+installs dependencies; later invocations reuse them and sync any lockfile changes.
+Each checkout gets its own environment under `SLURM_TMPDIR`, `TMPDIR`, or `/tmp`,
+in that order. Set `TINY_LLM_TEST_ROOT` to choose another local directory.
+
+Additional arguments pass through to pytest, for example:
 
 ```bash
-export UV_PROJECT_ENVIRONMENT="/tmp/tiny-llm-dev-$(id -u)"
-uv sync --locked --link-mode copy
-CUDA_VISIBLE_DEVICES='' uv run pytest -q -m 'not cuda' --durations=10
+scripts/test-cpu.sh tests/test_adaptive_consensus.py -k weighted_mixing
 ```
 
 CPU compilation and figure rendering are optional:
 
 ```bash
-CUDA_VISIBLE_DEVICES='' uv run pytest -q --run-slow -m slow
+scripts/test-cpu.sh --run-slow -m slow
 ```
 
 The multiprocessing cache comparison is skipped before loading its tokenizer
 fixture; run it separately when changing preparation or worker code:
 
 ```bash
-CUDA_VISIBLE_DEVICES='' uv run pytest -q --run-integration -m integration
+scripts/test-cpu.sh --run-integration -m integration
 ```
 
 GPU tests require a CUDA allocation. The website uses an independent Node 24+

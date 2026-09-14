@@ -87,23 +87,6 @@ def autocast(config: Config, device: torch.device):
     return torch.autocast(device.type, dtype=torch.bfloat16, enabled=config.runtime.amp)
 
 
-def attention_kernels(model, config: Config, device: torch.device) -> list[str]:
-    """Record SDPA dispatch for the configured context and precision."""
-    if actual_backend(config) == "reference":
-        return ["reference_matmul_softmax"]
-    with (
-        preserve_rng(),
-        torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CPU]) as profile,
-    ):
-        with autocast(config, device):
-            inputs = torch.zeros((1, config.model.context_length), device=device, dtype=torch.long)
-            if hasattr(model, "num_models"):
-                inputs = inputs.unsqueeze(0).expand(model.num_models, -1, -1)
-            model(inputs).sum().backward()
-    model.zero_grad(set_to_none=True)
-    return sorted({event.key for event in profile.key_averages() if "attention" in event.key})
-
-
 def rng_state() -> RNGState:
     return RNGState(
         python=random.getstate(),

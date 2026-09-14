@@ -57,7 +57,7 @@ def runtime_policy(single_threaded_session):
 
 @pytest.fixture(autouse=True)
 def cpu_run_metadata(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest):
-    """Keep host and profiler diagnostics out of CPU checkpoint/resume checks."""
+    """Use fixed host metadata for CPU tests while preserving benchmark profiling."""
     if request.node.get_closest_marker("cuda") is not None:
         return
 
@@ -66,8 +66,6 @@ def cpu_run_metadata(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureReq
 
     for module in ("train", "benchmark", "packed_benchmark"):
         monkeypatch.setattr(f"tiny_llm.{module}.environment", environment)
-    # Benchmark tests exercise the real profiler and dispatch metadata.
-    monkeypatch.setattr("tiny_llm.train.attention_kernels", lambda *args: ["fixture"])
 
 
 @pytest.fixture

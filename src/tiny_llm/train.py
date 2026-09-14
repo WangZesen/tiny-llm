@@ -36,7 +36,6 @@ from tiny_llm.runtime import (
     append_metric,
     atomic_checkpoint,
     atomic_json,
-    attention_kernels,
     autocast,
     clip_grad_norm_,
     environment,
@@ -340,8 +339,6 @@ def _train(config: Config, resume: Path | None) -> dict:
         if decentralized
         else Llama(config.model, actual_backend(config))
     ).to(device)
-    kernels = attention_kernels(model, config, device)
-    assert model.parameter_count == num_models * config.model.parameter_count
     averaged = None
     if decentralized:
         with preserve_rng():
@@ -410,7 +407,6 @@ def _train(config: Config, resume: Path | None) -> dict:
         cache_identity=cache.manifest["identity"],
         recipe_identity=identity,
         attention=actual_backend(config),
-        attention_kernels=kernels,
         compiled=config.runtime.compile and not config.runtime.deterministic,
         realized_tokens=blocks * length,
         epochs=len(boundaries),
