@@ -6,6 +6,7 @@ from torch import nn
 from tiny_llm.config import Config
 from tiny_llm.packed import PackedLlama
 from tiny_llm.runtime import clip_grad_norm_
+from tiny_llm.state import TorchState
 
 
 class PackedAdamW:
@@ -16,7 +17,8 @@ class PackedAdamW:
         self._arena = model.parameter_storage
         self.first_moment_storage = torch.zeros_like(self._arena)
         self.second_moment_storage = torch.zeros_like(self._arena)
-        self.optimizers, self.local_parameters = [], []
+        self.optimizers: list[torch.optim.AdamW] = []
+        self.local_parameters: list[list[nn.Parameter]] = []
         fused = (
             config.runtime.fused_optimizer
             and self._arena.device.type == "cuda"
@@ -84,7 +86,7 @@ class PackedAdamW:
         for optimizer in self.optimizers:
             optimizer.step()
 
-    def state_dict(self):
+    def state_dict(self) -> TorchState:
         return {
             "version": 1,
             "layout": self.model.layout_metadata(),
@@ -105,7 +107,7 @@ class PackedAdamW:
         }
 
     @torch.no_grad()
-    def load_state_dict(self, state):
+    def load_state_dict(self, state: TorchState) -> None:
         self._check_storage()
         if state.get("version") != 1 or state["layout"] != self.model.layout_metadata():
             raise ValueError("incompatible packed optimizer layout")

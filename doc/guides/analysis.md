@@ -4,7 +4,7 @@ title: "Running checkpoint analysis"
 
 ## Analysis
 
-For epoch-by-epoch analysis, train with `--set training.checkpoint_policy=all`.
+For epoch-by-epoch analysis, train with `--set training.checkpoint_policy=interval`.
 Analyze all checkpoints or select filenames relative to the run directory.
 Use a prepared cache with enough data for both seen and unseen cases; the tool
 checks capacity before computing. Packed runs use root, averaged checkpoints.

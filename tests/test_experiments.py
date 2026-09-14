@@ -1,14 +1,58 @@
 import json
 import math
+from pathlib import Path
 
 import pytest
 
-from tiny_llm.config import save_config
+from tiny_llm.config import Config, save_config
 from tiny_llm.experiments import sweep
 from tiny_llm.runtime import atomic_json
 
 
-def test_twelve_run_promotions_and_report(tiny_config, cache_dir, tmp_path, monkeypatch):
+@pytest.mark.parametrize(
+    "snapshots,expected",
+    [
+        ([], None),
+        (["epoch-009.pt", "epoch-010.pt"], "epoch-010.pt"),
+        (["epoch-999.pt", "epoch-1000.pt"], "epoch-1000.pt"),
+        (["epoch-002.pt", "final.pt"], "final.pt"),
+    ],
+)
+def test_stage_resumes_latest_retained_state(
+    tiny_config: Config,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    snapshots: list[str],
+    expected: str | None,
+) -> None:
+    from types import SimpleNamespace
+
+    import tiny_llm.experiments as module
+
+    output = tiny_config.runtime.output_dir
+    output.mkdir()
+    for name in snapshots:
+        (output / name).touch()
+    commands = []
+
+    def launch(command, **kwargs):
+        commands.append(command)
+        atomic_json(output / "result.json", {"status": "complete"})
+        return SimpleNamespace(pid=123, returncode=0, poll=lambda: 0)
+
+    monkeypatch.setattr(module.subprocess, "Popen", launch)
+    module.run_stage([tiny_config], ["0"], tmp_path / "stage")
+    assert len(commands) == 1
+    command = commands[0]
+    if expected is None:
+        assert "--resume" not in command
+    else:
+        assert command[command.index("--resume") + 1] == str(output / expected)
+
+
+def test_twelve_run_promotions_and_report(
+    tiny_config: Config, cache_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     import tiny_llm.experiments as module
 
     benchmarks = tmp_path / "benchmarks"

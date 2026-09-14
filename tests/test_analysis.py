@@ -1,9 +1,13 @@
 import json
 import math
+from collections.abc import Iterable
+from pathlib import Path
+from typing import Any, cast
 
 import pytest
 import torch
-from safetensors.torch import save_file
+from helpers import set_budget
+from safetensors.torch import load_file, save_file
 from torch.func import functional_call
 
 from tiny_llm.analysis import (
@@ -20,10 +24,11 @@ from tiny_llm.analysis import (
     tensor_dot,
 )
 from tiny_llm.cli import build_parser, main
-from tiny_llm.config import DecentralizedConfig, ModelConfig, save_config
+from tiny_llm.config import Config, DecentralizedConfig, ModelConfig, save_config
 from tiny_llm.data import BufferedTokenLoader, TokenCache, training_boundaries
-from tiny_llm.model import Llama, token_losses
+from tiny_llm.model import Block, Llama, token_losses
 from tiny_llm.packed import PackedLlama
+from tiny_llm.runtime import precision_backend
 
 
 def test_explicit_hessian_and_weighted_microbatches():
@@ -48,6 +53,7 @@ def test_explicit_hessian_and_weighted_microbatches():
         return token_losses(functional_call(model, weights, (x,)), y).sum() / 5
 
     explicit = torch.autograd.functional.hessian(loss, flat, vectorize=True)
+    assert isinstance(explicit, torch.Tensor)
     batches = [(x[:2], y[:2]), (x[2:], y[2:])]
     # Four workers with unequal deviations and one exactly at consensus.
     workers = [
@@ -148,10 +154,11 @@ def test_signed_statistics_and_zero_noise():
     assert zero["average_noise_norm"] == 0
 
 
-def test_epoch_replay_unseen_and_microbatch(tiny_config, cache_dir):
+def test_epoch_replay_unseen_and_microbatch(tiny_config: Config, cache_dir: Path):
     cfg = tiny_config
     cfg.data.buffer_size_mib = 24 / 2**20  # Force several shuffled ranges.
-    cfg.training.epoch_tokens = 28  # Seven blocks, including a shortened batch/microbatch.
+    cfg.training.batch_tokens = 28
+    set_budget(cfg, 56, 28)  # Seven blocks; uneven microbatches and curvature padding.
     cache = TokenCache(cache_dir)
     seen, unseen = [EpochData(cache, cfg, case) for case in ("seen", "unseen")]
     with BufferedTokenLoader(
@@ -167,7 +174,7 @@ def test_epoch_replay_unseen_and_microbatch(tiny_config, cache_dir):
     assert [len(x) for x, _ in actual] == [2, 2, 2, 1]
     for index in (0, 1):
         torch.testing.assert_close(torch.cat([batch[index] for batch in actual]), expected[index])
-    assert [sample.local_blocks for sample in seen.samples] == [4, 3]
+    assert [sample.local_blocks for sample in seen.samples] == [7]
     assert unseen.start == seen.training_blocks
     assert unseen.start >= seen.blocks
     # Verify actual cache reads start after the entire physical training prefix.
@@ -184,23 +191,23 @@ def test_epoch_replay_unseen_and_microbatch(tiny_config, cache_dir):
     assert all(start >= unseen.start * 4 for start, _ in reads)
     for a, b in zip(first, second, strict=True):
         torch.testing.assert_close(a[0], b[0], rtol=0, atol=0)
-    cfg.training.max_tokens = 128
+    set_budget(cfg, 140, 28)
     with pytest.raises(ValueError, match="cache too small"):
         EpochData(cache, cfg, "unseen")
 
 
-def test_packed_batches_and_average_loading(tiny_config, cache_dir):
+def test_packed_batches_and_average_loading(tiny_config: Config, cache_dir: Path):
     from tiny_llm.analysis.core import result_key
 
     cfg = tiny_config
     cfg.decentralized = DecentralizedConfig(num_models=2)
-    cfg.training.epoch_tokens = 24
+    cfg.training.micro_batch_size = 3
+    cfg.training.batch_tokens = 24
+    set_budget(cfg, 48, 24)
     data = EpochData(TokenCache(cache_dir), cfg, "seen")
     assert [(s.cursor, s.blocks, s.worker) for s in data.samples] == [
-        (0, 4, 0),
-        (0, 4, 1),
-        (4, 2, 0),
-        (4, 2, 1),
+        (0, 6, 0),
+        (0, 6, 1),
     ]
     with data.loader() as loader:
         full = loader.next_batch(data.blocks, torch.device("cpu"))
@@ -219,7 +226,7 @@ def test_packed_batches_and_average_loading(tiny_config, cache_dir):
             config=cfg.model_dump(mode="json"),
             model=packed.packed_state_dict(),
             cursor=6,
-            step=2,
+            step=1,
             completed_epochs=1,
         ),
         path,
@@ -230,7 +237,7 @@ def test_packed_batches_and_average_loading(tiny_config, cache_dir):
             model.get_parameter(entry.name), packed.get_parameter(entry.name).mean(0)
         )
     assert info["tokens"] == 24
-    assert all(b.attention.backend == "reference" for b in model.blocks)
+    assert all(b.attention.backend == "reference" for b in cast(Iterable[Block], model.blocks))
     assert len(info["workers"]) == 2
     root = path.parent / "epoch-001.safetensors"
     save_file(model.state_dict(), root)
@@ -258,7 +265,7 @@ def test_packed_batches_and_average_loading(tiny_config, cache_dir):
         )
     assert not (path.parent / "stale").exists()
     worker = path.parent / "node-001" / root.name
-    valid = {k: v.clone() for k, v in state.items()}
+    valid = load_file(str(worker))
     for damage in ("shape", "name", "nonfinite", "mean"):
         state = {k: v.clone() for k, v in valid.items()}
         if damage == "shape":
@@ -279,9 +286,9 @@ def test_packed_batches_and_average_loading(tiny_config, cache_dir):
     assert "workers" not in load_checkpoint(cfg, root, consensus=False)[1]
 
 
-def test_runtime_restoration(tiny_config):
+def test_runtime_restoration(tiny_config: Config):
     before = (
-        torch.backends.fp32_precision,
+        precision_backend.fp32_precision,
         torch.backends.cuda.matmul.fp32_precision,
         torch.get_num_threads(),
         torch.random.get_rng_state().clone(),
@@ -295,14 +302,16 @@ def test_runtime_restoration(tiny_config):
             assert not policy["tf32_effective"]
             raise RuntimeError("test failure")
     assert (
-        torch.backends.fp32_precision,
+        precision_backend.fp32_precision,
         torch.backends.cuda.matmul.fp32_precision,
         torch.get_num_threads(),
     ) == before[:3]
     assert torch.equal(torch.random.get_rng_state(), before[3])
 
 
-def test_analysis_cli_resume_and_aliases(tiny_config, cache_dir, monkeypatch):
+def test_analysis_cli_resume_and_aliases(
+    tiny_config: Config, cache_dir: Path, monkeypatch: pytest.MonkeyPatch
+):
     import tiny_llm.analysis.core as module
 
     cfg = tiny_config
@@ -321,7 +330,7 @@ def test_analysis_cli_resume_and_aliases(tiny_config, cache_dir, monkeypatch):
         step=4,
         completed_epochs=2,
     )
-    for name in ("latest.pt", "final.pt"):
+    for name in ("alias.pt", "final.pt"):
         torch.save(state, run / name)
     monkeypatch.setattr(
         module,
@@ -362,7 +371,7 @@ def test_analysis_cli_resume_and_aliases(tiny_config, cache_dir, monkeypatch):
         checkpoint_paths(run, ["node-000/epoch-001.safetensors"])
 
 
-def test_sampling_reproducibility_and_training_microbatch(tiny_config, cache_dir):
+def test_sampling_reproducibility_and_training_microbatch(tiny_config: Config, cache_dir: Path):
     from tiny_llm.analysis import measure
 
     cfg = tiny_config
@@ -398,4 +407,4 @@ def test_cli_defaults_and_invalid_options():
         dict(amp=True, dtype="float64"),
     ):
         with pytest.raises(ValueError):
-            AnalysisOptions(**kwargs)
+            AnalysisOptions(**cast(dict[str, Any], kwargs))

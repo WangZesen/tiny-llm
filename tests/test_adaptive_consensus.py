@@ -1,15 +1,15 @@
 import json
-import os
-import signal
 from dataclasses import asdict
+from pathlib import Path
 
 import pytest
 import torch
-from test_packed import assert_nested_equal, assert_storage, matrix
+from helpers import assert_nested_equal
+from test_packed import assert_storage, matrix
 
-from tiny_llm.checkpoints import RETENTION_FIELDS, load_training_checkpoint
+from tiny_llm.checkpoints import load_training_checkpoint
 from tiny_llm.config import AdaptiveConsensusConfig, Config
-from tiny_llm.data import BufferedTokenLoader, TokenCache, fingerprint, training_boundaries
+from tiny_llm.data import TokenCache, training_boundaries
 from tiny_llm.packed import PackedLlama
 from tiny_llm.packed_benchmark import benchmark_packed, benchmark_packed_worker
 from tiny_llm.packed_optimizer import PackedAdamW
@@ -23,11 +23,13 @@ def adaptive_config(config, start_frac=0.3, p=1.5):
         topology="one_peer_exponential",
         adaptive_consensus=dict(start_frac=start_frac, p=p),
     )
-    raw["training"].update(batch_tokens=32, max_tokens=128, epoch_tokens=48)
+    raw["training"].update(
+        batch_tokens=32, tokens_per_parameters=128 / 800, epoch_tokens_per_parameters=32 / 800
+    )
     return Config.model_validate(raw)
 
 
-def test_config_validation(tiny_config):
+def test_config_validation(tiny_config: Config):
     for raw in (
         {},
         {"start_frac": 0},
@@ -47,45 +49,49 @@ def test_config_validation(tiny_config):
     "start_frac,warmup,p",
     [(0, 0.5, 1), (0.3, 0.6, 2), (0.6, 0.2, 0.5), (1, 0.5, 1), (0.99, 0, 1), (0, 0, 0)],
 )
-def test_realized_schedule(tiny_config, start_frac, warmup, p):
+def test_realized_schedule(tiny_config: Config, start_frac, warmup, p):
     config = adaptive_config(tiny_config, start_frac, p)
+    assert config.decentralized is not None and config.decentralized.adaptive_consensus is not None
     config.optimizer.warmup_fraction = warmup
     before = torch.get_rng_state()
     schedule = adaptive_consensus_schedule(
         config, training_boundaries(config, config.model.parameter_count)
     )
+    assert schedule is not None
     assert torch.equal(before, torch.get_rng_state())
-    # Three epochs contain 12, 12, 8 blocks: two full and two shortened steps,
-    # followed by one full step. The naive global ceil would give only four.
-    assert schedule.total_steps == 5
-    expected_start = {0: 0, 0.3: 2, 0.6: 3, 1: 5, 0.99: 5}[start_frac]
+    assert schedule.total_steps == 4
+    expected_start = {0: 0, 0.3: 2, 0.6: 3, 1: 4, 0.99: 4}[start_frac]
     assert schedule.start_step == expected_start
-    rates = [learning_rate(config, tokens, 128) for tokens in (32, 48, 80, 96, 128)]
-    assert schedule.lr_max == (max(rates[expected_start:]) if expected_start < 5 else None)
+    rates = [learning_rate(config, tokens, 128) for tokens in (32, 64, 96, 128)]
+    assert schedule.lr_max == (max(rates[expected_start:]) if expected_start < 4 else None)
     for r, lr in enumerate(rates):
         expected = 1 if r < expected_start or p == 0 else (lr / max(rates[expected_start:])) ** p
         assert schedule.gamma(r, lr) == expected
     if start_frac == 0 and warmup == 0.5:
+        assert schedule.lr_max is not None
         assert schedule.lr_max > rates[0]  # Maximum occurs after activation.
 
 
-def test_zero_lr_and_empty_window(tiny_config):
+def test_zero_lr_and_empty_window(tiny_config: Config):
     config = adaptive_config(tiny_config, 0)
+    assert config.decentralized is not None and config.decentralized.adaptive_consensus is not None
     config.optimizer.min_lr_ratio = 0
     with pytest.raises(ValueError, match="positive maximum LR"):
         adaptive_consensus_schedule(config, [8])
     config.decentralized.adaptive_consensus.p = 0
-    assert adaptive_consensus_schedule(config, [8]).gamma(0, 0) == 1
+    zero = adaptive_consensus_schedule(config, [8])
+    assert zero is not None and zero.gamma(0, 0) == 1
     config.decentralized.adaptive_consensus.p = 1
     config.decentralized.adaptive_consensus.start_frac = 0.1
     schedule = adaptive_consensus_schedule(config, [8])
+    assert schedule is not None
     assert schedule.start_step == 1 and schedule.lr_max is None
     assert schedule.gamma(0, 0) == 1
 
 
 @pytest.mark.parametrize("topology", ["complete", "one_peer_ring", "one_peer_exponential"])
 @pytest.mark.parametrize("n", [1, 3, 4])
-def test_weighted_mixing(tiny_config, topology, n):
+def test_weighted_mixing(tiny_config: Config, topology, n):
     model = PackedLlama(tiny_config.model, n).double()
     opt = PackedAdamW(model, tiny_config)
     with torch.no_grad():
@@ -99,7 +105,8 @@ def test_weighted_mixing(tiny_config, topology, n):
                 )
     before = model.parameter_storage.clone()
     moments = (opt.first_moment_storage.clone(), opt.second_moment_storage.clone())
-    gradients = [p.grad.clone() for p in model.parameters()]
+    gradients = [p.grad.clone() for p in model.parameters() if p.grad is not None]
+    assert len(gradients) == len(tuple(model.parameters()))
     for step, gamma in enumerate((0, 0.2, 0.75, 1)):
         model.parameter_storage.copy_(before)
         pointer = model.parameter_storage.data_ptr()
@@ -130,32 +137,23 @@ def test_weighted_mixing(tiny_config, topology, n):
         for local in opt.optimizers:
             assert all(state["step"].item() == 0 for state in local.state.values())
         for parameter, grad in zip(model.parameters(), gradients, strict=True):
+            assert parameter.grad is not None
             assert torch.equal(parameter.grad, grad)
     for gamma in (-0.1, 1.1, float("nan"), float("inf")):
         with pytest.raises(ValueError, match="gamma"):
             model.mix_(topology, 0, gamma)
 
 
-def test_identity_and_benchmark_guards(tiny_config, cache_dir, tmp_path):
+def test_identity_and_benchmark_guards(tiny_config: Config, cache_dir: Path, tmp_path: Path):
     config = adaptive_config(tiny_config)
+    assert config.decentralized is not None and config.decentralized.adaptive_consensus is not None
     cache = TokenCache(cache_dir)
     enabled = recipe_identity(config, cache)
     config.decentralized.adaptive_consensus = None
     disabled = recipe_identity(config, cache)
-    legacy = config.model_dump(mode="json")
-    legacy["decentralized"].pop("adaptive_consensus")
-    legacy["decentralized"].pop("scheme")
-    for key in RETENTION_FIELDS:
-        legacy["training"].pop(key)
-    for key in ("output_dir", "device", "cpu_threads", "compile_mode", "sdpa_backend"):
-        legacy["runtime"].pop(key)
-    for key in ("cache_dir", "prefetch"):
-        legacy["data"].pop(key)
-    legacy.update(
-        cache_identity=cache.manifest["identity"], loader_version=BufferedTokenLoader.VERSION
-    )
-    assert disabled == fingerprint(legacy) != enabled
+    assert disabled != enabled
     config = adaptive_config(tiny_config)
+    assert config.decentralized is not None and config.decentralized.adaptive_consensus is not None
     destination = tmp_path / "must-not-exist"
     with pytest.raises(ValueError, match="training only"):
         benchmark_packed(config, destination)
@@ -165,34 +163,19 @@ def test_identity_and_benchmark_guards(tiny_config, cache_dir, tmp_path):
     assert not destination.exists()
 
 
-@pytest.mark.parametrize("resume_at", ["before", "after", "epoch"])
+@pytest.mark.parametrize("resume_epoch", [1, 3])
 @pytest.mark.parametrize("scheme", ["awc", "atc"])
-def test_adaptive_resume(tiny_config, cache_dir, monkeypatch, resume_at, scheme):
+def test_adaptive_resume(tiny_config: Config, cache_dir: Path, resume_epoch, scheme):
     config = adaptive_config(tiny_config)
+    assert config.decentralized is not None and config.decentralized.adaptive_consensus is not None
     config.decentralized.scheme = scheme
-    config.training.checkpoint_policy = "all"
+    config.training.checkpoint_policy = "interval"
     config.runtime.deterministic = True
     config.optimizer.warmup_fraction = 0.6
     baseline = config.model_copy(deep=True)
     baseline.runtime.output_dir = cache_dir.parent / "baseline"
     expected = train(baseline)
-    if resume_at == "epoch":
-        source = baseline.runtime.output_dir / "epoch-001.pt"
-    else:
-        original = PackedAdamW.step
-        updates = 0
-
-        def interrupt(self):
-            nonlocal updates
-            original(self)
-            updates += 1
-            if updates == (1 if resume_at == "before" else 4):
-                os.kill(os.getpid(), signal.SIGTERM)
-
-        monkeypatch.setattr(PackedAdamW, "step", interrupt)
-        assert train(config)["status"] == "interrupted"
-        monkeypatch.setattr(PackedAdamW, "step", original)
-        source = config.runtime.output_dir / "latest.pt"
+    source = baseline.runtime.output_dir / f"epoch-{resume_epoch:03d}.pt"
     config.runtime.output_dir = cache_dir.parent / "resumed"
     assert train(config, source)["final_validation"]["loss"] == expected["final_validation"]["loss"]
     a = load_training_checkpoint(baseline.runtime.output_dir / "final.pt")
@@ -210,6 +193,7 @@ def test_adaptive_resume(tiny_config, cache_dir, monkeypatch, resume_at, scheme)
     schedule = adaptive_consensus_schedule(
         config, training_boundaries(config, config.model.parameter_count)
     )
+    assert schedule is not None
     for directory in (baseline.runtime.output_dir, config.runtime.output_dir):
         rows = [json.loads(line) for line in (directory / "metrics.jsonl").read_text().splitlines()]
         for row in rows:

@@ -1,19 +1,20 @@
 import json
-import os
-import signal
+from pathlib import Path
 
 import pytest
 import torch
+from helpers import assert_nested_equal, set_budget
 from safetensors.torch import load_file
 from torch.func import functional_call
 
 from tiny_llm.config import Config, ModelConfig, load_config
-from tiny_llm.data import BufferedTokenLoader, TokenCache, fingerprint
+from tiny_llm.data import BufferedTokenLoader, TokenCache
 from tiny_llm.model import Llama, token_losses
 from tiny_llm.packed import PackedLlama, local_mean_losses
 from tiny_llm.packed_benchmark import benchmark_packed_worker
 from tiny_llm.packed_optimizer import PackedAdamW
 from tiny_llm.runtime import preserve_rng, rng_state, setup_runtime
+from tiny_llm.state import LoaderState, TrainingState
 from tiny_llm.train import (
     adaptive_consensus_schedule,
     evaluate,
@@ -26,7 +27,7 @@ from tiny_llm.train import (
 
 
 @pytest.mark.parametrize("seed,n", [(0, 1), (42, 4), (123, 8)])
-def test_initialization(tiny_config, seed, n):
+def test_initialization(tiny_config: Config, seed, n):
     torch.manual_seed(seed)
     ordinary = Llama(tiny_config.model)
     expected_rng = torch.get_rng_state()
@@ -69,7 +70,9 @@ def matrix(n, topology, step, device="cpu", dtype=torch.float64):
 @pytest.mark.parametrize("adaptive", [False, True])
 @pytest.mark.parametrize("scheme", ["awc", "atc"])
 @pytest.mark.parametrize("grad_clip", [0.5, None])
-def test_independent_worker_parity(tiny_config, backend, topology, adaptive, scheme, grad_clip):
+def test_independent_worker_parity(
+    tiny_config: Config, backend, topology, adaptive, scheme, grad_clip
+):
     n = 3
     schedule = None
     if adaptive:
@@ -113,6 +116,7 @@ def test_independent_worker_parity(tiny_config, backend, topology, adaptive, sch
             torch.testing.assert_close(means[i], loss)
             loss.backward()
             for p, q in zip(packed.parameters(), model.parameters(), strict=True):
+                assert p.grad is not None and q.grad is not None
                 torch.testing.assert_close(p.grad[i], q.grad, rtol=1e-9, atol=1e-11)
         optimizer.clip_grad_norm_(grad_clip)
         if grad_clip is not None:
@@ -185,7 +189,7 @@ def assert_storage(model, optimizer):
 
 @pytest.mark.parametrize("n", [1, 2, 3, 8])
 @pytest.mark.parametrize("topology", ["complete", "one_peer_ring", "one_peer_exponential"])
-def test_topologies(tiny_config, n, topology):
+def test_topologies(tiny_config: Config, n, topology):
     model = PackedLlama(tiny_config.model, n).double()
     with torch.no_grad():
         model.parameter_storage.normal_()
@@ -198,7 +202,7 @@ def test_topologies(tiny_config, n, topology):
         torch.testing.assert_close(model.parameter_storage, original.mean(0).expand_as(original))
 
 
-def test_storage_roundtrip_and_moment_edits(tiny_config, tmp_path):
+def test_storage_roundtrip_and_moment_edits(tiny_config: Config, tmp_path: Path):
     model = PackedLlama(tiny_config.model, 2).double()
     model.load_state_dict(model.state_dict())
     with pytest.raises(ValueError, match="aliases"):
@@ -233,7 +237,7 @@ def test_storage_roundtrip_and_moment_edits(tiny_config, tmp_path):
     assert_storage(model, PackedAdamW(model, tiny_config))
 
 
-def test_causality_and_worker_independence(tiny_config):
+def test_causality_and_worker_independence(tiny_config: Config):
     packed = PackedLlama(tiny_config.model, 4, "reference").double()
     x = torch.randint(17, (4, 2, 4))
     before = packed(x)
@@ -247,6 +251,7 @@ def test_causality_and_worker_independence(tiny_config):
     local_mean_losses(packed(x), x).sum().backward()
     local_mean_losses(single(x[:1]), x[:1]).sum().backward()
     for p, q in zip(packed.parameters(), single.parameters(), strict=True):
+        assert p.grad is not None and q.grad is not None
         torch.testing.assert_close(p.grad[0], q.grad[0], rtol=1e-10, atol=1e-12)
 
 
@@ -265,7 +270,7 @@ def test_second_derivatives():
     assert torch.autograd.gradgradcheck(loss, parameters, fast_mode=True)
 
 
-def test_average_evaluation(tiny_config, cache_dir):
+def test_average_evaluation(tiny_config: Config, cache_dir: Path):
     setup_runtime(tiny_config)
     packed = PackedLlama(tiny_config.model, 3, "reference")
     optimizer = PackedAdamW(packed, tiny_config)
@@ -301,67 +306,27 @@ def decentralized_config(config, n=2, topology="one_peer_ring"):
     return Config.model_validate(raw)
 
 
-def assert_nested_equal(left, right):
-    if isinstance(left, torch.Tensor):
-        assert torch.equal(left, right)
-    elif isinstance(left, dict):
-        assert left.keys() == right.keys()
-        for key in left:
-            assert_nested_equal(left[key], right[key])
-    elif isinstance(left, (list, tuple)):
-        assert len(left) == len(right)
-        for a, b in zip(left, right, strict=True):
-            assert_nested_equal(a, b)
-    else:
-        assert left == right
-
-
 @pytest.mark.parametrize("scheme", ["awc", "atc"])
 @pytest.mark.parametrize("grad_clip", [1.0, None])
-def test_training_resume(tiny_config, cache_dir, monkeypatch, scheme, grad_clip):
-    tiny_config.training.checkpoint_policy = "all"
+def test_training_resume(
+    tiny_config: Config, cache_dir: Path, monkeypatch: pytest.MonkeyPatch, scheme, grad_clip
+):
+    tiny_config.training.checkpoint_policy = "interval"
     topology = "one_peer_exponential"
     config = decentralized_config(tiny_config, n=4, topology=topology)
+    assert config.decentralized is not None
     config.decentralized.scheme = scheme
     config.optimizer.grad_clip = grad_clip
     config.runtime.deterministic = True
     # Cross buffer boundaries inside packed steps and switch prefetch on resume.
     config.data.buffer_size_mib = 24 / 2**20
     # 12-block epochs: full local batch 2, followed by local batch 1.
-    config.training.max_tokens = 96
-    config.training.epoch_tokens = 48
+    set_budget(config, 128, 64)
     complete = config.model_copy(deep=True)
     complete.runtime.output_dir = cache_dir.parent / "complete"
     result = train(complete)
-    original = PackedAdamW.step
-    original_mix = PackedLlama.mix_
-    events = []
-
-    def record_mix(self, topology, step, gamma=1.0):
-        assert all(parameter.grad is not None for parameter in self.parameters())
-        events.append(("mix", step))
-        original_mix(self, topology, step, gamma=gamma)
-
-    def record_update(self):
-        events.append(("update", None))
-        original(self)
-
-    monkeypatch.setattr(PackedLlama, "mix_", record_mix)
-
-    def interrupted(self):
-        original(self)
-        os.kill(os.getpid(), signal.SIGTERM)
-
-    monkeypatch.setattr(PackedAdamW, "step", interrupted)
-    assert train(config)["status"] == "interrupted"
-    monkeypatch.setattr(PackedAdamW, "step", record_update)
     config.data.prefetch = False
-    resumed = train(config, config.runtime.output_dir / "latest.pt")
-    expected_events = [("mix", 0)]
-    for mixing_step in range(1, 4):
-        pair = [("mix", mixing_step), ("update", None)]
-        expected_events.extend(pair if scheme == "awc" else reversed(pair))
-    assert events == expected_events
+    resumed = train(config, complete.runtime.output_dir / "epoch-001.pt")
     assert result["scheme"] == resumed["scheme"] == scheme
     metadata = json.loads((complete.runtime.output_dir / "environment.json").read_text())
     assert metadata["scheme"] == scheme
@@ -375,7 +340,7 @@ def test_training_resume(tiny_config, cache_dir, monkeypatch, scheme, grad_clip)
     assert a["config"]["decentralized"]["scheme"] == scheme
     assert b["config"]["decentralized"]["scheme"] == scheme
     assert a["loader"] == b["loader"]
-    assert a["loader"]["cursor"] == a["cursor"] == 24
+    assert a["loader"]["cursor"] == a["cursor"] == 32
     expected = evaluate_checkpoint(config, config.runtime.output_dir / "final.pt", True)
     assert expected["loss"] == result["final_validation"]["loss"]
     averaged = load_file(str(config.runtime.output_dir / "epoch-002.safetensors"))
@@ -390,36 +355,23 @@ def test_training_resume(tiny_config, cache_dir, monkeypatch, scheme, grad_clip)
     assert json.loads((config.runtime.output_dir / "best.json").read_text())["epoch"] in (1, 2)
 
 
-def test_config_and_buffered_identity(tiny_config, cache_dir):
+def test_config_and_buffered_identity(tiny_config: Config, cache_dir: Path):
     raw = tiny_config.model_dump()
     raw["decentralized"] = {"num_models": 8}
     with pytest.raises(ValueError, match="no accumulation"):
         Config.model_validate(raw)
-    config = decentralized_config(tiny_config, 4)
-    config.training.epoch_tokens = 20
-    with pytest.raises(ValueError, match="epoch boundaries"):
-        train(config)
-    value = tiny_config.model_dump(mode="json")
-    value["training"].pop("checkpoint_policy")
-    value["training"].pop("save_epoch_training_state")
-    value.pop("decentralized")
-    for key in ("device", "output_dir", "cpu_threads", "compile_mode", "sdpa_backend"):
-        value["runtime"].pop(key)
-    value["data"].pop("cache_dir")
-    value["data"].pop("prefetch")
-    cache = TokenCache(cache_dir)
-    value["cache_identity"] = cache.manifest["identity"]
-    value["loader_version"] = BufferedTokenLoader.VERSION
-    assert recipe_identity(tiny_config, cache) == fingerprint(value)
 
 
-def test_buffered_worker_partition(tiny_config, cache_dir, monkeypatch):
+def test_buffered_worker_partition(
+    tiny_config: Config, cache_dir: Path, monkeypatch: pytest.MonkeyPatch
+):
     import tiny_llm.train as module
 
     config = decentralized_config(tiny_config, 4)
+    assert config.decentralized is not None
     config.runtime.deterministic = True
     config.data.buffer_size_mib = 24 / 2**20
-    config.training.max_tokens, config.training.epoch_tokens = 96, 48
+    set_budget(config, 96, 48)
     cache = TokenCache(cache_dir)
     with BufferedTokenLoader(
         cache, "train", 4, 24, config.data.buffer_size_mib, seed=config.runtime.seed
@@ -443,41 +395,25 @@ def test_buffered_worker_partition(tiny_config, cache_dir, monkeypatch):
     monkeypatch.setattr(module, "loss_function", record_loss)
     monkeypatch.setattr(TokenCache, "batch", random_access_forbidden)
     assert train(config)["status"] == "complete"
-    assert [x.shape[1] for x, _ in batches] == [2, 1, 2, 1]
+    assert [x.shape[1] for x, _ in batches] == [2, 2, 2]
     for index, wanted in enumerate(expected):
         actual = torch.cat([batch[index] for batch in batches], dim=1)
         assert torch.equal(actual, wanted.view(6, 4, 4).transpose(0, 1))
 
 
-def test_checkpoint_format_detection(tiny_config, cache_dir):
-    config = decentralized_config(tiny_config)
-    config.runtime.deterministic = True
-    packed = PackedLlama(config.model, 2, "reference")
-    averaged = Llama(config.model, "reference")
-    packed.copy_average_to(averaged)
-    path = cache_dir.parent / "legacy-packed.pt"
-    torch.save(
-        {
-            "version": 2,
-            "config": config.model_dump(mode="json"),
-            "model": packed.packed_state_dict(),
-        },
-        path,
-    )
-    expected = evaluate(averaged, TokenCache(cache_dir), config, torch.device("cpu"), True)
-    assert evaluate_checkpoint(config, path, True)["loss"] == expected["loss"]
-    with pytest.raises(ValueError, match="legacy checkpoint.*weights remain usable"):
-        train(config, path)
-    # Upstream ordinary checkpoints also use version 2, with an ordinary state dict.
-    torch.save({"version": 2, "model": averaged.state_dict()}, path)
-    assert evaluate_checkpoint(config, path, True)["loss"] == expected["loss"]
-
-
 @pytest.mark.parametrize("execution", ["packed", "sequential"])
 @pytest.mark.parametrize("scheme", ["awc", "atc"])
 @pytest.mark.parametrize("grad_clip", [1.0, None])
-def test_benchmark_worker(tiny_config, tmp_path, execution, scheme, monkeypatch, grad_clip):
+def test_benchmark_worker(
+    tiny_config: Config,
+    tmp_path: Path,
+    execution,
+    scheme,
+    monkeypatch: pytest.MonkeyPatch,
+    grad_clip,
+):
     config = decentralized_config(tiny_config)
+    assert config.decentralized is not None
     config.decentralized.scheme = scheme
     config.optimizer.grad_clip = grad_clip
     events = []
@@ -514,7 +450,7 @@ def test_benchmark_worker(tiny_config, tmp_path, execution, scheme, monkeypatch,
 
 @pytest.mark.cuda
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA required")
-def test_cuda_bf16_and_fused_optimizer(tiny_config):
+def test_cuda_bf16_and_fused_optimizer(tiny_config: Config):
     from tiny_llm.checkpoints import load_training_checkpoint, save_epoch_checkpoint
     from tiny_llm.config import DecentralizedConfig
 
@@ -550,12 +486,14 @@ def test_cuda_bf16_and_fused_optimizer(tiny_config):
             torch.testing.assert_close(actual[i], expected, rtol=0.003, atol=0.003)
             expected.backward()
             for p, q in zip(packed.parameters(), model.parameters(), strict=True):
+                assert p.grad is not None and q.grad is not None
                 error = (p.grad[i] - q.grad).norm() / q.grad.norm().clamp_min(1e-8)
                 assert error < 0.06
                 # Isolate fused-optimizer/storage parity from BF16 kernel rounding.
                 # Adam can amplify sign differences in near-zero gradients.
                 q.grad.copy_(p.grad[i])
         optimizer.clip_grad_norm_(cfg.optimizer.grad_clip)
+        assert cfg.optimizer.grad_clip is not None
         for model in locals_:
             torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.optimizer.grad_clip)
         gamma = 1.0 if _step == 0 else 0.25
@@ -572,12 +510,12 @@ def test_cuda_bf16_and_fused_optimizer(tiny_config):
         if _step == 0:
             # Continue the compiled BF16/fused update after restoring separate worker files.
             cfg.decentralized = DecentralizedConfig(num_models=2)
-            cfg.training.max_tokens = 128
-            cfg.training.epoch_tokens = 64
+            cfg.training.tokens_per_parameters = 128 / cfg.model.parameter_count
+            cfg.training.epoch_tokens_per_parameters = 64 / cfg.model.parameter_count
             directory = cfg.runtime.output_dir
             directory.mkdir()
             path = directory / "epoch-001.pt"
-            state = dict(
+            state = TrainingState(
                 version=3,
                 config=cfg.model_dump(mode="json"),
                 recipe_identity="cuda-fixture",
@@ -586,7 +524,16 @@ def test_cuda_bf16_and_fused_optimizer(tiny_config):
                 cursor=4,
                 step=1,
                 completed_epochs=1,
-                loader=dict(cursor=4),
+                loader=LoaderState(
+                    version=1,
+                    cache_identity="cuda-fixture",
+                    split="train",
+                    length=16,
+                    blocks=8,
+                    buffer_blocks=2097152,
+                    seed=42,
+                    cursor=4,
+                ),
                 rng=rng_state(),
                 best_loss=1.0,
                 best_epoch=1,
@@ -616,8 +563,9 @@ def test_cuda_bf16_and_fused_optimizer(tiny_config):
                 )
 
 
-def test_scheme_config_and_identity(tiny_config, cache_dir, tmp_path):
+def test_scheme_config_and_identity(tiny_config: Config, cache_dir: Path, tmp_path: Path):
     config = decentralized_config(tiny_config)
+    assert config.decentralized is not None
     path = tmp_path / "config.json"
     raw = config.model_dump(mode="json")
     raw["decentralized"].pop("scheme")
@@ -626,12 +574,13 @@ def test_scheme_config_and_identity(tiny_config, cache_dir, tmp_path):
     assert config.decentralized.scheme == "awc"
     assert load_config(path, ["decentralized.scheme=awc"]) == config
     atc = load_config(path, ["decentralized.scheme=atc"])
+    assert atc.decentralized is not None
     assert atc.decentralized.scheme == "atc"
     with pytest.raises(ValueError):
         load_config(path, ["decentralized.scheme=invalid"])
     cache = TokenCache(cache_dir)
     assert recipe_identity(atc, cache) != recipe_identity(config, cache)
-    config.training.checkpoint_policy = "all"
+    config.training.checkpoint_policy = "interval"
     train(config)
     with pytest.raises(ValueError, match="recipe"):
         train(atc, config.runtime.output_dir / "final.pt")
@@ -639,18 +588,22 @@ def test_scheme_config_and_identity(tiny_config, cache_dir, tmp_path):
 
 @pytest.mark.parametrize("scheme", ["awc", "atc"])
 @pytest.mark.parametrize("grad_clip", [1.0, None])
-def test_benchmark_scheme_propagation(tiny_config, tmp_path, monkeypatch, scheme, grad_clip):
+def test_benchmark_scheme_propagation(
+    tiny_config: Config, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, scheme, grad_clip
+):
     from types import SimpleNamespace
 
     import tiny_llm.packed_benchmark as module
 
     config = decentralized_config(tiny_config)
+    assert config.decentralized is not None
     config.decentralized.scheme = scheme
     config.optimizer.grad_clip = grad_clip
     executions = []
 
     def run(command, **kwargs):
         candidate = load_config(command[command.index("--config") + 1])
+        assert candidate.decentralized is not None
         assert candidate.decentralized.scheme == scheme
         assert candidate.optimizer.grad_clip == grad_clip
         execution = command[command.index("--execution") + 1]

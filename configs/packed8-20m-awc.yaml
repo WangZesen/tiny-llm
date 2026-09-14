@@ -10,8 +10,6 @@ training:
   batch_tokens: 131072
   micro_batch_size: 16
   checkpoint_policy: final
-  epoch_tokens: 10207232
-  max_tokens: 408068096
 runtime:
   output_dir: runs/packed8-20m-awc
 optimizer:

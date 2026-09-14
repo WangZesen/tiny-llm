@@ -3,10 +3,12 @@
 import math
 import signal
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from contextlib import nullcontext
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from types import FrameType
+from typing import overload
 
 import torch
 from loguru import logger
@@ -44,9 +46,20 @@ from tiny_llm.runtime import (
     setup_logging,
     setup_runtime,
 )
+from tiny_llm.state import Batch, EvaluationResult, LossFunction, TrainingState
 
 
-def make_optimizer(model: Llama | PackedLlama, config: Config, device: torch.device):
+@overload
+def make_optimizer(model: Llama, config: Config, device: torch.device) -> torch.optim.AdamW: ...
+
+
+@overload
+def make_optimizer(model: PackedLlama, config: Config, device: torch.device) -> PackedAdamW: ...
+
+
+def make_optimizer(
+    model: Llama | PackedLlama, config: Config, device: torch.device
+) -> torch.optim.AdamW | PackedAdamW:
     if isinstance(model, PackedLlama):
         return PackedAdamW(model, config)
     cfg = config.optimizer
@@ -104,7 +117,7 @@ class AdaptiveConsensusSchedule:
 def adaptive_consensus_schedule(
     config: Config, boundaries: list[int]
 ) -> AdaptiveConsensusSchedule | None:
-    """Resolve the full run's active LR maximum, including shortened epoch steps."""
+    """Resolve the full run's active LR maximum, over the realized updates."""
     adaptive = config.decentralized.adaptive_consensus if config.decentralized else None
     if adaptive is None:
         return None
@@ -129,8 +142,8 @@ def adaptive_consensus_schedule(
     return AdaptiveConsensusSchedule(total_steps, start_step, lr_max, adaptive.p)
 
 
-def loss_function(model, config: Config, device: torch.device):
-    def loss(inputs, targets):
+def loss_function(model: Llama | PackedLlama, config: Config, device: torch.device) -> LossFunction:
+    def loss(inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
         with autocast(config, device):
             if isinstance(model, PackedLlama):
                 return local_mean_losses(model(inputs), targets)
@@ -141,8 +154,8 @@ def loss_function(model, config: Config, device: torch.device):
 
         batch_axis = 1 if isinstance(model, PackedLlama) else 0
 
-        def dispatched(inputs, targets):
-            # Rare epoch-ending shapes do not amortize another compilation.
+        def dispatched(inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+            # Microbatch remainders do not amortize another compilation.
             if inputs.shape[batch_axis] != config.training.micro_batch_size:
                 return loss(inputs, targets)
             return compiled(inputs, targets)
@@ -152,8 +165,15 @@ def loss_function(model, config: Config, device: torch.device):
 
 
 def optimizer_update(
-    model, optimizer, compute_loss, next_batch, config, device, step_blocks, profile=False
-):
+    model: Llama,
+    optimizer: torch.optim.AdamW,
+    compute_loss: LossFunction,
+    next_batch: Callable[[int, torch.device], Batch],
+    config: Config,
+    device: torch.device,
+    step_blocks: int,
+    profile: bool = False,
+) -> tuple[torch.Tensor, torch.Tensor]:
     """The production update, also used by synthetic and real-data benchmarks."""
 
     def region(name):
@@ -187,7 +207,7 @@ def evaluate(
     device: torch.device,
     full: bool,
     should_stop: Callable[[], bool] | None = None,
-) -> dict:
+) -> EvaluationResult:
     was_training = model.training
     start = time.monotonic()
     total_loss = torch.zeros((), device=device, dtype=torch.float64)
@@ -198,7 +218,7 @@ def evaluate(
             model.eval()
             if full:
                 count_blocks = cache.blocks("validation", config.model.context_length, partial=True)
-                loader = BufferedTokenLoader(
+                full_loader = BufferedTokenLoader(
                     cache,
                     "validation",
                     config.model.context_length,
@@ -206,21 +226,28 @@ def evaluate(
                     config.data.buffer_size_mib,
                     prefetch=config.data.prefetch,
                 )
+                loader = full_loader
+                batches: Iterator[Batch] = (
+                    full_loader.next_batch(
+                        min(config.evaluation.batch_size, count_blocks - offset), device
+                    )
+                    for offset in range(0, count_blocks, config.evaluation.batch_size)
+                )
             else:
                 tokens, valid = cache.validation_subset(config, should_stop)
                 count_blocks = len(tokens)
+                batches = (
+                    subset_batch(
+                        tokens[offset : offset + config.evaluation.batch_size],
+                        valid[offset : offset + config.evaluation.batch_size],
+                        device,
+                    )
+                    for offset in range(0, count_blocks, config.evaluation.batch_size)
+                )
             for offset in range(0, count_blocks, config.evaluation.batch_size):
                 if should_stop is not None and should_stop():
                     raise InterruptedError("evaluation interrupted")
-                batch_size = min(config.evaluation.batch_size, count_blocks - offset)
-                if full:
-                    x, y = loader.next_batch(batch_size, device)
-                else:
-                    x, y = subset_batch(
-                        tokens[offset : offset + batch_size],
-                        valid[offset : offset + batch_size],
-                        device,
-                    )
+                x, y = next(batches)
                 with autocast(config, device):
                     losses = token_losses(model(x), y)
                 total_loss += losses.double().sum()
@@ -236,7 +263,7 @@ def evaluate(
     mean = total_loss.item() / count
     if not math.isfinite(mean):
         raise FloatingPointError("nonfinite validation loss")
-    return dict(
+    return EvaluationResult(
         loss=mean,
         perplexity=math.exp(mean) if mean < 700 else None,
         tokens=count,
@@ -250,17 +277,6 @@ def recipe_identity(config: Config, cache: TokenCache) -> str:
     value = config.model_dump(mode="json")
     for key in RETENTION_FIELDS:
         value["training"].pop(key)
-    if value["decentralized"] is None:
-        value.pop("decentralized")  # Keep pre-feature single-model recipe identities.
-    else:
-        if value["decentralized"]["adaptive_consensus"] is None:
-            value["decentralized"].pop("adaptive_consensus")
-        if value["decentralized"]["scheme"] == "awc":
-            value["decentralized"].pop("scheme")  # Preserve existing AWC recipe identities.
-    # Default execution controls retain the identity of existing v2 checkpoints.
-    for name, default in (("compile_mode", "default"), ("sdpa_backend", "auto")):
-        if value["runtime"][name] == default:
-            value["runtime"].pop(name)
     for name in ("output_dir", "device", "cpu_threads"):
         value["runtime"].pop(name)
     value["data"].pop("cache_dir")
@@ -304,10 +320,7 @@ def _train(config: Config, resume: Path | None) -> dict:
     decentralized = config.decentralized
     num_models = decentralized.num_models if decentralized else 1
     boundaries = training_boundaries(config, config.model.parameter_count)
-    if decentralized and any(boundary % num_models for boundary in boundaries):
-        raise ValueError(
-            "decentralized epoch boundaries must contain a multiple of num_models blocks"
-        )
+    selected_epochs = config.training.saved_epochs()
     consensus_schedule = adaptive_consensus_schedule(config, boundaries)
     model = (
         PackedLlama(config.model, num_models, actual_backend(config))
@@ -321,8 +334,9 @@ def _train(config: Config, resume: Path | None) -> dict:
         with preserve_rng():
             averaged = Llama(config.model, actual_backend(config)).to(device)
 
-    def evaluation_model():
-        if averaged is not None:
+    def evaluation_model() -> Llama:
+        if isinstance(model, PackedLlama):
+            assert averaged is not None
             model.copy_average_to(averaged)
             return averaged
         return model
@@ -339,16 +353,11 @@ def _train(config: Config, resume: Path | None) -> dict:
     if resume:
         # Resume checkpoints are trusted local pickle artifacts, not untrusted model downloads.
         state = load_training_checkpoint(resume)
-        if state.get("version") == 1 or (state.get("version") == 2 and "loader" not in state):
-            raise ValueError(
-                "legacy checkpoint uses global memmap shuffling; start a new buffered "
-                "training run (weights remain usable for evaluation)"
-            )
         if state.get("version") != (3 if decentralized else 2):
             raise ValueError(f"incompatible training checkpoint version: {state.get('version')}")
         if state["recipe_identity"] != identity:
             raise ValueError("resume checkpoint is incompatible with this recipe or token cache")
-        if decentralized:
+        if isinstance(model, PackedLlama):
             model.load_packed_state_dict(state["model"])
         else:
             model.load_state_dict(state["model"], strict=True)
@@ -362,9 +371,11 @@ def _train(config: Config, resume: Path | None) -> dict:
             cursor * length,
             completed_epochs,
         )
-    if config.training.checkpoint_policy == "all" and config.training.save_epoch_training_state:
-        for epoch in range(completed_epochs + 1, len(boundaries) + 1):
-            require_new_epoch(output / f"epoch-{epoch:03d}.pt")
+    for epoch in sorted(selected_epochs):
+        if epoch <= completed_epochs:
+            continue
+        suffix = ".pt" if config.training.save_epoch_training_state else ".safetensors"
+        require_new_epoch(output / f"epoch-{epoch:03d}{suffix}")
     loader = BufferedTokenLoader(
         cache,
         "train",
@@ -415,7 +426,7 @@ def _train(config: Config, resume: Path | None) -> dict:
     metrics_path = output / "metrics.jsonl"
     stopped = False
 
-    def stop(signum, frame):
+    def stop(signum: int, frame: FrameType | None) -> None:
         nonlocal stopped
         stopped = True
         logger.warning(
@@ -426,16 +437,16 @@ def _train(config: Config, resume: Path | None) -> dict:
 
     previous_handlers = {sig: signal.signal(sig, stop) for sig in (signal.SIGINT, signal.SIGTERM)}
 
-    def checkpoint(name="latest.pt", *, epoch=False):
+    def checkpoint(name: str, *, epoch: bool = False) -> None:
         if config.training.checkpoint_policy == "none":
             return
-        if config.training.checkpoint_policy == "final" and name != "final.pt":
-            return
-        state = dict(
+        state = TrainingState(
             version=3 if decentralized else 2,
             recipe_identity=identity,
             config=config.model_dump(mode="json"),
-            model=model.packed_state_dict() if decentralized else model.state_dict(),
+            model=model.packed_state_dict()
+            if isinstance(model, PackedLlama)
+            else model.state_dict(),
             optimizer=optimizer.state_dict(),
             rng=rng_state(),
             cursor=cursor,
@@ -464,14 +475,16 @@ def _train(config: Config, resume: Path | None) -> dict:
         if device.type == "cuda":
             torch.cuda.synchronize(device)
         training_start = window_start = time.monotonic()
+        packed_metrics: tuple[torch.Tensor, torch.Tensor, float] | None = None
         for epoch_index in range(completed_epochs, len(boundaries)):
             boundary = boundaries[epoch_index]
             while cursor < boundary:
-                step_blocks = min(config.training.batch_tokens // length, boundary - cursor)
+                step_blocks = config.training.batch_tokens // length
                 lr = learning_rate(config, (cursor + step_blocks) * length, blocks * length)
                 for group in optimizer.param_groups:
                     group["lr"] = lr
-                if decentralized:
+                if isinstance(model, PackedLlama):
+                    assert isinstance(optimizer, PackedAdamW) and decentralized is not None
                     optimizer.zero_grad(set_to_none=True)
                     local_batch = step_blocks // num_models
                     x, y = loader.next_batch(step_blocks, device)
@@ -494,7 +507,9 @@ def _train(config: Config, resume: Path | None) -> dict:
                     model.mix_(decentralized.topology, step, gamma=mixing_gamma)
                     if decentralized.scheme == "awc":
                         optimizer.step()
+                    packed_metrics = (means.detach(), local_grad_norms, mixing_gamma)
                 else:
+                    assert isinstance(optimizer, torch.optim.AdamW)
                     step_loss, grad_norm = optimizer_update(
                         model,
                         optimizer,
@@ -514,7 +529,7 @@ def _train(config: Config, resume: Path | None) -> dict:
                     now = time.monotonic()
                     window_seconds = now - window_start
                     training_seconds += window_seconds
-                    row = dict(
+                    row: dict[str, object] = dict(
                         event="train",
                         step=step,
                         epoch=epoch_index + 1,
@@ -530,9 +545,10 @@ def _train(config: Config, resume: Path | None) -> dict:
                         if device.type == "cuda"
                         else 0,
                     )
-                    if decentralized:
+                    if packed_metrics is not None:
+                        means, local_grad_norms, mixing_gamma = packed_metrics
                         row.update(
-                            local_losses=means.detach().tolist(),
+                            local_losses=means.tolist(),
                             local_grad_norms=local_grad_norms.tolist(),
                             tokens_per_model=cursor * length // num_models,
                             mixing_step=step - 1,
@@ -551,16 +567,13 @@ def _train(config: Config, resume: Path | None) -> dict:
                     )
                     window_loss = 0.0
                     window_start, window_tokens = time.monotonic(), 0
-                if step % config.training.checkpoint_every == 0 or stopped:
-                    checkpoint_start = time.monotonic()
-                    checkpoint()
-                    window_start += time.monotonic() - checkpoint_start
                 if stopped:
                     result = dict(status="interrupted", step=step, tokens=cursor * length)
                     atomic_json(output / "status.json", result)
                     return result
+            epoch_model = evaluation_model()
             evaluation = evaluate(
-                evaluation_model(), cache, config, device, full=False, should_stop=lambda: stopped
+                epoch_model, cache, config, device, full=False, should_stop=lambda: stopped
             )
             append_metric(
                 metrics_path,
@@ -579,12 +592,13 @@ def _train(config: Config, resume: Path | None) -> dict:
                 evaluation["loss"],
                 evaluation["perplexity"],
             )
-            if config.training.checkpoint_policy == "all":
+            save_epoch = epoch_index + 1 in selected_epochs
+            if save_epoch:
                 save_weights(
-                    averaged if decentralized else model,
+                    epoch_model,
                     output / f"epoch-{epoch_index + 1:03d}.safetensors",
                 )
-            if decentralized and config.training.checkpoint_policy == "all":
+            if isinstance(model, PackedLlama) and save_epoch:
                 for worker in range(num_models):
                     directory = output / f"node-{worker:03d}"
                     directory.mkdir(exist_ok=True)
@@ -605,17 +619,12 @@ def _train(config: Config, resume: Path | None) -> dict:
                     dict(
                         epoch=best_epoch,
                         loss=best_loss,
-                        weights=(
-                            f"epoch-{best_epoch:03d}.safetensors"
-                            if config.training.checkpoint_policy == "all"
-                            else None
-                        ),
+                        weights=(f"epoch-{best_epoch:03d}.safetensors" if save_epoch else None),
                     ),
                 )
             completed_epochs = epoch_index + 1
-            if config.training.save_epoch_training_state:
+            if save_epoch and config.training.save_epoch_training_state:
                 checkpoint(f"epoch-{completed_epochs:03d}.pt", epoch=True)
-            checkpoint()
             if stopped:
                 result = dict(status="interrupted", step=step, tokens=cursor * length)
                 atomic_json(output / "status.json", result)
@@ -673,7 +682,6 @@ def _train(config: Config, resume: Path | None) -> dict:
         logger.success("Completed training: full validation loss {:.5f}", final_eval["loss"])
         return result
     except InterruptedError:
-        checkpoint()
         result = dict(status="interrupted", step=step, tokens=cursor * length)
         atomic_json(output / "status.json", result)
         return result
@@ -694,15 +702,13 @@ def _train(config: Config, resume: Path | None) -> dict:
             signal.signal(sig, handler)
 
 
-def evaluate_checkpoint(config: Config, checkpoint: Path, full: bool) -> dict:
+def evaluate_checkpoint(config: Config, checkpoint: Path, full: bool) -> EvaluationResult:
     device = setup_runtime(config)
     model = Llama(config.model, actual_backend(config)).to(device)
     if checkpoint.suffix == ".safetensors":
         model.load_state_dict(load_file(str(checkpoint)), strict=True)
     else:
         state = load_training_checkpoint(checkpoint)
-        # Version 2 is shared by legacy packed and current ordinary checkpoints.
-        # Inspect the payload so both remain usable for evaluation.
         if "parameter_storage" in state["model"]:
             saved = Config.model_validate(state["config"])
             if saved.model != config.model or saved.decentralized is None:

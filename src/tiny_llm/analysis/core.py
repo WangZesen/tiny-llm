@@ -9,30 +9,40 @@ import json
 import math
 import re
 import time
+from collections.abc import Callable, Iterable, Sequence
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Any, Literal, NotRequired, TypedDict, cast
 
 import numpy as np
 import torch
 from loguru import logger
 from safetensors.torch import load_file
+from torch import Tensor
 from torch.func import functional_call, grad, jvp
 from torch.fx.experimental.proxy_tensor import make_fx
 from torch.nn import functional as F
 
 from tiny_llm.checkpoints import RETENTION_FIELDS, load_training_checkpoint
 from tiny_llm.config import Config, load_config
-from tiny_llm.data import BufferedTokenLoader, TokenCache, fingerprint, training_boundaries
+from tiny_llm.data import (
+    BufferedTokenLoader,
+    TokenCache,
+    TokenSource,
+    fingerprint,
+    training_boundaries,
+)
 from tiny_llm.model import Llama, token_losses
 from tiny_llm.packed import PackedLlama
-from tiny_llm.runtime import atomic_json, environment, preserve_rng
+from tiny_llm.runtime import atomic_json, environment, precision_backend, preserve_rng
+from tiny_llm.state import Batch, TokenArray, TrainingState
 
 
 @dataclass(frozen=True)
 class AnalysisOptions:
     data_case: str = "both"
-    noise_samples: int | str = 32
+    noise_samples: int | Literal["all"] = 32
     random_samples: int = 32
     seed: int = 42
     device: str | None = None
@@ -61,11 +71,11 @@ class AnalysisOptions:
 
 
 class AutocastModel(torch.nn.Module):
-    def __init__(self, base, enabled=True):
+    def __init__(self, base: Llama, enabled: bool = True) -> None:
         super().__init__()
         self.base, self.enabled = base, enabled
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         # A cached cast could belong to another functional parameter/tangent
         # input. Traced higher derivatives must see every cast explicitly.
         with torch.autocast(
@@ -74,7 +84,7 @@ class AutocastModel(torch.nn.Module):
             return self.base(x)
 
     @property
-    def parameter_count(self):
+    def parameter_count(self) -> int:
         return self.base.parameter_count
 
 
@@ -85,7 +95,14 @@ class QuadraticKernel:
     checkpoints with the same architecture. No dense Hessian is materialized.
     """
 
-    def __init__(self, model, batch_size, *, compile=True, backend="inductor"):
+    def __init__(
+        self,
+        model: torch.nn.Module,
+        batch_size: int,
+        *,
+        compile: bool = True,
+        backend: str = "inductor",
+    ) -> None:
         if batch_size <= 0:
             raise ValueError("HVP batch size must be positive")
         self.model, self.batch_size, self.compiled = model, batch_size, compile
@@ -100,13 +117,13 @@ class QuadraticKernel:
                 return loss(p, x, y)
 
             hvp = jvp(grad(objective), (parameters,), (direction,))[1]
-            return sum((a.double() * b.double()).sum() for a, b in zip(hvp, direction, strict=True))
+            return tensor_dot(hvp, direction)
 
         self.eager = quadratic
         self.backend = backend
         self.function = None if compile else quadratic
 
-    def __call__(self, x, y, direction):
+    def __call__(self, x: Tensor, y: Tensor, direction: Sequence[Tensor]) -> Tensor:
         if x.shape[0] > self.batch_size:
             raise ValueError("batch exceeds configured HVP batch size")
         # Padding keeps the last batch in the same compiled graph. Ignored targets
@@ -156,7 +173,7 @@ def analysis_runtime(config: Config, options: AnalysisOptions):
     if device.type == "cuda" and device.index is None:
         device = torch.device("cuda", torch.cuda.current_device())
     previous = (
-        torch.backends.fp32_precision,
+        precision_backend.fp32_precision,
         torch.backends.cuda.matmul.fp32_precision,
         torch.get_num_threads(),
     )
@@ -170,7 +187,7 @@ def analysis_runtime(config: Config, options: AnalysisOptions):
                     raise ValueError("BF16 AMP is unsupported on this GPU")
             supported = device.type == "cuda" and torch.cuda.is_tf32_supported()
             effective = options.tf32 and options.dtype == "float32" and supported
-            torch.backends.fp32_precision = "ieee"
+            precision_backend.fp32_precision = "ieee"
             torch.backends.cuda.matmul.fp32_precision = "tf32" if effective else "ieee"
             torch.manual_seed(options.seed)
             with torch.autocast(device.type, enabled=False):
@@ -189,7 +206,7 @@ def analysis_runtime(config: Config, options: AnalysisOptions):
                     ),
                 )
     finally:
-        torch.backends.fp32_precision = previous[0]
+        precision_backend.fp32_precision = previous[0]
         torch.backends.cuda.matmul.fp32_precision = previous[1]
         torch.set_num_threads(previous[2])
         if previous_device is not None:
@@ -199,16 +216,16 @@ def analysis_runtime(config: Config, options: AnalysisOptions):
 class _CacheRange:
     """A read-only block-aligned view; the training loader itself is unchanged."""
 
-    def __init__(self, cache, start, blocks, length):
+    def __init__(self, cache: TokenCache, start: int, blocks: int, length: int) -> None:
         self.cache, self.start, self.count = cache, start * length, blocks * length + 1
         self.manifest = cache.manifest
         self.offsets = {"train": [0, self.count]}
 
-    def blocks(self, split, length, partial=False):
+    def blocks(self, split: str, length: int, partial: bool = False) -> int:
         assert split == "train"
         return (self.count - 1) // length
 
-    def read_into(self, split, start, stop, destination):
+    def read_into(self, split: str, start: int, stop: int, destination: TokenArray) -> None:
         if not 0 <= start < stop <= self.count:
             raise ValueError("read outside analysis range")
         self.cache.read_into(split, self.start + start, self.start + stop, destination)
@@ -236,11 +253,6 @@ class EpochData:
         self.start = 0
         self.seed = config.runtime.seed
         if case == "unseen":
-            nominal_tokens = (
-                config.training.epoch_tokens
-                or config.model.parameter_count * config.training.epoch_tokens_per_parameter
-            )
-            self.blocks = math.ceil(nominal_tokens / length)
             self.start = self.training_blocks
             self.seed = int(np.random.SeedSequence([config.runtime.seed, 2]).generate_state(1)[0])
         elif case != "seen":
@@ -267,7 +279,7 @@ class EpochData:
 
     def loader(self, cursor=0):
         cfg = self.config
-        cache = self.cache
+        cache: TokenSource = self.cache
         budget = self.training_blocks
         if self.case == "unseen":
             cache = _CacheRange(cache, self.start, self.blocks, cfg.model.context_length)
@@ -314,11 +326,14 @@ class EpochData:
             )
 
 
-def tensor_dot(left, right):
-    return sum((a.double() * b.double()).sum() for a, b in zip(left, right, strict=True))
+def tensor_dot(left: Iterable[Tensor], right: Iterable[Tensor]) -> Tensor:
+    # Model parameter tuples are nonempty; sum therefore returns a tensor.
+    return cast(
+        Tensor, sum((a.double() * b.double()).sum() for a, b in zip(left, right, strict=True))
+    )
 
 
-def gradient(model, batches, tokens):
+def gradient(model: torch.nn.Module, batches: Iterable[Batch], tokens: int) -> tuple[Tensor, ...]:
     parameters = tuple(model.parameters())
     result = tuple(torch.zeros_like(p) for p in parameters)
     count = 0
@@ -337,7 +352,14 @@ def gradient(model, batches, tokens):
     return result
 
 
-def hessian_quadratic(model, batches, tokens, direction, *, kernel=None):
+def hessian_quadratic(
+    model: torch.nn.Module,
+    batches: Iterable[Batch],
+    tokens: int,
+    direction: Sequence[Tensor],
+    *,
+    kernel: Callable[[Tensor, Tensor, Sequence[Tensor]], Tensor] | None = None,
+) -> float:
     parameters = tuple(model.parameters())
     direction = tuple(v.detach() for v in direction)
     total = torch.zeros((), dtype=torch.float64, device=parameters[0].device)
@@ -347,8 +369,11 @@ def hessian_quadratic(model, batches, tokens, direction, *, kernel=None):
         if kernel is None:
             loss = token_losses(model(x), y).sum() / tokens
             first = torch.autograd.grad(loss, parameters, create_graph=True)
-            directional = sum(
-                (g * v).sum(dtype=torch.float64) for g, v in zip(first, direction, strict=True)
+            directional = cast(
+                Tensor,
+                sum(
+                    (g * v).sum(dtype=torch.float64) for g, v in zip(first, direction, strict=True)
+                ),
             )
             hvp = torch.autograd.grad(directional, parameters)
             total += tensor_dot(hvp, direction).detach()
@@ -365,7 +390,7 @@ def hessian_quadratic(model, batches, tokens, direction, *, kernel=None):
     return value
 
 
-def rademacher(parameters, seed, index):
+def rademacher(parameters: Sequence[Tensor], seed: int, index: int) -> tuple[Tensor, ...]:
     generator = torch.Generator(device=parameters[0].device)
     # Each vector has its own seed, independent of model initialization and data iteration.
     generator.manual_seed(int(np.random.SeedSequence([seed, 3, index]).generate_state(1)[0]))
@@ -380,10 +405,33 @@ def rademacher(parameters, seed, index):
     )
 
 
-def summarize(noise, random, dimension, mean_norm):
+class ConsensusStatistics(TypedDict):
+    consensus_workers: int
+    consensus_alignment: float
+    normalized_consensus_alignment: float | None
+    average_consensus_norm: float
+
+
+class Statistics(TypedDict):
+    noise_samples: int
+    random_samples: int
+    dimension: int
+    noise_alignment: float
+    normalized_noise_alignment: float | None
+    average_noise_norm: float
+    average_batch_gradient_norm: float
+    mean_gradient_norm: float
+    normalized_random_alignment: float
+    consensus_workers: NotRequired[int]
+    consensus_alignment: NotRequired[float]
+    normalized_consensus_alignment: NotRequired[float | None]
+    average_consensus_norm: NotRequired[float]
+
+
+def summarize(noise, random, dimension: int, mean_norm: float) -> Statistics:
     q = math.fsum(row["quadratic"] for row in noise)
     squared = math.fsum(row["noise_norm_squared"] for row in noise)
-    return dict(
+    return Statistics(
         noise_samples=len(noise),
         random_samples=len(random),
         dimension=dimension,
@@ -398,10 +446,10 @@ def summarize(noise, random, dimension, mean_norm):
     )
 
 
-def consensus_statistics(rows):
+def consensus_statistics(rows) -> ConsensusStatistics:
     quadratic = math.fsum(row["quadratic"] for row in rows)
     squared = math.fsum(row["norm_squared"] for row in rows)
-    return dict(
+    return ConsensusStatistics(
         consensus_workers=len(rows),
         consensus_alignment=quadratic / len(rows),
         normalized_consensus_alignment=quadratic / squared if squared else None,
@@ -477,7 +525,14 @@ def validate_consensus(result, checkpoint):
         raise ValueError("inconsistent consensus statistics")
 
 
-def measure(model, data: EpochData, options: AnalysisOptions, device, kernel=None, workers=()):
+def measure(
+    model: Llama | AutocastModel,
+    data: EpochData,
+    options: AnalysisOptions,
+    device: torch.device,
+    kernel=None,
+    workers=(),
+) -> dict[str, Any]:
     started = time.monotonic()
     logger.info("{}: full-epoch mean gradient over {:,} tokens", data.case, data.tokens)
     mean = gradient(model, data.batches(device), data.tokens)
@@ -546,7 +601,7 @@ def measure(model, data: EpochData, options: AnalysisOptions, device, kernel=Non
     consensus = measure_consensus(model, data, options, device, workers, kernel) if workers else []
     statistics = summarize(noise, random, model.parameter_count, mean_norm)
     if consensus:
-        statistics.update(consensus_statistics(consensus))
+        statistics = {**statistics, **consensus_statistics(consensus)}
     return dict(
         statistics=statistics,
         **(dict(consensus=consensus) if consensus else {}),
@@ -588,9 +643,16 @@ def weights_hash(state):
     return digest.hexdigest()
 
 
-def load_checkpoint(config, path, *, consensus=True, worker_states=None):
+def load_checkpoint(
+    config: Config,
+    path: Path,
+    *,
+    consensus: bool = True,
+    worker_states: list[dict[str, Tensor]] | None = None,
+) -> tuple[Llama, dict[str, Any]]:
     model = Llama(config.model, "reference")
     packed = None
+    state: TrainingState | None = None
     boundaries = training_boundaries(config, config.model.parameter_count)
     if path.suffix == ".safetensors":
         match = re.fullmatch(r"epoch-(\d+)\.safetensors", path.name)
@@ -625,7 +687,7 @@ def load_checkpoint(config, path, *, consensus=True, worker_states=None):
         else:
             model.load_state_dict(state["model"], strict=True)
         cursor, step, epoch = state["cursor"], state["step"], state["completed_epochs"]
-    info = dict(
+    info: dict[str, Any] = dict(
         path=str(path),
         name=path.name,
         weights_hash=weights_hash(model.state_dict()),
@@ -638,7 +700,7 @@ def load_checkpoint(config, path, *, consensus=True, worker_states=None):
         workers, provenance = [], []
         for index in range(config.decentralized.num_models):
             source = path if path.suffix == ".pt" else path.parent / f"node-{index:03d}" / path.name
-            if path.suffix == ".pt":
+            if state is not None:
                 if "worker_files" in state:
                     source = path.parent / state["worker_files"][index]["path"]
                 if packed is None:
@@ -733,7 +795,7 @@ def analyze(
             )
         )
         manifest_path = output / "manifest.json"
-        manifest = dict(
+        manifest: dict[str, Any] = dict(
             version=1,
             identity=identity,
             run=str(run),
@@ -770,6 +832,7 @@ def analyze(
             else:
                 base.load_state_dict(loaded.state_dict(), strict=True)
             del loaded
+            assert model is not None
             entries = [entry for entry in manifest["checkpoints"] if entry["path"] != str(path)]
             entries.append(checkpoint)
             manifest["checkpoints"] = sorted(entries, key=lambda row: (row["tokens"], row["name"]))

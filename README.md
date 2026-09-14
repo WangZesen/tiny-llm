@@ -26,7 +26,7 @@ uv run tiny-llm train --config configs/packed4-20m-awc.yaml
 ```
 
 The default checkpoint policy saves final training state only. Use
-`--set training.checkpoint_policy=all` when you need epoch checkpoints for analysis.
+`--set training.checkpoint_policy=interval` when you need epoch checkpoints for analysis.
 See the [training and evaluation guide](doc/guides/training.md) for smoke runs,
 resume behavior, alternate recipes, clipping, and checkpoint retention.
 
@@ -42,10 +42,15 @@ resume behavior, alternate recipes, clipping, and checkpoint retention.
 ## Development
 
 ```bash
+uv run pyright
 uv run pytest -q
 uv run ruff check .
 uv run ruff format --check .
 ```
+
+Type checks cover `src`, `tests`, and `scripts`. Ruff leaves archived research
+sources under `doc/archive`, `doc/data`, and `doc/adaptive-consensus-investigation`
+unchanged.
 
 GPU tests require a CUDA allocation. The website uses an independent Node 24+
 environment and builds entirely from committed Markdown and data:

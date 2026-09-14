@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 import torch
 
+from tiny_llm.config import Config
 from tiny_llm.data import BufferedTokenLoader, TokenCache, subset_batch, validation_indices
 from tiny_llm.model import Llama, token_losses
 from tiny_llm.train import evaluate, recipe_identity, train
@@ -15,7 +16,7 @@ CPU = torch.device("cpu")
 SIZE = 24 / 2**20
 
 
-def collect(cache, *, seed=42, prefetch=True, cursor=0, count=13, batch=5):
+def collect(cache, *, seed: int | None = 42, prefetch=True, cursor=0, count=13, batch=5):
     with BufferedTokenLoader(
         cache, "train", 4, count, SIZE, seed=seed, prefetch=prefetch, cursor=cursor
     ) as loader:
@@ -27,7 +28,7 @@ def collect(cache, *, seed=42, prefetch=True, cursor=0, count=13, batch=5):
 
 
 @pytest.mark.parametrize("prefetch", [False, True])
-def test_coverage_boundaries_and_seeds(cache_dir, prefetch):
+def test_coverage_boundaries_and_seeds(cache_dir: Path, prefetch):
     cache = TokenCache(cache_dir)
     expected = cache.batch("train", list(range(13)), 4, CPU)
     expected = list(zip(expected[0].tolist(), expected[1].tolist(), strict=True))
@@ -38,7 +39,9 @@ def test_coverage_boundaries_and_seeds(cache_dir, prefetch):
     assert collect(cache, seed=None, prefetch=prefetch) == expected
 
 
-def test_resume_every_cursor_without_reading_previous_ranges(cache_dir, monkeypatch):
+def test_resume_every_cursor_without_reading_previous_ranges(
+    cache_dir: Path, monkeypatch: pytest.MonkeyPatch
+):
     cache = TokenCache(cache_dir)
     expected = collect(cache)
     reads = []
@@ -59,10 +62,12 @@ def test_resume_every_cursor_without_reading_previous_ranges(cache_dir, monkeypa
             assert loader.state_dict()["cursor"] == cursor
             loader.validate_state(loader.state_dict())
             with pytest.raises(ValueError, match="incompatible"):
-                loader.validate_state(loader.state_dict() | {"seed": 99})
+                loader.validate_state({**loader.state_dict(), "seed": 99})
 
 
-def test_contiguous_file_reads_and_two_buffer_residency(cache_dir, monkeypatch):
+def test_contiguous_file_reads_and_two_buffer_residency(
+    cache_dir: Path, monkeypatch: pytest.MonkeyPatch
+):
     cache = TokenCache(cache_dir)
     original_open = Path.open
     original_read = cache.read_into
@@ -125,7 +130,7 @@ def test_contiguous_file_reads_and_two_buffer_residency(cache_dir, monkeypatch):
     assert not any(t.name.startswith("token-reader") for t in threading.enumerate())
 
 
-def test_reader_failure_and_interruption_cleanup(cache_dir, monkeypatch):
+def test_reader_failure_and_interruption_cleanup(cache_dir: Path, monkeypatch: pytest.MonkeyPatch):
     cache = TokenCache(cache_dir)
     original = cache.read_into
 
@@ -135,15 +140,17 @@ def test_reader_failure_and_interruption_cleanup(cache_dir, monkeypatch):
         return original(split, start, stop, destination)
 
     monkeypatch.setattr(cache, "read_into", fail_second)
+    loader = BufferedTokenLoader(cache, "train", 4, 13, SIZE)
     with pytest.raises(OSError, match="simulated reader failure"):
-        with BufferedTokenLoader(cache, "train", 4, 13, SIZE) as loader:
+        with loader:
             loader.next_batch(5, CPU)
     assert loader._active is None and loader._future is None
     assert not any(t.name.startswith("token-reader") for t in threading.enumerate())
     monkeypatch.setattr(cache, "read_into", original)
     for cursor in (2, 3, 4):
+        loader = BufferedTokenLoader(cache, "train", 4, 13, SIZE)
         with pytest.raises(InterruptedError):
-            with BufferedTokenLoader(cache, "train", 4, 13, SIZE) as loader:
+            with loader:
                 loader.next_batch(cursor, CPU)
                 raise InterruptedError
         loader.close()  # Idempotent even at a prefetch transition.
@@ -154,7 +161,9 @@ def test_reader_failure_and_interruption_cleanup(cache_dir, monkeypatch):
         cache.read("train", 0, 5)
 
 
-def test_validation_scan_subset_reuse_and_loss(cache_dir, tiny_config, monkeypatch):
+def test_validation_scan_subset_reuse_and_loss(
+    cache_dir: Path, tiny_config: Config, monkeypatch: pytest.MonkeyPatch
+):
     cache = TokenCache(cache_dir)
     tiny_config.data.buffer_size_mib = SIZE
     indices = validation_indices(cache, tiny_config, full=False)
@@ -186,7 +195,7 @@ def test_validation_scan_subset_reuse_and_loss(cache_dir, tiny_config, monkeypat
     assert (y != -100).sum() == 29
 
 
-def test_ordering_compatibility_and_legacy_rejection(cache_dir, tiny_config):
+def test_ordering_compatibility_and_legacy_rejection(cache_dir: Path, tiny_config: Config):
     cache = TokenCache(cache_dir)
     identity = recipe_identity(tiny_config, cache)
     tiny_config.data.prefetch = False
@@ -195,5 +204,5 @@ def test_ordering_compatibility_and_legacy_rejection(cache_dir, tiny_config):
     assert recipe_identity(tiny_config, cache) != identity
     checkpoint = cache_dir.parent / "legacy.pt"
     torch.save({"version": 1}, checkpoint)
-    with pytest.raises(ValueError, match="legacy checkpoint.*weights remain usable"):
+    with pytest.raises(ValueError, match="incompatible training checkpoint version"):
         train(tiny_config, checkpoint)

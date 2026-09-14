@@ -1,20 +1,22 @@
+from typing import cast
+
 import pytest
 import torch
 from torch.func import functional_call
 from torch.nn.attention import SDPBackend, sdpa_kernel
 
-from tiny_llm.config import ModelConfig
-from tiny_llm.model import Llama, token_losses
+from tiny_llm.config import Config, ModelConfig
+from tiny_llm.model import Attention, Llama, token_losses
 
 
-def test_causality(tiny_config):
+def test_causality(tiny_config: Config):
     model = Llama(tiny_config.model, "reference").double()
     x = torch.tensor([[1, 2, 3, 4]])
     y = torch.tensor([[1, 2, 8, 9]])
     torch.testing.assert_close(model(x)[:, :2], model(y)[:, :2], rtol=0, atol=0)
 
 
-def test_fp64_backend_parity(tiny_config):
+def test_fp64_backend_parity(tiny_config: Config):
     torch.manual_seed(42)
     ref = Llama(tiny_config.model, "reference").double()
     fast = Llama(tiny_config.model, "sdpa").double()
@@ -49,7 +51,8 @@ def test_second_derivatives_and_hvp():
     directions = tuple(torch.randn_like(p) * 0.01 for p in values)
     gradient = torch.autograd.grad(loss(*values), values, create_graph=True)
     hvp = torch.autograd.grad(
-        sum((g * v).sum() for g, v in zip(gradient, directions, strict=True)), values
+        cast(torch.Tensor, sum((g * v).sum() for g, v in zip(gradient, directions, strict=True))),
+        values,
     )
     epsilon = 1e-4
     plus = tuple(
@@ -64,13 +67,14 @@ def test_second_derivatives_and_hvp():
         torch.testing.assert_close(actual, (left - right) / (2 * epsilon), atol=1e-5, rtol=1e-3)
 
 
-def test_overfit_and_padding(tiny_config):
+def test_overfit_and_padding(tiny_config: Config):
     torch.manual_seed(1)
     model = Llama(tiny_config.model, "reference")
     optimizer = torch.optim.AdamW(model.parameters(), lr=0.03)
     x = torch.tensor([[1, 2, 3, 4]])
     y = torch.tensor([[2, 3, 4, -100]])
-    initial = token_losses(model(x), y).sum().item() / 3
+    loss = token_losses(model(x), y).sum() / 3
+    initial = loss.item()
     for _ in range(50):
         optimizer.zero_grad()
         loss = token_losses(model(x), y).sum() / 3
@@ -132,6 +136,7 @@ def test_rotary_cache_dtype_device_and_state_dict(device, packed):
     for dtype in (torch.float32, torch.bfloat16, torch.float32, torch.float64):
         model.to(dtype=dtype)
         attention = model.blocks[0].attention
+        assert isinstance(attention, Attention)
         assert attention._rope_cos.dtype == torch.float32
         for length in (1, 7, 32):
             x = torch.randn(2, 2, length, 32, dtype=dtype, device=device, requires_grad=True)

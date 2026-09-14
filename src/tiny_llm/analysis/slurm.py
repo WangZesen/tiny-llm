@@ -15,6 +15,7 @@ import subprocess
 import time
 from dataclasses import asdict
 from pathlib import Path
+from typing import Any, TypedDict
 
 import torch
 
@@ -58,7 +59,13 @@ def allocation_hours(seconds):
     return math.ceil((2 * seconds + 1800) / 3600)
 
 
-def measured_timing(config, data, options):
+class TimingProfile(TypedDict):
+    profile: str
+    checkpoint_seconds: float
+    startup_seconds: float
+
+
+def measured_timing(config, data, options) -> TimingProfile | None:
     """Conservative GH200 timings; see doc/performance/checkpoint-analysis.md for measurements.
 
     Full passes scale by microbatch counts, including padded boundary batches.
@@ -86,10 +93,12 @@ def measured_timing(config, data, options):
         mean = 30 * math.ceil(row["blocks"] / 32) / 312
         hvp = 33 * math.ceil(row["blocks"] / 64) / 156
         seconds += mean + count * (0.15 + hvp) + options.random_samples * hvp
-    return dict(profile="20m-gh200-bf16", checkpoint_seconds=seconds, startup_seconds=60.0)
+    return TimingProfile(profile="20m-gh200-bf16", checkpoint_seconds=seconds, startup_seconds=60.0)
 
 
-def plan_shards(checkpoints, jobs, timing, max_hours=72, walltime_hours=None):
+def plan_shards(
+    checkpoints, jobs: int, timing, max_hours: float = 72, walltime_hours: float | None = None
+) -> dict[str, Any]:
     groups = {}
     for checkpoint in sorted(checkpoints, key=lambda row: (row["tokens"], row["name"])):
         groups.setdefault(result_key(checkpoint), []).append(checkpoint)
@@ -110,10 +119,14 @@ def plan_shards(checkpoints, jobs, timing, max_hours=72, walltime_hours=None):
     shards = []
     for index in range(jobs):
         assigned = list(groups.values())[index::jobs]
-        seconds = startup + len(assigned) * per_checkpoint if timing else None
+        seconds = (
+            timing["startup_seconds"] + len(assigned) * timing["checkpoint_seconds"]
+            if timing
+            else None
+        )
         hours = allocation_hours(seconds) if timing else walltime_hours
         if walltime_hours is not None:
-            if walltime_hours < hours:
+            if hours is not None and walltime_hours < hours:
                 raise ValueError("walltime override must cover the padded estimate")
             hours = walltime_hours
         shards.append(

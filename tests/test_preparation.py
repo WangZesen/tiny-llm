@@ -1,14 +1,18 @@
 import json
 import sys
+from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
 import pytest
 
+from tiny_llm.config import Config
 from tiny_llm.data import TokenCache, prepare
 
 
-def test_preparation_eos_determinism_and_reuse(tiny_config, monkeypatch, tmp_path):
+def test_preparation_eos_determinism_and_reuse(
+    tiny_config: Config, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
 
     class API:
         def dataset_info(self, *args, **kwargs):

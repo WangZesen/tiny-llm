@@ -5,7 +5,9 @@ import statistics
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any, Literal
 
 import torch
 from loguru import logger
@@ -14,6 +16,7 @@ from tiny_llm.config import Config, load_config, save_config
 from tiny_llm.data import BufferedTokenLoader, TokenCache, fingerprint, training_boundaries
 from tiny_llm.model import Llama
 from tiny_llm.runtime import actual_backend, atomic_json, environment, setup_runtime
+from tiny_llm.state import Batch
 from tiny_llm.train import learning_rate, loss_function, make_optimizer, optimizer_update
 
 
@@ -146,7 +149,7 @@ def benchmark_worker(
     windows: int = 3,
     data_mode: str = "synthetic",
     profile: bool = False,
-):
+) -> dict[str, Any]:
     if config.decentralized is not None:
         raise ValueError("use benchmark-packed for decentralized training")
     if min(warmup, steps, windows) < 1 or data_mode not in ("synthetic", "real"):
@@ -165,6 +168,7 @@ def benchmark_worker(
     step_blocks = config.training.batch_tokens // length
     batch = config.training.micro_batch_size
     loader = None
+    next_batch: Callable[[int, torch.device], Batch]
     cursor = 0
     if data_mode == "real":
         cache = TokenCache(config.data.cache_dir)
@@ -192,8 +196,10 @@ def benchmark_worker(
         x = torch.randint(config.model.vocab_size, (batch, length), device=device)
         y = torch.randint(config.model.vocab_size, x.shape, device=device)
 
-        def next_batch(count, device):
+        def synthetic_batch(count: int, device: torch.device) -> Batch:
             return x[:count], y[:count]
+
+        next_batch = synthetic_batch
 
     total_tokens = training_boundaries(config, model.parameter_count)[-1] * length
 
@@ -230,9 +236,11 @@ def benchmark_worker(
             start = time.monotonic()
             timestamp = time.time()
             loss = 0.0
+            grad_norm = 0.0
             for _ in range(steps):
                 value, norm = update()
                 loss += value.item()
+                grad_norm = norm.item()
             synchronize()
             seconds = time.monotonic() - start
             measurements.append(
@@ -242,7 +250,7 @@ def benchmark_worker(
                     seconds=seconds,
                     tokens_per_second=steps * config.training.batch_tokens / seconds,
                     loss=loss / (steps * config.training.batch_tokens),
-                    grad_norm=norm.item(),
+                    grad_norm=grad_norm,
                 )
             )
         memory = torch.cuda.max_memory_allocated(device) if device.type == "cuda" else 0
@@ -333,7 +341,13 @@ def tune_gh200(config: Config, output: Path, budget_minutes: float = 75):
     results = []
     seen = set()
 
-    def candidate(batch, compiled, backend="auto", mode="default", threads=8):
+    def candidate(
+        batch: int,
+        compiled: bool,
+        backend: Literal["auto", "flash", "cudnn"] = "auto",
+        mode: Literal["default", "reduce-overhead", "max-autotune"] = "default",
+        threads: int = 8,
+    ) -> None:
         key = (batch, compiled, backend, mode, threads)
         if key in seen or deadline - time.monotonic() < 60:
             return

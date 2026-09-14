@@ -3,21 +3,20 @@
 import hashlib
 import math
 from pathlib import Path
+from typing import Any
 
 import torch
 
 from tiny_llm.config import Config
-from tiny_llm.data import training_boundaries
+from tiny_llm.data import file_digest, training_boundaries
+from tiny_llm.model import Llama
 from tiny_llm.packed import PackedLlama
+from tiny_llm.packed_optimizer import PackedAdamW
 from tiny_llm.runtime import atomic_checkpoint, preserve_rng
+from tiny_llm.state import TorchState, TrainingState
 
-RETENTION_FIELDS = {"checkpoint_policy", "save_epoch_training_state"}
+RETENTION_FIELDS = {"checkpoint_policy", "checkpoint_epochs", "save_epoch_training_state"}
 POSITION_FIELDS = ("recipe_identity", "cursor", "step", "completed_epochs")
-
-
-def file_hash(path):
-    with Path(path).open("rb") as handle:
-        return hashlib.file_digest(handle, "sha256").hexdigest()
 
 
 def compact_cpu(value):
@@ -30,21 +29,27 @@ def compact_cpu(value):
     return value
 
 
-def require_new_epoch(path):
+def require_new_epoch(path: Path) -> None:
     if path.exists():
         raise ValueError(
             f"committed epoch snapshot already exists: {path}; use a new output directory"
         )
 
 
-def save_epoch_checkpoint(path, state, model, optimizer):
+def save_epoch_checkpoint(
+    path: Path,
+    state: TrainingState,
+    model: Llama | PackedLlama,
+    optimizer: torch.optim.AdamW | PackedAdamW,
+) -> None:
     """Publish the root last; an interrupted uncommitted epoch may be rewritten."""
     path = Path(path)
     require_new_epoch(path)
     if not isinstance(model, PackedLlama):
         atomic_checkpoint(path, state)
         return
-    shared = {
+    assert isinstance(optimizer, PackedAdamW)
+    shared: dict[str, Any] = {
         key: value
         for key, value in state.items()
         if key not in ("model", "optimizer", "worker_files")
@@ -80,13 +85,15 @@ def save_epoch_checkpoint(path, state, model, optimizer):
         destination.parent.mkdir(exist_ok=True)
         atomic_checkpoint(destination, compact_cpu(local))
         shared["workers"].append(
-            dict(worker=worker, path=relative.as_posix(), sha256=file_hash(destination))
+            dict(worker=worker, path=relative.as_posix(), sha256=file_digest(destination))
         )
         del local
     atomic_checkpoint(path, shared)
 
 
-def _validate_worker(local, root, config, model, index):
+def _validate_worker(
+    local: TorchState, root: dict[str, Any], config: Config, model: PackedLlama, index: int
+) -> None:
     if (
         local.get("kind") != "packed_worker"
         or local.get("version") != 1
@@ -145,7 +152,7 @@ def _validate_worker(local, root, config, model, index):
             raise ValueError("incompatible worker parameter groups")
 
 
-def load_training_checkpoint(path):
+def load_training_checkpoint(path: Path) -> TrainingState:
     """Return the existing combined representation, without changing live training state."""
     path = Path(path)
     state = torch.load(path, map_location="cpu", weights_only=False)
@@ -159,7 +166,7 @@ def load_training_checkpoint(path):
         raise ValueError(f"invalid packed epoch checkpoint: {path}: {exc}") from exc
 
 
-def _load_packed_epoch(path, state):
+def _load_packed_epoch(path: Path, state: dict[str, Any]) -> TrainingState:
     if state.get("version") != 4 or state.get("kind") != "packed_epoch":
         raise ValueError("unsupported packed epoch format")
     config = Config.model_validate(state["config"])
@@ -215,13 +222,17 @@ def _load_packed_epoch(path, state):
             )
         )
         del local
-    return dict(
-        {
-            key: value
-            for key, value in state.items()
-            if key not in ("kind", "num_workers", "workers")
-        },
+    return TrainingState(
         version=3,
+        recipe_identity=state["recipe_identity"],
+        config=state["config"],
+        rng=state["rng"],
+        cursor=state["cursor"],
+        step=state["step"],
+        completed_epochs=state["completed_epochs"],
+        best_loss=state["best_loss"],
+        best_epoch=state["best_epoch"],
+        loader=state["loader"],
         model=model.packed_state_dict(),
         optimizer=dict(
             version=1,

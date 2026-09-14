@@ -1,10 +1,12 @@
 """Strict YAML configuration, shared by the CLI and Python API."""
 
+from collections.abc import Sequence
+from fractions import Fraction
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal, Self
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
 
 
 class StrictModel(BaseModel):
@@ -12,18 +14,18 @@ class StrictModel(BaseModel):
 
 
 class ModelConfig(StrictModel):
-    vocab_size: int = Field(32000, ge=2, le=65536)
-    layers: int = Field(8, gt=0)
-    width: int = Field(320, gt=0)
-    heads: int = Field(5, gt=0)
-    ffn_width: int = Field(896, gt=0)
-    context_length: int = Field(1024, gt=0)
-    rope_theta: float = Field(10000.0, gt=0)
-    norm_eps: float = Field(1e-5, gt=0)
-    init_std: float = Field(0.02, gt=0)
+    vocab_size: int = Field(default=32000, ge=2, le=65536)
+    layers: int = Field(default=8, gt=0)
+    width: int = Field(default=320, gt=0)
+    heads: int = Field(default=5, gt=0)
+    ffn_width: int = Field(default=896, gt=0)
+    context_length: int = Field(default=1024, gt=0)
+    rope_theta: float = Field(default=10000.0, gt=0)
+    norm_eps: float = Field(default=1e-5, gt=0)
+    init_std: float = Field(default=0.02, gt=0)
 
     @model_validator(mode="after")
-    def dimensions(self):
+    def dimensions(self) -> Self:
         if self.width % self.heads or (self.width // self.heads) % 2:
             raise ValueError("width must divide into heads with an even head dimension")
         return self
@@ -47,51 +49,88 @@ class DataConfig(StrictModel):
     revision: str = "main"
     tokenizer: str = "TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T"
     tokenizer_revision: str = "main"
-    shuffle_seed: int = Field(42, ge=0, lt=2**32)
-    shuffle_buffer: int = Field(10000, gt=0)
-    shard_tokens: int = Field(16_777_216, gt=0)
-    tokenize_batch_size: int = Field(256, gt=0)
+    shuffle_seed: int = Field(default=42, ge=0, lt=2**32)
+    shuffle_buffer: int = Field(default=10000, gt=0)
+    shard_tokens: int = Field(default=16_777_216, gt=0)
+    tokenize_batch_size: int = Field(default=256, gt=0)
     # Runtime buffering; separate from the document shuffle used during preparation.
-    buffer_size_mib: float = Field(64.0, gt=0)
+    buffer_size_mib: float = Field(default=64.0, gt=0)
     prefetch: bool = True
     # Overrides for preparation/smoke runs; None means the complete validation split.
-    prepare_train_tokens: int | None = Field(None, gt=0)
-    prepare_validation_tokens: int | None = Field(None, gt=0)
+    prepare_train_tokens: int | None = Field(default=None, gt=0)
+    prepare_validation_tokens: int | None = Field(default=None, gt=0)
 
 
 class OptimizerConfig(StrictModel):
-    lr: float = Field(1e-3, gt=0)
-    beta1: float = Field(0.9, ge=0, lt=1)
-    beta2: float = Field(0.95, ge=0, lt=1)
-    eps: float = Field(1e-8, gt=0)
-    weight_decay: float = Field(0.1, ge=0)
-    grad_clip: float | None = Field(1.0, gt=0)
-    warmup_fraction: float = Field(0.05, ge=0, lt=1)
-    min_lr_ratio: float = Field(0.1, ge=0, le=1)
+    lr: float = Field(default=1e-3, gt=0)
+    beta1: float = Field(default=0.9, ge=0, lt=1)
+    beta2: float = Field(default=0.95, ge=0, lt=1)
+    eps: float = Field(default=1e-8, gt=0)
+    weight_decay: float = Field(default=0.1, ge=0)
+    grad_clip: float | None = Field(default=1.0, gt=0)
+    warmup_fraction: float = Field(default=0.05, ge=0, lt=1)
+    min_lr_ratio: float = Field(default=0.1, ge=0, le=1)
 
 
 class TrainingConfig(StrictModel):
-    tokens_per_parameter: float = Field(20.0, gt=0)
-    epoch_tokens_per_parameter: float = Field(0.5, gt=0)
-    batch_tokens: int = Field(32768, gt=0)
-    micro_batch_size: int = Field(32, gt=0)
-    checkpoint_every: int = Field(500, gt=0)
-    checkpoint_policy: Literal["all", "final", "none"] = "final"
+    tokens_per_parameters: float = Field(default=20.0, gt=0)
+    epoch_tokens_per_parameters: float = Field(default=0.5, gt=0)
+    batch_tokens: int = Field(default=32768, gt=0)
+    micro_batch_size: int = Field(default=32, gt=0)
+    checkpoint_policy: Literal["interval", "explicit", "final", "none"] = "final"
+    checkpoint_epochs: list[Annotated[int, Field(strict=True, gt=0)]] = Field(
+        default_factory=lambda: [1], min_length=1
+    )
     save_epoch_training_state: bool = True
-    log_every: int = Field(20, gt=0)
-    # Explicit short-run overrides. Stored in configs; never silently applied by sweep.
-    max_tokens: int | None = Field(None, gt=0)
-    epoch_tokens: int | None = Field(None, gt=0)
+    log_every: int = Field(default=20, gt=0)
+
+    @field_validator("checkpoint_epochs", mode="before")
+    @classmethod
+    def normalize_epochs(cls, value: object) -> object:
+        return [value] if isinstance(value, int) else value
+
+    @field_validator("checkpoint_epochs")
+    @classmethod
+    def unique_epochs(cls, value: list[int], info: ValidationInfo) -> list[int]:
+        return sorted(set(value)) if info.data.get("checkpoint_policy") == "explicit" else value
+
+    @property
+    def epoch_count(self) -> int:
+        count = Fraction(str(self.tokens_per_parameters)) / Fraction(
+            str(self.epoch_tokens_per_parameters)
+        )
+        if count.denominator != 1:
+            raise ValueError(
+                "tokens_per_parameters must be divisible by epoch_tokens_per_parameters"
+            )
+        return count.numerator
+
+    @model_validator(mode="after")
+    def schedule(self) -> Self:
+        epochs = self.epoch_count
+        if self.checkpoint_policy == "interval" and len(self.checkpoint_epochs) != 1:
+            raise ValueError("interval checkpoint policy requires exactly one epoch interval")
+        if self.checkpoint_policy == "explicit" and self.checkpoint_epochs[-1] > epochs:
+            raise ValueError("checkpoint epoch exceeds the training epoch count")
+        return self
+
+    def saved_epochs(self) -> frozenset[int]:
+        if self.checkpoint_policy == "interval":
+            interval = self.checkpoint_epochs[0]
+            return frozenset(range(interval, self.epoch_count + 1, interval))
+        if self.checkpoint_policy == "explicit":
+            return frozenset(self.checkpoint_epochs)
+        return frozenset()
 
 
 class EvaluationConfig(StrictModel):
-    subset_blocks: int = Field(1024, gt=0)
-    batch_size: int = Field(128, gt=0)
-    seed: int = Field(12345, ge=0, lt=2**32)
+    subset_blocks: int = Field(default=1024, gt=0)
+    batch_size: int = Field(default=128, gt=0)
+    seed: int = Field(default=12345, ge=0, lt=2**32)
 
 
 class RuntimeConfig(StrictModel):
-    seed: int = Field(42, ge=0, lt=2**32)
+    seed: int = Field(default=42, ge=0, lt=2**32)
     deterministic: bool = False
     device: str = "cuda:0"
     amp: bool = True
@@ -101,16 +140,16 @@ class RuntimeConfig(StrictModel):
     fused_optimizer: bool = True
     attention_backend: Literal["sdpa", "reference"] = "sdpa"
     output_dir: Path = Path("runs/default")
-    cpu_threads: int = Field(8, gt=0)
+    cpu_threads: int = Field(default=8, gt=0)
 
 
 class AdaptiveConsensusConfig(StrictModel):
-    start_frac: float = Field(..., ge=0, le=1)
-    p: float = Field(..., ge=0)
+    start_frac: float = Field(ge=0, le=1)
+    p: float = Field(ge=0)
 
 
 class DecentralizedConfig(StrictModel):
-    num_models: int = Field(..., gt=0)
+    num_models: int = Field(gt=0)
     topology: Literal["complete", "one_peer_ring", "one_peer_exponential"] = "complete"
     scheme: Literal["awc", "atc"] = "awc"
     adaptive_consensus: AdaptiveConsensusConfig | None = None
@@ -126,7 +165,7 @@ class Config(StrictModel):
     decentralized: DecentralizedConfig | None = None
 
     @model_validator(mode="after")
-    def batch_shape(self):
+    def batch_shape(self) -> Self:
         length = self.model.context_length
         if self.training.batch_tokens % length:
             raise ValueError("training.batch_tokens must be divisible by context_length")
@@ -144,7 +183,7 @@ class Config(StrictModel):
         return self
 
 
-def load_config(path: str | Path | None = None, overrides: list[str] = ()) -> Config:
+def load_config(path: str | Path | None = None, overrides: Sequence[str] = ()) -> Config:
     raw = yaml.safe_load(Path(path).read_text()) if path else {}
     if raw is None:
         raw = {}

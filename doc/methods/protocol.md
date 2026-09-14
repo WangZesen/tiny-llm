@@ -52,6 +52,7 @@ Curve means and sample SDs are computed only from observations at matching recor
 
 ## Reproduction and provenance
 
-Follow the [training guide](../guides/training.md), select a committed preset, and repeat it with runtime seeds 42, 43, and 44 in separate output directories. Current checkpoint defaults differ from some historical runs; record the resolved recipe and retention policy when reproducing them.
+Follow the [training guide](../guides/training.md), select a committed preset, and repeat it with runtime seeds 42, 43, and 44 in separate output directories. Current token allocation rounds cumulative epochs to complete global batches,
+and checkpoint defaults differ from some historical runs; record the resolved recipe and retention policy when reproducing them.
 
 The study data bundles retain CSV summaries, seed records, original result JSON, and plotting tools. Original paths and source hashes inside provenance describe historical execution and are preserved after relocation. Curve snapshots add hashes of the raw metrics and result files. Website builds use only committed artifacts; refreshing curves requires access to the source logs through the [maintenance workflow](../guides/website.md).

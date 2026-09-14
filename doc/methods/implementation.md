@@ -50,7 +50,7 @@ update; decentralized training does not accumulate gradients.
 The tuned 20M AWC and ATC presets use four workers with local microbatch 32
 and a global batch of 131,072 tokens. They inherit compilation in `default` mode,
 automatic SDPA, and global evaluation batch size 128. Cached
-RoPE is shared across workers; shortened local batches run eagerly.
+RoPE is shared across workers; each update uses a complete global batch.
 
 ```bash
 uv run tiny-llm train --config configs/packed4-20m-awc.yaml
@@ -62,12 +62,12 @@ uv run tiny-llm train --config configs/packed4-20m-awc.yaml \
 
 The global batch must equal `num_models * micro_batch_size * context_length`.
 Every realized epoch boundary must divide evenly across workers. The packed
-presets round each ordinary total budget down to a multiple of `8 * context_length`,
-so their prepared caches remain sufficient. They use 40 epochs with a shorter
-final epoch (408,068,096 total targets for packed 20M). The ordinary presets retain
-their existing token-budget calculation.
-The buffered loader's shuffled sample stream is partitioned without overlap:
-worker i receives every Nth sample, including across buffer and epoch boundaries.
+presets use the same nominal ratios as ordinary models. Epoch boundaries round
+the cumulative nominal token count to the nearest complete global batch, with
+halfway ties upward. The difference between consecutive boundaries determines
+that epoch's batch count. Earlier boundaries are independent of the total budget;
+see the [allocation rule](../guides/training.md#token-budget-and-epochs).
+
 
 Each worker computes a mean loss over its own valid tokens. The sum of these
 local means supplies independent gradients, with no division by the worker
@@ -99,7 +99,7 @@ Available `decentralized.topology` values:
 Before validation, a separate ordinary Llama receives the global parameter
 average. It evaluates with the global `evaluation.batch_size`; training weights,
 moments, and topology phase stay unchanged. Validation metrics and `best.json`
-refer to this averaged model. With checkpoint policy `all`, root
+refer to this averaged model. At selected checkpoint epochs, root
 `epoch-NNN.safetensors` files contain averaged
 weights; `node-000/epoch-NNN.safetensors`, etc. contain local weights. Resume
 checkpoints retain all local parameters and optimizer states.
@@ -140,7 +140,7 @@ decentralized:
 
 For zero-based update `r`, activation begins at
 `ceil(start_frac * total_steps)`. Count actual optimizer updates across all epochs,
-including shortened epoch-ending updates. Before activation, `gamma = 1`.
+using complete global batches. Before activation, `gamma = 1`.
 After activation, `gamma = (lr / lr_max)**p`, where `lr` is the LR assigned to that
 update and `lr_max` is the largest LR among all active updates in the original run.
 The maximum is computed from the existing token-based LR schedule, so activation
@@ -174,49 +174,37 @@ all checkpoint and weight files, including the final checkpoint. Training still
 saves configuration, logs, and full-validation results; interrupted runs restart
 from scratch.
 
-By default, `training.checkpoint_policy: final` saves only the final training
-checkpoint. No periodic, epoch, worker-weight, or interruption checkpoints are
-written. Set `training.checkpoint_policy: all` to enable the previous behavior.
-With policy `all`, `training.save_epoch_training_state: true` (the default)
-also retains complete epoch snapshots. Set the new field to `false` to disable
-these archives while preserving weight exports and rolling recovery saves.
-The field has no effect under policy `final` or `none`.
+The default `training.checkpoint_policy: final` saves only `final.pt`.
+`interval` plus `checkpoint_epochs: K` saves every K epochs; the default K=1
+saves every epoch. `explicit` plus `checkpoint_epochs: [1, 10, 20]` selects epochs.
+Inputs normalize to a positive integer list; both scheduled policies also save
+`final.pt`. There are no rolling or interruption checkpoint writes.
 
-Each run contains:
+Each run contains configuration, environment metadata, logs, epoch validation,
+best-result statistics, and final metrics. Selected epochs retain root
+`epoch-NNN.safetensors` and, for packed models, worker weight exports.
+`save_epoch_training_state: true` additionally retains resumable `epoch-NNN.pt`
+snapshots. `best.json` references weights only if its best epoch was retained.
 
-- `resolved.yaml`, `environment.json`, `run.log`, and `metrics.jsonl`.
-- `epoch-NNN.safetensors` (policy `all`): FP32 weights after every epoch.
-- `epoch-NNN.pt` (policy `all`, epoch states enabled): complete ordinary state,
-  or shared packed state with references to separate worker files.
-- `best.json`: best epoch and subset loss; `weights` is null under policy `final`.
-- `latest.pt` (policy `all`): model, AdamW, RNG states, data cursor, and schedule progress.
-- `final.pt` (policy `all` or `final`): final training state.
-- `result.json`: full-validation metrics under every checkpoint policy.
-
-Resume using the saved configuration. Device and output-directory changes are
-allowed, as are changes to `data.prefetch` and checkpoint retention policy. Recipe, precision, data identity, batch,
-seed, and buffer-size changes are rejected. Ordinary checkpoint format v2 and
-packed format v3 record loader format v1 and a committed sample cursor. Resume
-reconstructs the current range and row position directly, without replaying earlier training ranges or saving
-buffer contents. The normal startup cache checksum scan still runs.
-
-Old global-permutation checkpoints (ordinary v1 and packed v2) cannot resume
-training under this loader; start a fresh run. Their model weights remain usable
-for evaluation and analysis.
-The previous campaign is preserved under `runs/campaign`; fresh buffered runs use
-`runs/campaign-buffered` and reuse the existing model computation benchmarks.
-
-For a run trained with policy `all`:
+Resume with a retained epoch checkpoint or `final.pt` and the saved configuration:
 
 ```bash
 uv run tiny-llm train --config runs/baseline/resolved.yaml \
-  --resume runs/baseline/latest.pt
+  --resume runs/baseline/epoch-010.pt \
+  --set runtime.output_dir=runs/baseline-branch
 ```
 
-Resume `.pt` files are trusted local pickle artifacts. For exchanging model
-weights, use the `.safetensors` files produced with policy `all`. Model/data artifacts live in gitignored
-`runs/` and `data/`; source, configurations, the UV lockfile, and documentation
-are tracked in Git.
+Device, output directory, prefetch, and checkpoint retention may change on resume.
+Training recipe, total budget, precision, data identity, batch, seed, and buffer
+size must match. The loader reconstructs its range and row position from the
+committed cursor; the normal startup checksum scan still runs. This config
+revision is a clean break: old field names and historical identities are not
+translated. Use the archived source for archived runs.
+
+Resume `.pt` files are trusted local pickle artifacts. Use `.safetensors` when
+exchanging model weights. The experiment runner resumes incomplete runs from
+`final.pt` when present, otherwise the highest retained root epoch checkpoint.
+Runs without a retained state require a fresh output directory.
 
 ### Full epoch state and local worker inspection
 
@@ -240,7 +228,9 @@ padding and other workers' backing storage are excluded.
 ```python
 import torch
 
-local = torch.load("runs/packed4-20m-awc/node-000/epoch-010.pt", map_location="cpu", weights_only=False)
+local = torch.load(
+    "runs/packed4-20m-awc/node-000/epoch-010.pt", map_location="cpu", weights_only=False
+)
 name = "embedding.weight"
 weights = local["model"][name]
 first_moment = local["optimizer"]["state"][name]["exp_avg"]
@@ -252,8 +242,8 @@ A local file is independently inspectable but cannot resume the whole decentrali
 run. Pass the root `epoch-NNN.pt` to `--resume`. The shared reader validates the
 complete worker set, checksums, names/shapes, groups, counters, and training
 position before returning reconstructed packed state. Training, evaluation, and
-consensus analysis all use this reader. Existing combined packed v3 `latest.pt`
-and `final.pt` remain unchanged.
+consensus analysis all use this reader. Final packed state uses the combined
+version 3 representation.
 
 Worker files are written atomically and the root is published last. An interrupted
 snapshot without a root can be rewritten. Committed epoch snapshots are immutable;

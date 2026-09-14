@@ -1,14 +1,17 @@
 """Packed Llama execution and aligned, shared parameter storage."""
 
 import math
+from collections.abc import Callable, Iterable
 from dataclasses import asdict, dataclass
+from typing import Literal, Self, cast
 
 import torch
 from torch import Tensor, nn
 from torch.nn import functional as F
 
 from tiny_llm.config import ModelConfig
-from tiny_llm.model import Llama, stable_dtype, token_losses
+from tiny_llm.model import Block, Llama, stable_dtype, token_losses
+from tiny_llm.state import TorchState
 
 
 @dataclass(frozen=True)
@@ -40,7 +43,12 @@ def local_mean_losses(logits: Tensor, targets: Tensor) -> Tensor:
 
 
 class PackedLlama(nn.Module):
-    def __init__(self, config: ModelConfig, num_models: int, attention_backend: str = "sdpa"):
+    def __init__(
+        self,
+        config: ModelConfig,
+        num_models: int,
+        attention_backend: Literal["sdpa", "reference"] = "sdpa",
+    ):
         super().__init__()
         if num_models < 1:
             raise ValueError("num_models must be positive")
@@ -65,7 +73,7 @@ class PackedLlama(nn.Module):
                 view.copy_(original.expand_as(view))
             module_name, _, name = entry.name.rpartition(".")
             self.get_submodule(module_name).register_parameter(name, nn.Parameter(view))
-        self._mix_scratch = None
+        self._mix_scratch: Tensor | None = None
 
     @property
     def parameter_storage(self) -> Tensor:
@@ -88,7 +96,7 @@ class PackedLlama(nn.Module):
     def layout_metadata(self) -> list[dict]:
         return [asdict(entry) for entry in self.layout]
 
-    def packed_state_dict(self) -> dict:
+    def packed_state_dict(self) -> TorchState:
         return {
             "version": 1,
             "layout": self.layout_metadata(),
@@ -101,7 +109,7 @@ class PackedLlama(nn.Module):
         return super().load_state_dict(state_dict, strict=strict, assign=False)
 
     @torch.no_grad()
-    def load_packed_state_dict(self, state):
+    def load_packed_state_dict(self, state: TorchState) -> None:
         if (
             state.get("version") != 1
             or state["layout"] != self.layout_metadata()
@@ -110,7 +118,7 @@ class PackedLlama(nn.Module):
             raise ValueError("incompatible packed parameter layout")
         self.parameter_storage.copy_(state["parameter_storage"])
 
-    def _apply(self, fn, recurse=True):
+    def _apply(self, fn: Callable[[Tensor], Tensor], recurse: bool = True) -> Self:
         # nn.Module conversion transforms parameters separately. Rebind them to a
         # fresh arena afterward; callers construct optimizers after placement.
         super()._apply(fn, recurse)
@@ -139,7 +147,7 @@ class PackedLlama(nn.Module):
         n, batch, length = input_ids.shape
         workers = torch.arange(n, device=input_ids.device)[:, None, None]
         x = self.embedding.weight[workers, input_ids]
-        for block in self.blocks:
+        for block in cast(Iterable[Block], self.blocks):
             z = norm(x, block.attention_norm.weight, cfg.norm_eps)
             q, k, v = [
                 linear(z, projection.weight)

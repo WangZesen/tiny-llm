@@ -12,8 +12,6 @@ training:
   batch_tokens: 32768
   micro_batch_size: 8
   # Equal-worker epoch boundaries and the same cache budget as packed4-20m-awc.yaml.
-  epoch_tokens: 10207232
-  max_tokens: 408068096
 runtime:
   output_dir: runs/packed-20m-adaptive
 optimizer:

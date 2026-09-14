@@ -40,19 +40,28 @@ all checkpoint and weight files, including the final checkpoint. Training still
 saves configuration, logs, and full-validation results; interrupted runs restart
 from scratch.
 
-`training.checkpoint_policy` defaults to `final`: no periodic, epoch, or interruption
-checkpoints are written. Interrupted training must restart unless `final.pt` exists.
-To retain epoch weights and rolling recovery states, train with
-`--set training.checkpoint_policy=all`. Resume those runs with the saved configuration:
+`training.checkpoint_policy` defaults to `final`. Use `interval` to save every
+K epochs, or `explicit` to select epoch numbers:
 
 ```bash
-uv run tiny-llm train --config runs/20m/resolved.yaml \
-  --resume runs/20m/latest.pt
+uv run tiny-llm train --config configs/20m.yaml \
+  --set training.checkpoint_policy=interval --set training.checkpoint_epochs=5
+uv run tiny-llm train --config configs/20m.yaml \
+  --set training.checkpoint_policy=explicit --set 'training.checkpoint_epochs=[1,10,20,40]'
 ```
 
-With policy `all`, `training.save_epoch_training_state` defaults to `true`, retaining
-complete `epoch-NNN.pt` snapshots as well. Set it to `false` to keep only epoch
-weight exports and rolling recovery states. Packed epoch snapshots store each
+The default interval is 1 (every epoch). Scalar inputs normalize to lists in
+`resolved.yaml`; explicit lists are sorted and deduplicated. Epoch numbers must
+be positive and explicit selections must lie within the run. Both scheduled
+policies also save `final.pt`. Validation and best-loss tracking run every epoch;
+`best.json` has a null weight reference when its best epoch was not saved.
+
+There are no step-based or interruption checkpoints. Interrupted runs resume from
+a retained `epoch-NNN.pt` or `final.pt`; without one, start in a new output directory.
+`training.save_epoch_training_state` defaults to `true`; set it to `false` to retain
+only weights at selected epochs, plus final training state.
+
+Packed epoch snapshots store each
 worker's weights and AdamW moments in `node-NNN/epoch-NNN.pt`; the root file holds
 shared state and references to those files. Keep the complete set together.
 To branch from an earlier epoch, use its root checkpoint and a new output directory:
@@ -74,6 +83,28 @@ uv run tiny-llm train --config configs/smoke.yaml
 ```
 
 The smoke configuration truncates C4, so its evaluation is marked incomplete.
+
+### Token budget and epochs
+
+`training.tokens_per_parameters` controls the total nominal token budget, and
+`training.epoch_tokens_per_parameters` controls one nominal epoch. The defaults
+are 20 and 0.5, giving 40 epochs. The total ratio must be divisible by the epoch
+ratio; fractional final epochs are rejected.
+
+For a single-model parameter count P, epoch ratio e, and global batch size B,
+the cumulative batch count after epoch k is `floor(k * e * P / B + 0.5)`.
+Each epoch receives the difference from the previous cumulative count. Halfway
+ties round up, and empty epochs are rejected. Every update uses a complete global
+batch, including the final update; realized tokens may be above or below the
+nominal total by at most B/2.
+
+Increasing only the total ratio preserves earlier epoch batch counts. Learning
+rates, adaptive consensus, and sample shuffling still depend on the total budget.
+Changing that budget requires a new run rather than resuming an existing recipe.
+Preparation sizes the cache for the realized budget; changing global batch size
+can change the required capacity. Old token fields and checkpoint policy `all`
+are rejected by the new schema. Archived experiments retain their original
+configuration and token positions.
 
 ### Packed training
 
@@ -99,8 +130,8 @@ uv run tiny-llm train --config configs/packed8-20m-awc.yaml
 ```
 
 The global batch must equal `num_models * micro_batch_size * context_length`,
-and epoch boundaries must divide evenly across workers. With checkpoint policy
-`all`, root epoch checkpoints contain averaged weights and worker weights live
+and epoch boundaries must divide evenly across workers. With a scheduled checkpoint policy, root epoch weight exports contain averaged
+weights and worker weights live
 under `node-NNN/`. The default `final.pt` retains all local training states.
 [Packed implementation details](../methods/implementation.md#packed-decentralized-training)
 cover topologies and optimizer behavior.
@@ -124,15 +155,15 @@ config retains its separate 32,768-token recipe and uses four workers,
 uv run tiny-llm train --config configs/packed-20m-adaptive.yaml
 ```
 
-Activation uses the ceiling of `start_frac * total_steps`, counting shortened
-epoch-ending updates. See [adaptive consensus](../methods/implementation.md#adaptive-consensus)
+Activation uses the ceiling of `start_frac * total_steps`, counting complete
+global batches. See [adaptive consensus](../methods/implementation.md#adaptive-consensus)
 for the LR normalization and resume semantics. It is supported by training only;
 packed throughput benchmarks reject adaptive-consensus configurations.
 
 
 ## Evaluation
 
-Epoch-weight examples below require training with `--set training.checkpoint_policy=all`.
+Epoch-weight examples below require training with `--set training.checkpoint_policy=interval`.
 
 Evaluate a saved checkpoint using the run's resolved configuration. `--full`
 selects the full cached validation split; omit it to use the fixed subset.

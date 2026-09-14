@@ -2,13 +2,14 @@ import argparse
 import json
 import logging
 import subprocess
+from collections.abc import Sequence
 from pathlib import Path
 
-from tiny_llm.config import PRESETS, ModelConfig, load_config
+from tiny_llm.config import PRESETS, Config, ModelConfig, load_config
 from tiny_llm.runtime import setup_logging
 
 
-def _add_benchmark_arguments(parser, *, packed):
+def _add_benchmark_arguments(parser: argparse.ArgumentParser, *, packed: bool) -> None:
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--warmup", type=int, default=3 if packed else 20)
     parser.add_argument("--steps", type=int, default=8 if packed else 100)
@@ -18,7 +19,7 @@ def _add_benchmark_arguments(parser, *, packed):
         parser.add_argument("--profile", action="store_true")
 
 
-def _add_analysis_arguments(parser):
+def _add_analysis_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--run", required=True, type=Path)
     parser.add_argument("--checkpoints", nargs="+", default=["all"])
     parser.add_argument("--output", required=True, type=Path)
@@ -100,7 +101,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv=None):
+def main(argv: Sequence[str] | None = None) -> None:
     parser = build_parser()
     args = parser.parse_args(argv)
     setup_logging()
@@ -166,7 +167,7 @@ def main(argv=None):
     dispatch(args, config, parser)
 
 
-def dispatch(args, config, parser):
+def dispatch(args: argparse.Namespace, config: Config, parser: argparse.ArgumentParser) -> None:
     match args.command:
         case "prepare":
             from tiny_llm.data import prepare

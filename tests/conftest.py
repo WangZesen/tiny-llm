@@ -1,11 +1,13 @@
 import json
+from pathlib import Path
 
 import numpy as np
 import pytest
 import torch
 
-from tiny_llm.config import Config, ModelConfig
+from tiny_llm.config import Config, ModelConfig, TrainingConfig
 from tiny_llm.data import TokenWriter, fingerprint
+from tiny_llm.state import CacheContent, CacheManifest
 
 
 @pytest.fixture(autouse=True)
@@ -19,7 +21,7 @@ def runtime_policy():
 
 
 @pytest.fixture
-def tiny_config(tmp_path):
+def tiny_config(tmp_path: Path) -> Config:
     config = Config(
         model=ModelConfig(vocab_size=17, layers=1, width=8, heads=2, ffn_width=16, context_length=4)
     )
@@ -31,9 +33,13 @@ def tiny_config(tmp_path):
     config.data.cache_dir = tmp_path / "cache"
     config.training.batch_tokens = 16
     config.training.micro_batch_size = 2
-    config.training.max_tokens = 64
-    config.training.epoch_tokens = 32
-    config.training.checkpoint_every = 2
+    config.training = TrainingConfig(
+        tokens_per_parameters=0.08,
+        epoch_tokens_per_parameters=0.04,
+        batch_tokens=16,
+        micro_batch_size=2,
+        log_every=1,
+    )
     config.training.log_every = 1
     config.evaluation.subset_blocks = 3
     config.evaluation.batch_size = 2
@@ -41,10 +47,10 @@ def tiny_config(tmp_path):
 
 
 @pytest.fixture
-def cache_dir(tiny_config):
+def cache_dir(tiny_config: Config) -> Path:
     directory = tiny_config.data.cache_dir
     directory.mkdir()
-    manifest = dict(
+    manifest: CacheContent = CacheContent(
         version=1,
         dataset=tiny_config.data.dataset,
         dataset_revision="fixture-dataset",
@@ -64,6 +70,6 @@ def cache_dir(tiny_config):
         writer = TokenWriter(directory, split, shard_tokens=11)
         writer.write(np.arange(count) % 17)
         manifest["splits"][split] = writer.finish()
-    manifest["identity"] = fingerprint(manifest)
-    (directory / "manifest.json").write_text(json.dumps(manifest))
+    completed_manifest = CacheManifest(**manifest, identity=fingerprint(manifest))
+    (directory / "manifest.json").write_text(json.dumps(completed_manifest))
     return directory

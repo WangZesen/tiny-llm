@@ -1,42 +1,34 @@
 import copy
 import json
+from pathlib import Path
 
 import pytest
 import torch
+from helpers import gradients
 from pydantic import ValidationError
 
 from tiny_llm.benchmark import benchmark_identity, benchmark_worker
 from tiny_llm.config import Config
-from tiny_llm.data import BufferedTokenLoader, TokenCache, fingerprint
+from tiny_llm.data import TokenCache
 from tiny_llm.model import Llama
 from tiny_llm.runtime import setup_runtime
+from tiny_llm.state import LossFunction
 from tiny_llm.train import loss_function, make_optimizer, optimizer_update, recipe_identity
 
 
-def test_execution_config_and_legacy_identity(tiny_config, cache_dir):
+def test_execution_config_and_identity(tiny_config: Config, cache_dir: Path):
     cache = TokenCache(cache_dir)
-    old = tiny_config.model_dump(mode="json")
-    old["training"].pop("checkpoint_policy")
-    old["training"].pop("save_epoch_training_state")
-    old.pop("decentralized")
-    for key in ("output_dir", "device", "cpu_threads", "compile_mode", "sdpa_backend"):
-        old["runtime"].pop(key)
-    old["data"].pop("cache_dir")
-    old["data"].pop("prefetch")
-    old["cache_identity"] = cache.manifest["identity"]
-    old["loader_version"] = BufferedTokenLoader.VERSION
     original = recipe_identity(tiny_config, cache)
-    assert original == fingerprint(old)
     tiny_config.runtime.compile_mode = "reduce-overhead"
     assert recipe_identity(tiny_config, cache) != original
     with pytest.raises(ValidationError):
-        Config(runtime={"sdpa_backend": "unknown"})
+        Config.model_validate({"runtime": {"sdpa_backend": "unknown"}})
     tiny_config.runtime.sdpa_backend = "flash"
     with pytest.raises(ValueError, match="require CUDA"):
         setup_runtime(tiny_config)
 
 
-def test_benchmark_reuse_identity(tiny_config):
+def test_benchmark_reuse_identity(tiny_config: Config):
     metadata = dict(
         source_hash="a",
         versions={"torch": "1"},
@@ -60,8 +52,8 @@ def test_benchmark_reuse_identity(tiny_config):
 
 
 @pytest.mark.parametrize("data_mode", ["synthetic", "real"])
-def test_worker_windows(tiny_config, cache_dir, tmp_path, data_mode):
-    tiny_config.training.max_tokens = 128
+def test_worker_windows(tiny_config: Config, cache_dir: Path, tmp_path: Path, data_mode):
+    tiny_config.training.tokens_per_parameters = 128 / tiny_config.model.parameter_count
     result = benchmark_worker(
         tiny_config,
         tmp_path / "bench.json",
@@ -81,7 +73,9 @@ def test_worker_windows(tiny_config, cache_dir, tmp_path, data_mode):
 
 
 @pytest.mark.parametrize("bad_gradient", [False, True])
-def test_nonfinite_update_never_steps(tiny_config, monkeypatch, bad_gradient):
+def test_nonfinite_update_never_steps(
+    tiny_config: Config, monkeypatch: pytest.MonkeyPatch, bad_gradient
+):
     setup_runtime(tiny_config)
     model = Llama(tiny_config.model)
     optimizer = make_optimizer(model, tiny_config, torch.device("cpu"))
@@ -91,14 +85,16 @@ def test_nonfinite_update_never_steps(tiny_config, monkeypatch, bad_gradient):
         pytest.fail("invalid update reached optimizer.step")
 
     monkeypatch.setattr(optimizer, "step", forbidden_step)
-    compute = loss_function(model, tiny_config, torch.device("cpu"))
+    compute: LossFunction = loss_function(model, tiny_config, torch.device("cpu"))
     if bad_gradient:
         model.embedding.weight.register_hook(lambda gradient: gradient * float("nan"))
     else:
         original = compute
 
-        def compute(x, y):
+        def nonfinite_loss(x, y):
             return original(x, y) * float("nan")
+
+        compute = nonfinite_loss
 
     def batch(count, device):
         x = torch.ones((count, 4), dtype=torch.long)
@@ -149,12 +145,14 @@ def test_cuda_execution_parity(compiled, mode, backend):
         actual = compute(x, y)
         actual.backward()
         torch.testing.assert_close(actual, expected, rtol=0.002, atol=0.002)
-        left = torch.cat([p.grad.flatten() for p in model.parameters()])
-        right = torch.cat([p.grad.flatten() for p in reference.parameters()])
+        left = torch.cat([g.flatten() for g in gradients(model)])
+        right = torch.cat([g.flatten() for g in gradients(reference)])
         assert (left - right).norm() / right.norm() < 0.05
 
 
-def test_tuning_timeout_kills_worker_group(tiny_config, cache_dir, tmp_path, monkeypatch):
+def test_tuning_timeout_kills_worker_group(
+    tiny_config: Config, cache_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     import os
     import subprocess
 
@@ -188,7 +186,9 @@ def test_tuning_timeout_kills_worker_group(tiny_config, cache_dir, tmp_path, mon
 
 
 @pytest.mark.parametrize("num_models", [None, 4])
-def test_compile_dispatch_keeps_partial_batches_eager(tiny_config, monkeypatch, num_models):
+def test_compile_dispatch_keeps_partial_batches_eager(
+    tiny_config: Config, monkeypatch: pytest.MonkeyPatch, num_models
+):
     from tiny_llm.model import token_losses
     from tiny_llm.packed import PackedLlama, local_mean_losses
 
@@ -210,7 +210,7 @@ def test_compile_dispatch_keeps_partial_batches_eager(tiny_config, monkeypatch, 
         if num_models is None
         else PackedLlama(tiny_config.model, num_models, "reference")
     )
-    compute = loss_function(model, tiny_config, torch.device("cpu"))
+    compute: LossFunction = loss_function(model, tiny_config, torch.device("cpu"))
     for count in (2, 1, 2):
         shape = (count, 4) if num_models is None else (num_models, count, 4)
         x = torch.ones(shape, dtype=torch.long)

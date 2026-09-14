@@ -1,9 +1,10 @@
 import json
+from pathlib import Path
 
 import pytest
 import torch
 
-from tiny_llm.config import load_config
+from tiny_llm.config import Config, load_config
 from tiny_llm.data import TokenCache
 from tiny_llm.runtime import clip_grad_norm_
 from tiny_llm.train import recipe_identity, train
@@ -31,7 +32,7 @@ def test_nonfinite_gradients_raise(bad, maximum):
         clip_grad_norm_([parameter], maximum)
 
 
-def test_clipping_config(tmp_path):
+def test_clipping_config(tmp_path: Path):
     path = tmp_path / "config.yaml"
     path.write_text("{}\n")
     default = load_config(path)
@@ -44,7 +45,7 @@ def test_clipping_config(tmp_path):
 
 
 @pytest.mark.parametrize("workers", [1, 4])
-def test_clipping_identity_resume_and_logging(tiny_config, cache_dir, workers):
+def test_clipping_identity_resume_and_logging(tiny_config: Config, cache_dir: Path, workers):
     from tiny_llm.config import Config
 
     raw = tiny_config.model_dump()

@@ -70,8 +70,15 @@ def run_stage(configs: list[Config], gpus: list[str], stage_dir: Path):
                     "--set",
                     "runtime.device=cuda:0",
                 ]
-                if (directory / "latest.pt").exists():
-                    command += ["--resume", str(directory / "latest.pt")]
+                checkpoint = directory / "final.pt"
+                if not checkpoint.is_file():
+                    checkpoint = max(
+                        directory.glob("epoch-*.pt"),
+                        key=lambda path: int(path.stem.removeprefix("epoch-")),
+                        default=None,
+                    )
+                if checkpoint is not None:
+                    command += ["--resume", str(checkpoint)]
                 env = dict(os.environ, CUDA_VISIBLE_DEVICES=gpu, TOKENIZERS_PARALLELISM="false")
                 process = subprocess.Popen(command, env=env, stdout=log, stderr=subprocess.STDOUT)
                 running[gpu] = process, config, log

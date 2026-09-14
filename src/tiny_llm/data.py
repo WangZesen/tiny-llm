@@ -7,37 +7,49 @@ import os
 import shutil
 import time
 from bisect import bisect_right
-from concurrent.futures import ThreadPoolExecutor
+from collections.abc import Callable, Sequence
+from concurrent.futures import Future, ThreadPoolExecutor
+from fractions import Fraction
 from pathlib import Path
+from typing import BinaryIO, Protocol
 
 import numpy as np
 import torch
 from loguru import logger
+from numpy.typing import ArrayLike
 
 from tiny_llm.config import Config
+from tiny_llm.state import (
+    Batch,
+    CacheContent,
+    CacheManifest,
+    IndexArray,
+    LoaderIdentity,
+    LoaderState,
+    Shard,
+    SplitManifest,
+    TokenArray,
+)
 
 
-def fingerprint(value) -> str:
+def fingerprint(value: object) -> str:
     return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
 
 
 def file_digest(path: Path) -> str:
-    digest = hashlib.sha256()
     with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(8 * 1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+        return hashlib.file_digest(handle, "sha256").hexdigest()
 
 
 class TokenWriter:
     def __init__(self, directory: Path, split: str, shard_tokens: int):
         self.directory, self.split, self.shard_tokens = directory, split, shard_tokens
-        self.shards: list[dict] = []
+        self.shards: list[Shard] = []
         self.count = 0
-        self.handle = None
+        self.handle: BinaryIO | None = None
         self.in_shard = 0
 
-    def write(self, tokens):
+    def write(self, tokens: ArrayLike) -> None:
         values = np.asarray(tokens)
         if values.size and (values.min() < 0 or values.max() > 65535):
             raise ValueError("token ID cannot be represented as uint16")
@@ -55,36 +67,40 @@ class TokenWriter:
             if self.in_shard == self.shard_tokens:
                 self._close_shard()
 
-    def _close_shard(self):
+    def _close_shard(self) -> None:
         if self.handle is None:
             return
         self.handle.flush()
         os.fsync(self.handle.fileno())
         self.handle.close()
         self.shards.append(
-            dict(file=self.path.name, tokens=self.in_shard, sha256=file_digest(self.path))
+            Shard(file=self.path.name, tokens=self.in_shard, sha256=file_digest(self.path))
         )
         self.handle = None
 
-    def finish(self) -> dict:
+    def finish(self) -> SplitManifest:
         self._close_shard()
-        return dict(tokens=self.count, shards=self.shards)
+        return SplitManifest(tokens=self.count, shards=self.shards)
 
 
 def training_boundaries(config: Config, parameters: int) -> list[int]:
-    """Cumulative block boundaries, avoiding per-epoch rounding drift."""
+    """Nearest cumulative global batches, independent of the final epoch count."""
     length = config.model.context_length
     train = config.training
-    total = train.max_tokens or math.ceil(parameters * train.tokens_per_parameter)
-    epoch = train.epoch_tokens or parameters * train.epoch_tokens_per_parameter
-    count = math.ceil(total / epoch)
-    boundaries = [math.ceil(min(total, i * epoch) / length) for i in range(1, count + 1)]
-    if len(set(boundaries)) != len(boundaries):
-        raise ValueError("virtual epochs must each contain at least one block")
+    epoch_batches = (
+        Fraction(str(train.epoch_tokens_per_parameters)) * parameters / train.batch_tokens
+    )
+    batch_blocks = train.batch_tokens // length
+    boundaries = [
+        math.floor(k * epoch_batches + Fraction(1, 2)) * batch_blocks
+        for k in range(1, train.epoch_count + 1)
+    ]
+    if boundaries[0] == 0 or len(set(boundaries)) != len(boundaries):
+        raise ValueError("virtual epochs must each contain at least one global batch")
     return boundaries
 
 
-def prepare(config: Config) -> dict:
+def prepare(config: Config) -> CacheManifest:
     """Prepare privately, then atomically publish both splits and their manifest."""
     from datasets import load_dataset
     from huggingface_hub import HfApi
@@ -125,6 +141,8 @@ def prepare(config: Config) -> dict:
         api = HfApi()
         dataset_sha = api.dataset_info(cfg.dataset, revision=cfg.revision).sha
         tokenizer_sha = api.model_info(cfg.tokenizer, revision=cfg.tokenizer_revision).sha
+        if dataset_sha is None or tokenizer_sha is None:
+            raise ValueError("could not resolve dataset/tokenizer commit SHA")
         tokenizer = AutoTokenizer.from_pretrained(
             cfg.tokenizer, revision=tokenizer_sha, use_fast=True
         )
@@ -139,7 +157,7 @@ def prepare(config: Config) -> dict:
             }
         )
         paths = sorted(api.list_repo_files(cfg.dataset, repo_type="dataset", revision=dataset_sha))
-        manifest = {
+        manifest: CacheContent = {
             "version": 1,
             "dataset": cfg.dataset,
             "dataset_revision": dataset_sha,
@@ -197,17 +215,17 @@ def prepare(config: Config) -> dict:
             manifest["splits"][split] = writer.finish()
             if writer.count < 2 or (limit is not None and writer.count < limit):
                 raise ValueError(f"insufficient {split} tokens: {writer.count}")
-        manifest["identity"] = fingerprint(manifest)
-        (temporary / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+        completed_manifest = CacheManifest(**manifest, identity=fingerprint(manifest))
+        (temporary / "manifest.json").write_text(json.dumps(completed_manifest, indent=2) + "\n")
         temporary.rename(destination)
-        logger.success("Published cache {} ({})", destination, manifest["identity"][:12])
-        return manifest
+        logger.success("Published cache {} ({})", destination, completed_manifest["identity"][:12])
+        return completed_manifest
 
 
 class TokenCache:
     def __init__(self, directory: Path):
         self.directory = Path(directory)
-        self.manifest = json.loads((self.directory / "manifest.json").read_text())
+        self.manifest: CacheManifest = json.loads((self.directory / "manifest.json").read_text())
         content = {k: v for k, v in self.manifest.items() if k != "identity"}
         if self.manifest.get("version") != 1 or fingerprint(content) != self.manifest.get(
             "identity"
@@ -215,8 +233,8 @@ class TokenCache:
             raise ValueError("invalid cache manifest version or identity")
         self.paths: dict[str, list[Path]] = {}
         self.offsets: dict[str, list[int]] = {}
-        self._subset_key = None
-        self._subset = None
+        self._subset_key: tuple[int, int, int] | None = None
+        self._subset: tuple[TokenArray, IndexArray] | None = None
         for split, info in self.manifest["splits"].items():
             offsets, paths = [0], []
             for shard in info["shards"]:
@@ -229,7 +247,7 @@ class TokenCache:
                 raise ValueError("manifest token count does not match shards")
             self.paths[split], self.offsets[split] = paths, offsets
 
-    def validate_config(self, config: Config):
+    def validate_config(self, config: Config) -> None:
         data, manifest = config.data, self.manifest
         if manifest["vocab_size"] != config.model.vocab_size:
             raise ValueError("cache/model vocabulary mismatch")
@@ -248,7 +266,7 @@ class TokenCache:
         ):
             raise ValueError("cache preprocessing mismatch")
 
-    def verify(self):
+    def verify(self) -> None:
         for info in self.manifest["splits"].values():
             for shard in info["shards"]:
                 if file_digest(self.directory / shard["file"]) != shard["sha256"]:
@@ -258,7 +276,7 @@ class TokenCache:
         targets = self.manifest["splits"][split]["tokens"] - 1
         return math.ceil(targets / length) if partial else targets // length
 
-    def read(self, split: str, start: int, stop: int) -> np.ndarray:
+    def read(self, split: str, start: int, stop: int) -> TokenArray:
         """Read a contiguous interval into a compact owning array, without mmap."""
         if not 0 <= start < stop <= self.offsets[split][-1]:
             raise IndexError("token range outside cache")
@@ -266,7 +284,7 @@ class TokenCache:
         self.read_into(split, start, stop, values)
         return values
 
-    def read_into(self, split: str, start: int, stop: int, destination: np.ndarray):
+    def read_into(self, split: str, start: int, stop: int, destination: TokenArray) -> None:
         """Fill a preallocated uint16 array using sequential reads within each file."""
         if not 0 <= start < stop <= self.offsets[split][-1]:
             raise IndexError("token range outside cache")
@@ -290,7 +308,9 @@ class TokenCache:
                     remaining -= size
             start = end
 
-    def batch(self, split: str, indices, length: int, device: torch.device):
+    def batch(
+        self, split: str, indices: Sequence[int] | IndexArray, length: int, device: torch.device
+    ) -> Batch:
         inputs = np.zeros((len(indices), length), dtype=np.int64)
         targets = np.full_like(inputs, -100)
         count = self.offsets[split][-1]
@@ -301,11 +321,13 @@ class TokenCache:
             targets[row, : len(values) - 1] = values[1:]
         return transfer_batch(inputs, targets, device)
 
-    def validation_subset(self, config: Config, should_stop=None):
+    def validation_subset(
+        self, config: Config, should_stop: Callable[[], bool] | None = None
+    ) -> tuple[TokenArray, IndexArray]:
         """Collect the fixed subset in one sequential scan, retaining only its tokens."""
         length = config.model.context_length
         key = (length, config.evaluation.seed, config.evaluation.subset_blocks)
-        if key == self._subset_key:
+        if key == self._subset_key and self._subset is not None:
             return self._subset
         indices = validation_indices(self, config, full=False)
         tokens = np.zeros((len(indices), length + 1), dtype="<u2")
@@ -329,14 +351,14 @@ class TokenCache:
         return self._subset
 
 
-def transfer_batch(inputs: np.ndarray, targets: np.ndarray, device: torch.device):
+def transfer_batch(inputs: IndexArray, targets: IndexArray, device: torch.device) -> Batch:
     result = [torch.from_numpy(values) for values in (inputs, targets)]
     if device.type == "cuda":
         result = [values.pin_memory() for values in result]
-    return tuple(values.to(device, non_blocking=True) for values in result)
+    return result[0].to(device, non_blocking=True), result[1].to(device, non_blocking=True)
 
 
-def subset_batch(tokens, valid, device: torch.device):
+def subset_batch(tokens: TokenArray, valid: IndexArray, device: torch.device) -> Batch:
     inputs, targets = tokens[:, :-1].astype(np.int64), tokens[:, 1:].astype(np.int64)
     mask = np.arange(targets.shape[1])[None, :] >= valid[:, None]
     inputs[mask], targets[mask] = 0, -100
@@ -348,6 +370,15 @@ def buffer_blocks(size_mib: float, length: int) -> int:
     if capacity < 1:
         raise ValueError("buffer must hold at least one uint16 sequence")
     return capacity
+
+
+class TokenSource(Protocol):
+    manifest: CacheManifest
+    offsets: dict[str, list[int]]
+
+    def blocks(self, split: str, length: int, partial: bool = False) -> int: ...
+
+    def read_into(self, split: str, start: int, stop: int, destination: TokenArray) -> None: ...
 
 
 class BufferedTokenLoader:
@@ -362,7 +393,7 @@ class BufferedTokenLoader:
 
     def __init__(
         self,
-        cache: TokenCache,
+        cache: TokenSource,
         split: str,
         length: int,
         blocks: int,
@@ -385,7 +416,7 @@ class BufferedTokenLoader:
         sizes = np.minimum(self.capacity, blocks - self.order * self.capacity)
         self.ends = np.cumsum(sizes)
         self.range_position = int(np.searchsorted(self.ends, cursor, side="right"))
-        self.identity = dict(
+        self.identity: LoaderIdentity = LoaderIdentity(
             version=self.VERSION,
             cache_identity=cache.manifest["identity"],
             split=split,
@@ -395,14 +426,14 @@ class BufferedTokenLoader:
             seed=seed,
         )
         self.prefetch = prefetch
-        self._executor = None
-        self._future = None
-        self._active = None
-        self._windows = None
-        self._row_order = None
+        self._executor: ThreadPoolExecutor | None = None
+        self._future: Future[TokenArray] | None = None
+        self._active: TokenArray | None = None
+        self._windows: TokenArray | None = None
+        self._row_order: IndexArray | None = None
         self._closed = False
 
-    def _load(self, position: int):
+    def _load(self, position: int) -> TokenArray:
         first = int(self.order[position]) * self.capacity
         end = min(self.blocks, first + self.capacity)
         values = np.empty((end - first) * self.length + 1, dtype="<u2")
@@ -411,7 +442,7 @@ class BufferedTokenLoader:
         values[stop - first * self.length :] = 0
         return values
 
-    def _activate(self):
+    def _activate(self) -> tuple[TokenArray, IndexArray]:
         # Release all views before promoting the future and scheduling another read.
         self._windows = self._active = self._row_order = None
         if self._future is None:
@@ -438,7 +469,9 @@ class BufferedTokenLoader:
                 )
             self._future = self._executor.submit(self._load, self.range_position + 1)
 
-    def next_batch(self, count: int, device: torch.device):
+        return self._windows, self._row_order
+
+    def next_batch(self, count: int, device: torch.device) -> Batch:
         if self._closed:
             raise RuntimeError("loader is closed")
         if count <= 0 or self.cursor + count > self.blocks:
@@ -447,17 +480,19 @@ class BufferedTokenLoader:
         targets = np.empty_like(inputs)
         filled = 0
         while filled < count:
-            if self._active is None:
-                self._activate()
+            if self._windows is None or self._row_order is None:
+                windows, row_order = self._activate()
+            else:
+                windows, row_order = self._windows, self._row_order
             start = int(self.ends[self.range_position - 1]) if self.range_position else 0
             offset = self.cursor - start
             take = min(count - filled, int(self.ends[self.range_position]) - self.cursor)
-            rows = self._row_order[offset : offset + take]
-            values = self._windows[rows]  # Only this microbatch is gathered/copied.
+            rows = row_order[offset : offset + take]
+            values = windows[rows]  # Only this microbatch is gathered/copied.
             inputs[filled : filled + take] = values[:, :-1]
             targets[filled : filled + take] = values[:, 1:]
             first = int(self.order[self.range_position]) * self.capacity
-            if (first + len(self._row_order)) * self.length >= self.cache.offsets[self.split][-1]:
+            if (first + len(row_order)) * self.length >= self.cache.offsets[self.split][-1]:
                 valid = self.cache.offsets[self.split][-1] - 1 - (first + rows) * self.length
                 mask = np.arange(self.length)[None, :] >= valid[:, None]
                 inputs[filled : filled + take][mask] = 0
@@ -467,19 +502,20 @@ class BufferedTokenLoader:
             if self.cursor == self.ends[self.range_position]:
                 self.range_position += 1
                 self._windows = self._active = self._row_order = None
+            del windows, row_order
         return transfer_batch(inputs, targets, device)
 
-    def state_dict(self, committed_cursor: int | None = None):
+    def state_dict(self, committed_cursor: int | None = None) -> LoaderState:
         cursor = self.cursor if committed_cursor is None else committed_cursor
         if not 0 <= cursor <= self.cursor:
             raise ValueError("committed cursor is ahead of the loader")
-        return self.identity | {"cursor": cursor}
+        return LoaderState(**self.identity, cursor=cursor)
 
-    def validate_state(self, state: dict):
+    def validate_state(self, state: LoaderState) -> None:
         if state != self.state_dict():
             raise ValueError("incompatible buffered loader state")
 
-    def close(self):
+    def close(self) -> None:
         if self._executor is not None:
             self._executor.shutdown(wait=True, cancel_futures=True)
             self._executor = None
@@ -493,7 +529,7 @@ class BufferedTokenLoader:
         self.close()
 
 
-def validation_indices(cache: TokenCache, config: Config, full: bool):
+def validation_indices(cache: TokenCache, config: Config, full: bool) -> IndexArray:
     length = config.model.context_length
     if full:
         return np.arange(cache.blocks("validation", length, partial=True))

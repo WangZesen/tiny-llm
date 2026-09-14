@@ -46,14 +46,14 @@ uv run tiny-llm plot-analysis --output runs/20m/analysis
 
 Analysis reads `training.micro_batch_size` from `resolved.yaml` for mean and sampled
 gradients, preserving the effective optimizer batch and accumulation, including
-shortened boundary batches. `--hvp-batch-size N` independently increases curvature
+ordinary microbatch remainders. `--hvp-batch-size N` independently increases curvature
 batches without changing the noise samples or full-epoch Hessian. It defaults to
 the training microbatch size; neither size is silently reduced on allocation failure. Packed runs use the
 averaged model and reconstruct each worker's interleaved local batches. Only root
 checkpoints are accepted. Identical parameter states are hashed and measured once;
 the manifest and CSV retain each checkpoint filename and training position.
 
-The default analyzes both `seen` (exact replay of epoch 1) and `unseen` (one nominal
+The default analyzes both `seen` (exact replay of epoch 1) and `unseen` (one batch-aligned
 epoch immediately after the entire configured training budget). These are virtual
 epochs in a single token stream, not repeated dataset sweeps. Unseen blocks lie
 outside the physical training prefix and are shuffled independently; extending

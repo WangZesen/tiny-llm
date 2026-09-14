@@ -1,7 +1,8 @@
 """Llama blocks with a shared state dict and an explicit second-order path."""
 
 import math
-from typing import Literal
+from collections.abc import Callable, Iterable
+from typing import Literal, Self, cast
 
 import torch
 from torch import Tensor, nn
@@ -38,6 +39,9 @@ def rotary(x: Tensor, theta: float) -> Tensor:
 
 
 class Attention(nn.Module):
+    _rope_cos: Tensor
+    _rope_sin: Tensor
+
     def __init__(self, config: ModelConfig, backend: str):
         super().__init__()
         self.heads = config.heads
@@ -53,7 +57,7 @@ class Attention(nn.Module):
         self.register_buffer("_rope_sin", torch.empty(0), persistent=False)
         self._refresh_rope()
 
-    def _refresh_rope(self):
+    def _refresh_rope(self) -> None:
         """Cache constants on the weight device, outside compiled forward graphs."""
         device = self.q_proj.weight.device
         frequency = self.theta ** (
@@ -65,14 +69,14 @@ class Attention(nn.Module):
         )
         self._rope_cos, self._rope_sin = angle.cos(), angle.sin()
 
-    def _apply(self, fn, recurse=True):
+    def _apply(self, fn: Callable[[Tensor], Tensor], recurse: bool = True) -> Self:
         super()._apply(fn, recurse=recurse)
         # Rebuild after dtype/device changes; casting a BF16 cache back to FP32
         # would otherwise retain quantized angles. Caches are never serialized.
         self._refresh_rope()
         return self
 
-    def _rotary(self, x):
+    def _rotary(self, x: Tensor) -> Tensor:
         if self.backend == "reference" or x.dtype == torch.float64:
             return rotary(x, self.theta)
         length = x.shape[-2]
@@ -140,13 +144,13 @@ class Llama(nn.Module):
         self.norm = RMSNorm(config.width, config.norm_eps)
         # F.linear with embedding.weight is an actual tie, not two serialized aliases.
         self.apply(self._initialize)
-        for block in self.blocks:
+        for block in cast(Iterable[Block], self.blocks):
             for projection in (block.attention.out_proj, block.ffn.down_proj):
                 nn.init.normal_(
                     projection.weight, std=config.init_std / math.sqrt(2 * config.layers)
                 )
 
-    def _initialize(self, module: nn.Module):
+    def _initialize(self, module: nn.Module) -> None:
         if isinstance(module, (nn.Linear, nn.Embedding)):
             nn.init.normal_(module.weight, std=self.config.init_std)
 
@@ -154,7 +158,7 @@ class Llama(nn.Module):
         if input_ids.ndim != 2 or input_ids.shape[1] > self.config.context_length:
             raise ValueError("input_ids must have shape [batch, length <= context_length]")
         x = self.embedding(input_ids)
-        for block in self.blocks:
+        for block in cast(Iterable[Block], self.blocks):
             x = block(x)
         return F.linear(self.norm(x), self.embedding.weight)
 

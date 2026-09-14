@@ -7,18 +7,30 @@ import platform
 import random
 import subprocess
 import sys
+from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
+from typing import Literal, Protocol, cast
 
 import numpy as np
 import torch
 from loguru import logger
+from torch import Tensor
 
 from tiny_llm.config import Config
+from tiny_llm.state import RNGState
 
 
-def clip_grad_norm_(parameters, maximum: float | None):
+class PrecisionBackend(Protocol):
+    fp32_precision: str
+
+
+# PyTorch installs this property dynamically on its backends module.
+precision_backend = cast(PrecisionBackend, torch.backends)
+
+
+def clip_grad_norm_(parameters: Iterable[Tensor], maximum: float | None) -> Tensor:
     """Return the gradient norm and reject nonfinite values; null disables scaling."""
     if maximum is None:
         return torch.nn.utils.get_total_norm(
@@ -67,7 +79,7 @@ def setup_runtime(config: Config) -> torch.device:
     return device
 
 
-def actual_backend(config: Config) -> str:
+def actual_backend(config: Config) -> Literal["sdpa", "reference"]:
     return "reference" if config.runtime.deterministic else config.runtime.attention_backend
 
 
@@ -92,16 +104,16 @@ def attention_kernels(model, config: Config, device: torch.device) -> list[str]:
     return sorted({event.key for event in profile.key_averages() if "attention" in event.key})
 
 
-def rng_state() -> dict:
-    return dict(
+def rng_state() -> RNGState:
+    return RNGState(
         python=random.getstate(),
-        numpy=np.random.get_state(),
+        numpy=np.random.get_state(legacy=True),
         torch=torch.get_rng_state(),
         cuda=torch.cuda.get_rng_state_all() if torch.cuda.is_initialized() else None,
     )
 
 
-def restore_rng(state: dict):
+def restore_rng(state: RNGState) -> None:
     random.setstate(state["python"])
     np.random.set_state(state["numpy"])
     torch.set_rng_state(state["torch"].cpu())
@@ -112,7 +124,7 @@ def restore_rng(state: dict):
 
 
 @contextmanager
-def preserve_rng():
+def preserve_rng() -> Iterator[None]:
     state = rng_state()
     try:
         yield
@@ -120,7 +132,7 @@ def preserve_rng():
         restore_rng(state)
 
 
-def atomic_json(path: Path, value):
+def atomic_json(path: Path, value: object) -> None:
     temporary = path.with_name(path.name + ".tmp")
     with temporary.open("w") as handle:
         json.dump(value, handle, indent=2, allow_nan=False)
@@ -130,7 +142,7 @@ def atomic_json(path: Path, value):
     temporary.replace(path)
 
 
-def atomic_checkpoint(path: Path, value):
+def atomic_checkpoint(path: Path, value: object) -> None:
     temporary = path.with_name(path.name + ".tmp")
     with temporary.open("wb") as handle:
         torch.save(value, handle)
@@ -139,7 +151,7 @@ def atomic_checkpoint(path: Path, value):
     temporary.replace(path)
 
 
-def append_metric(path: Path, value):
+def append_metric(path: Path, value: object) -> None:
     with path.open("a") as handle:
         handle.write(json.dumps(value, allow_nan=False) + "\n")
 

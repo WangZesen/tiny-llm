@@ -4,6 +4,7 @@ import json
 import subprocess
 import sys
 import time
+from collections.abc import Sequence
 from pathlib import Path
 
 import torch
@@ -11,6 +12,7 @@ import torch
 from tiny_llm.config import Config, save_config
 from tiny_llm.model import Llama
 from tiny_llm.packed import PackedLlama
+from tiny_llm.packed_optimizer import PackedAdamW
 from tiny_llm.runtime import (
     actual_backend,
     atomic_json,
@@ -32,6 +34,7 @@ def benchmark_packed_worker(
         raise ValueError("benchmark requires decentralized config and packed/sequential execution")
     if warmup < 1 or steps < 1:
         raise ValueError("warmup and steps must be positive")
+    decentralized = config.decentralized
     device = setup_runtime(config)
     n, batch, length = (
         config.decentralized.num_models,
@@ -39,6 +42,7 @@ def benchmark_packed_worker(
         config.model.context_length,
     )
     packed = PackedLlama(config.model, n, actual_backend(config)).to(device)
+    models: list[Llama | PackedLlama]
     if execution == "packed":
         models = [packed]
     else:
@@ -73,7 +77,9 @@ def benchmark_packed_worker(
 
     def clip():
         if execution == "packed":
-            optimizers[0].clip_grad_norm_(config.optimizer.grad_clip)
+            optimizer = optimizers[0]
+            assert isinstance(optimizer, PackedAdamW)
+            optimizer.clip_grad_norm_(config.optimizer.grad_clip)
         else:
             for model in models:
                 clip_grad_norm_(model.parameters(), config.optimizer.grad_clip)
@@ -83,19 +89,20 @@ def benchmark_packed_worker(
             optimizer.step()
 
     def combine(step):
-        packed.mix_(config.decentralized.topology, step)
+        packed.mix_(decentralized.topology, step)
 
     def update_operations(step):
         operations = (("mixing", lambda: combine(step)), ("optimizer", update))
-        return operations if config.decentralized.scheme == "awc" else operations[::-1]
+        return operations if decentralized.scheme == "awc" else operations[::-1]
 
     def synchronize():
         if device.type == "cuda":
             torch.cuda.synchronize(device)
 
+    value: torch.Tensor | None = None
     start = time.monotonic()
     for step in range(warmup):
-        compute()
+        value = compute()
         clip()
         for _, operation in update_operations(step):
             operation()
@@ -112,6 +119,7 @@ def benchmark_packed_worker(
     synchronize()
     elapsed = time.monotonic() - start
     peak = torch.cuda.max_memory_allocated(device) if device.type == "cuda" else 0
+    assert value is not None
     if not torch.isfinite(value).item():
         raise FloatingPointError("benchmark produced nonfinite loss")
 
@@ -149,8 +157,8 @@ def benchmark_packed_worker(
         synthetic=True,
         execution=execution,
         num_models=n,
-        topology=config.decentralized.topology,
-        scheme=config.decentralized.scheme,
+        topology=decentralized.topology,
+        scheme=decentralized.scheme,
         global_batch_tokens=config.training.batch_tokens,
         local_micro_batch_size=batch,
         steps=steps,
@@ -168,7 +176,11 @@ def benchmark_packed_worker(
 
 
 def benchmark_packed(
-    config: Config, output: Path, num_models: list[int] = (4, 8), warmup: int = 3, steps: int = 8
+    config: Config,
+    output: Path,
+    num_models: Sequence[int] = (4, 8),
+    warmup: int = 3,
+    steps: int = 8,
 ) -> dict:
     if config.decentralized and config.decentralized.adaptive_consensus is not None:
         raise ValueError("adaptive consensus is supported by training only, not packed benchmarks")

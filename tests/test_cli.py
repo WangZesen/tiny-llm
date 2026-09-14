@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from tiny_llm.cli import build_parser, main
-from tiny_llm.config import PRESETS, save_config
+from tiny_llm.config import PRESETS, Config, save_config
 
 
 @pytest.mark.parametrize(
@@ -55,7 +55,15 @@ def test_benchmark_defaults(command, extra, warmup, steps):
         ),
     ],
 )
-def test_benchmark_dispatch(tiny_config, tmp_path, monkeypatch, command, function, extra, expected):
+def test_benchmark_dispatch(
+    tiny_config: Config,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    command,
+    function,
+    extra,
+    expected,
+):
     import tiny_llm.benchmark as ordinary
     import tiny_llm.packed_benchmark as packed
 
@@ -73,7 +81,7 @@ def test_benchmark_dispatch(tiny_config, tmp_path, monkeypatch, command, functio
     assert kwargs == dict(warmup=5, steps=7, **expected)
 
 
-def test_all_presets_dispatch(tiny_config, tmp_path, monkeypatch):
+def test_all_presets_dispatch(tiny_config: Config, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     import tiny_llm.benchmark as module
 
     calls = []
@@ -92,7 +100,9 @@ def test_all_presets_dispatch(tiny_config, tmp_path, monkeypatch):
     assert len({id(args[0]) for args, _ in calls}) == len(PRESETS)
 
 
-def test_tuner_dispatch_and_conflict(tiny_config, tmp_path, monkeypatch):
+def test_tuner_dispatch_and_conflict(
+    tiny_config: Config, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     import tiny_llm.benchmark as module
 
     calls = []

@@ -81,7 +81,7 @@ the comparisons and the limits of the 90M selection.
 
 ```bash
 uv run tiny-llm sweep --config configs/20m.yaml \
-  --set training.checkpoint_policy=all \
+  --set training.checkpoint_policy=interval \
   --benchmarks runs/benchmarks --output runs/campaign-buffered --gpus 0,1
 uv run tiny-llm report --runs runs/campaign-buffered
 ```

@@ -1,12 +1,16 @@
+from pathlib import Path
+
 import pytest
 import torch
+from helpers import set_budget
 
 from tiny_llm.analysis import hessian_quadratic, rademacher
 from tiny_llm.analysis.core import QuadraticKernel, consensus_directions
+from tiny_llm.config import Config
 from tiny_llm.model import Llama
 
 
-def test_functional_quadratic_and_padding(tiny_config):
+def test_functional_quadratic_and_padding(tiny_config: Config):
     torch.manual_seed(19)
     model = Llama(tiny_config.model, "reference").double()
     x, y = torch.randint(17, (3, 4)), torch.randint(17, (3, 4))
@@ -24,14 +28,15 @@ def test_functional_quadratic_and_padding(tiny_config):
     assert kernel(x, y, direction).item() / 11 == pytest.approx(expected, rel=1e-9, abs=1e-9)
 
 
-def test_independent_hvp_batches_preserve_statistics(tiny_config, cache_dir):
+def test_independent_hvp_batches_preserve_statistics(tiny_config: Config, cache_dir: Path):
     from dataclasses import replace
 
     from tiny_llm.analysis import AnalysisOptions, EpochData, measure
     from tiny_llm.data import TokenCache
 
     cfg = tiny_config
-    cfg.training.epoch_tokens = 28  # Uneven end: 7 blocks, split as 5 + 2 for curvature.
+    cfg.training.batch_tokens = 28
+    set_budget(cfg, 56, 28)  # Seven blocks; uneven microbatches and curvature padding.
     model = Llama(cfg.model, "reference").double()
     data = EpochData(TokenCache(cache_dir), cfg, "seen")
     opts = AnalysisOptions(device="cpu", dtype="float64", noise_samples=2, random_samples=2)
@@ -44,7 +49,7 @@ def test_independent_hvp_batches_preserve_statistics(tiny_config, cache_dir):
         return inner(x, y, direction)
 
     candidate = measure(model, data, replace(opts, hvp_batch_size=5), torch.device("cpu"), kernel)
-    assert sizes == [5, 2] * 4
+    assert sizes == [5, 2] * 3  # One full-batch noise sample plus two random directions.
     for name, value in baseline["statistics"].items():
         assert candidate["statistics"][name] == pytest.approx(value, rel=1e-9, abs=1e-9)
     assert [sample["batch"] for sample in baseline["noise"]] == [
@@ -56,7 +61,7 @@ def test_independent_hvp_batches_preserve_statistics(tiny_config, cache_dir):
 
 @pytest.mark.cuda
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA required")
-def test_compiled_cuda_tf32_against_ieee(tiny_config):
+def test_compiled_cuda_tf32_against_ieee(tiny_config: Config):
     from dataclasses import replace
 
     from tiny_llm.analysis import AnalysisOptions, analysis_runtime, gradient
@@ -86,7 +91,7 @@ def test_compiled_cuda_tf32_against_ieee(tiny_config):
 
 @pytest.mark.cuda
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA required")
-def test_bf16_amp_functional_hvp(tiny_config):
+def test_bf16_amp_functional_hvp(tiny_config: Config):
     device = "cuda"
     from tiny_llm.analysis import AnalysisOptions, AutocastModel, analysis_runtime, gradient
 

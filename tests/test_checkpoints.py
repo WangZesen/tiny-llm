@@ -1,44 +1,118 @@
 import copy
 import json
+import os
+import signal
+from pathlib import Path
 
-import numpy as np
 import pytest
 import torch
+from helpers import assert_nested_equal, set_budget
 
 from tiny_llm.analysis import load_checkpoint
 from tiny_llm.analysis.core import result_key
-from tiny_llm.checkpoints import file_hash, load_training_checkpoint, save_epoch_checkpoint
+from tiny_llm.checkpoints import load_training_checkpoint, save_epoch_checkpoint
 from tiny_llm.config import Config
-from tiny_llm.data import TokenCache
+from tiny_llm.data import TokenCache, file_digest
 from tiny_llm.packed import PackedLlama
 from tiny_llm.packed_optimizer import PackedAdamW
 from tiny_llm.runtime import rng_state
 from tiny_llm.train import evaluate_checkpoint, recipe_identity, train
 
 
-def assert_equal(a, b):
-    if isinstance(a, torch.Tensor):
-        assert torch.equal(a.cpu(), b.cpu())
-    elif isinstance(a, np.ndarray):
-        np.testing.assert_array_equal(a, b)
-    elif isinstance(a, dict):
-        assert a.keys() == b.keys()
-        for key in a:
-            assert_equal(a[key], b[key])
-    elif isinstance(a, (list, tuple)):
-        assert len(a) == len(b)
-        for x, y in zip(a, b, strict=True):
-            assert_equal(x, y)
+@pytest.mark.parametrize("workers", [1, 4])
+@pytest.mark.parametrize(
+    "policy,epochs,selected",
+    [
+        ("interval", [2], {2, 4}),
+        ("explicit", [1, 3], {1, 3}),
+    ],
+)
+@pytest.mark.parametrize("training_state", [False, True])
+def test_scheduled_artifacts(
+    tiny_config: Config,
+    cache_dir: Path,
+    workers: int,
+    policy: str,
+    epochs: list[int],
+    selected: set[int],
+    training_state: bool,
+) -> None:
+    set_budget(tiny_config, 128, 32)
+    raw = tiny_config.model_dump()
+    raw["training"].update(
+        checkpoint_policy=policy,
+        checkpoint_epochs=epochs,
+        save_epoch_training_state=training_state,
+        micro_batch_size=1,
+    )
+    if workers > 1:
+        raw["decentralized"] = {"num_models": workers}
+    config = Config.model_validate(raw)
+    train(config)
+    output = config.runtime.output_dir
+    expected_weights = {f"epoch-{epoch:03d}.safetensors" for epoch in selected}
+    assert {path.name for path in output.glob("*.safetensors")} == expected_weights
+    expected_states = {f"epoch-{epoch:03d}.pt" for epoch in selected} if training_state else set()
+    assert {path.name for path in output.glob("*.pt")} == expected_states | {"final.pt"}
+    for worker in range(workers if workers > 1 else 0):
+        directory = output / f"node-{worker:03d}"
+        assert {path.name for path in directory.glob("*.safetensors")} == expected_weights
+        assert {path.name for path in directory.glob("*.pt")} == expected_states
+    best = json.loads((output / "best.json").read_text())
+    assert best["weights"] == (
+        f"epoch-{best['epoch']:03d}.safetensors" if best["epoch"] in selected else None
+    )
+    events = [json.loads(line) for line in (output / "metrics.jsonl").read_text().splitlines()]
+    assert [row["epoch"] for row in events if row["event"] == "validation"] == [1, 2, 3, 4]
+
+
+@pytest.mark.parametrize("during", ["training", "evaluation"])
+def test_interruption_keeps_only_committed_epochs(
+    tiny_config: Config, cache_dir: Path, monkeypatch: pytest.MonkeyPatch, during: str
+) -> None:
+    import tiny_llm.train as module
+
+    tiny_config.training.checkpoint_policy = "interval"
+    if during == "training":
+        original = module.optimizer_update
+        calls = 0
+
+        def update(*args, **kwargs):
+            nonlocal calls
+            result = original(*args, **kwargs)
+            calls += 1
+            if calls == 3:
+                os.kill(os.getpid(), signal.SIGTERM)
+            return result
+
+        monkeypatch.setattr(module, "optimizer_update", update)
     else:
-        assert a == b
+        original_evaluate = module.evaluate
+        evaluations = 0
+
+        def evaluate(*args, **kwargs):
+            nonlocal evaluations
+            evaluations += 1
+            if evaluations == 2:
+                os.kill(os.getpid(), signal.SIGTERM)
+            return original_evaluate(*args, **kwargs)
+
+        monkeypatch.setattr(module, "evaluate", evaluate)
+    assert train(tiny_config)["status"] == "interrupted"
+    output = tiny_config.runtime.output_dir
+    assert {path.name for path in output.glob("*.pt")} == {"epoch-001.pt"}
+    assert {path.name for path in output.glob("*.safetensors")} == {"epoch-001.safetensors"}
 
 
 @pytest.fixture
-def packed_epoch(tiny_config, cache_dir):
+def packed_epoch(tiny_config: Config, cache_dir: Path):
     raw = tiny_config.model_dump()
     raw["decentralized"] = dict(num_models=4, topology="one_peer_exponential")
     raw["training"].update(
-        checkpoint_policy="all", micro_batch_size=1, max_tokens=96, epoch_tokens=48
+        checkpoint_policy="interval",
+        micro_batch_size=1,
+        tokens_per_parameters=96 / 800,
+        epoch_tokens_per_parameters=48 / 800,
     )
     raw["runtime"]["deterministic"] = True
     config = Config.model_validate(raw)
@@ -47,9 +121,13 @@ def packed_epoch(tiny_config, cache_dir):
 
 
 @pytest.mark.parametrize("workers", [1, 4])
-def test_epoch_continuation_and_retention(tiny_config, cache_dir, workers):
+def test_epoch_continuation_and_retention(tiny_config: Config, cache_dir: Path, workers):
     raw = tiny_config.model_dump()
-    raw["training"].update(checkpoint_policy="all", max_tokens=96, epoch_tokens=48)
+    raw["training"].update(
+        checkpoint_policy="interval",
+        tokens_per_parameters=96 / 800,
+        epoch_tokens_per_parameters=48 / 800,
+    )
     raw["runtime"]["deterministic"] = True
     if workers > 1:
         raw["decentralized"] = dict(num_models=workers, topology="one_peer_exponential")
@@ -64,13 +142,7 @@ def test_epoch_continuation_and_retention(tiny_config, cache_dir, workers):
     assert original["cursor"] == 12 and original["step"] == 3
     assert original["best_loss"] < float("inf")
     expected = load_training_checkpoint(output / "final.pt")
-    # Omitting the new field is compatible with historical checkpoints/configuration.
-    legacy = copy.deepcopy(original)
-    legacy["config"]["training"].pop("save_epoch_training_state")
-    legacy.pop("worker_files", None)
-    legacy_path = output / "legacy.pt"
-    torch.save(legacy, legacy_path)
-    branch = Config.model_validate(legacy["config"])
+    branch = Config.model_validate(original["config"])
     branch.runtime.output_dir = output.parent / "branch"
     branch.data.prefetch = False
     branch.training.save_epoch_training_state = False
@@ -88,7 +160,7 @@ def test_epoch_continuation_and_retention(tiny_config, cache_dir, workers):
         "best_loss",
         "best_epoch",
     ):
-        assert_equal(actual[key], expected[key])
+        assert_nested_equal(actual[key], expected[key])
     assert not list(branch.runtime.output_dir.glob("epoch-*.pt"))
     assert (branch.runtime.output_dir / "epoch-002.safetensors").is_file()
     events = [
@@ -96,23 +168,16 @@ def test_epoch_continuation_and_retention(tiny_config, cache_dir, workers):
         for line in (branch.runtime.output_dir / "metrics.jsonl").read_text().splitlines()
     ]
     assert {row["epoch"] for row in events if row["event"] == "train"} == {2}
-    # Analysis accepts retention changes and recognizes manifests and ordinary weights alike.
+    # Analysis accepts retention changes and reads the same epoch weights.
     branch.training.checkpoint_policy = "final"
     a, info = load_checkpoint(branch, epoch)
-    b, alias = load_checkpoint(branch, legacy_path)
+    b, alias = load_checkpoint(branch, epoch.with_suffix(".safetensors"))
     assert result_key(info) == result_key(alias)
     for x, y in zip(a.parameters(), b.parameters(), strict=True):
-        assert_equal(x, y)
+        assert_nested_equal(x, y)
     assert (
         evaluate_checkpoint(config, epoch, True)["loss"]
-        == evaluate_checkpoint(config, legacy_path, True)["loss"]
-    )
-    legacy_branch = branch.model_copy(deep=True)
-    legacy_branch.runtime.output_dir = output.parent / "legacy-branch"
-    train(legacy_branch, legacy_path)
-    assert_equal(
-        load_training_checkpoint(legacy_branch.runtime.output_dir / "final.pt")["optimizer"],
-        expected["optimizer"],
+        == evaluate_checkpoint(config, epoch.with_suffix(".safetensors"), True)["loss"]
     )
     before = epoch.read_bytes()
     with pytest.raises(ValueError, match="committed epoch"):
@@ -128,14 +193,14 @@ def test_worker_files_compact_and_validated(packed_epoch):
     assert len(root["workers"]) == 4
     before = rng_state()
     combined = load_training_checkpoint(path)
-    assert_equal(before, rng_state())
+    assert_nested_equal(before, rng_state())
     model = PackedLlama(config.model, 4)
     model.load_packed_state_dict(combined["model"])
     for member in root["workers"]:
         local_path = path.parent / member["path"]
         local = torch.load(local_path, weights_only=False)
         assert local["worker"] == member["worker"]
-        assert_equal(local["model"], model.local_state_dict(member["worker"]))
+        assert_nested_equal(local["model"], model.local_state_dict(member["worker"]))
         for entry in model.layout:
             for tensor in (
                 local["model"][entry.name],
@@ -184,16 +249,16 @@ def test_worker_files_compact_and_validated(packed_epoch):
                 broken["optimizer"]["state"][name]["exp_avg_sq"].fill_(float("nan"))
             torch.save(broken, worker_path)
         if damage not in ("missing", "truncated"):
-            manifest["workers"][0]["sha256"] = file_hash(worker_path)
+            manifest["workers"][0]["sha256"] = file_digest(worker_path)
         torch.save(manifest, path)
         with pytest.raises((ValueError, FileNotFoundError)):
             load_training_checkpoint(path)
         worker_path.write_bytes(original)
         torch.save(root, path)
-    assert_equal(load_training_checkpoint(path)["optimizer"], combined["optimizer"])
+    assert_nested_equal(load_training_checkpoint(path)["optimizer"], combined["optimizer"])
 
 
-def test_interrupted_worker_export_and_immutability(packed_epoch, monkeypatch):
+def test_interrupted_worker_export_and_immutability(packed_epoch, monkeypatch: pytest.MonkeyPatch):
     import tiny_llm.checkpoints as checkpoints
 
     config, original = packed_epoch
@@ -222,6 +287,6 @@ def test_interrupted_worker_export_and_immutability(packed_epoch, monkeypatch):
     assert (directory / "node-000" / path.name).exists()
     monkeypatch.setattr(checkpoints, "atomic_checkpoint", real_save)
     save_epoch_checkpoint(path, state, model, optimizer)
-    assert_equal(load_training_checkpoint(path)["optimizer"], state["optimizer"])
+    assert_nested_equal(load_training_checkpoint(path)["optimizer"], state["optimizer"])
     with pytest.raises(ValueError, match="committed epoch"):
         save_epoch_checkpoint(path, state, model, optimizer)

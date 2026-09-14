@@ -155,7 +155,7 @@ Evaluation first snapshots the global parameter mean into an ordinary Llama.
 The snapshot uses FP32 averaging and the global evaluation batch size. It never
 changes local training states. Selection and reported validation losses concern
 this averaged model, whose ordinary-format weights are exported each epoch only with
-`training.checkpoint_policy: all`. The default policy `final` saves only `final.pt`.
+`training.checkpoint_policy: interval`. The default policy `final` saves only `final.pt`.
 
 See the [SLURM launcher setup](../guides/slurm.md#slurm-jobs) for submission on the
 aarch64 GPU nodes, automatic CPU allocation, and console logs. `benchmark-packed`

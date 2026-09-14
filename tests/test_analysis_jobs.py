@@ -2,14 +2,16 @@ import copy
 import json
 import subprocess
 from dataclasses import asdict
+from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 from safetensors.torch import save_file
 
 from tiny_llm.analysis import AnalysisOptions, analyze, load_checkpoint
 from tiny_llm.analysis import slurm as jobs
-from tiny_llm.config import save_config
+from tiny_llm.config import Config, save_config
 from tiny_llm.model import Llama
 
 
@@ -23,7 +25,7 @@ def checkpoints(count=40):
         dict(name=f"epoch-{index + 1:03d}.safetensors", weights_hash=str(index), tokens=index)
         for index in range(count)
     ]
-    return rows + [dict(rows[-1], name="final.pt"), dict(rows[-1], name="latest.pt")]
+    return rows + [dict(rows[-1], name="final.pt"), dict(rows[-1], name="alias.pt")]
 
 
 def test_static_shards_aliases_and_limits(timing):
@@ -38,7 +40,7 @@ def test_static_shards_aliases_and_limits(timing):
     assert {row["name"] for row in plan["jobs"][3]["checkpoints"]} >= {
         "epoch-040.safetensors",
         "final.pt",
-        "latest.pt",
+        "alias.pt",
     }
     assert plan["estimated_gpu_hours"] * 3600 == pytest.approx(
         sum(row["estimated_seconds"] for row in plan["jobs"])
@@ -61,7 +63,7 @@ def test_static_shards_aliases_and_limits(timing):
     assert [row["name"] for row in split["jobs"][0]["checkpoints"]] == ["one", "alias"]
 
 
-def test_measured_profile_and_explicit_walltime(tiny_config):
+def test_measured_profile_and_explicit_walltime(tiny_config: Config):
     from dataclasses import replace
 
     from tiny_llm.config import PRESETS, Config, ModelConfig
@@ -72,10 +74,12 @@ def test_measured_profile_and_explicit_walltime(tiny_config):
     data = [dict(blocks=9963, available_noise_batches=312)] * 2
     options = AnalysisOptions(device="cuda", amp=True, hvp_batch_size=64)
     timing = jobs.measured_timing(cfg, data, options)
+    assert timing is not None
     assert timing["checkpoint_seconds"] == pytest.approx(4293.6)
     assert jobs.measured_timing(cfg, data, replace(options, amp=False)) is None
     assert jobs.measured_timing(tiny_config, data, options) is None
     all_samples = jobs.measured_timing(cfg, data, replace(options, noise_samples="all"))
+    assert all_samples is not None
     assert all_samples["checkpoint_seconds"] > timing["checkpoint_seconds"]
     with pytest.raises(ValueError, match="provide --walltime-hours"):
         jobs.plan_shards(checkpoints(), 4, None)
@@ -88,7 +92,13 @@ def test_measured_profile_and_explicit_walltime(tiny_config):
 
 
 @pytest.fixture
-def saved_shards(tmp_path, tiny_config, cache_dir, monkeypatch, request):
+def saved_shards(
+    tmp_path: Path,
+    tiny_config: Config,
+    cache_dir: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    request: pytest.FixtureRequest,
+):
     import tiny_llm.analysis.core as analysis
     from tiny_llm.config import DecentralizedConfig
     from tiny_llm.packed import PackedLlama
@@ -129,15 +139,13 @@ def saved_shards(tmp_path, tiny_config, cache_dir, monkeypatch, request):
     root = tmp_path / "campaign"
     root.mkdir()
     shards = []
+    from tiny_llm.analysis import EpochData, summarize
+    from tiny_llm.data import TokenCache
+
+    data = [EpochData(TokenCache(cache_dir), cfg, case).metadata() for case in ("seen", "unseen")]
     for index, info in enumerate(infos):
         output = root / "shards" / str(index)
-        from tiny_llm.analysis import EpochData, summarize
-        from tiny_llm.data import TokenCache
-
         output.mkdir(parents=True)
-        data = [
-            EpochData(TokenCache(cache_dir), cfg, case).metadata() for case in ("seen", "unseen")
-        ]
         manifest = dict(
             identity="fixture",
             run=str(run),
@@ -151,7 +159,7 @@ def saved_shards(tmp_path, tiny_config, cache_dir, monkeypatch, request):
         for row in data:
             noise = [dict(batch_index=0, quadratic=1.0, noise_norm_squared=1.0, gradient_norm=2.0)]
             random = [dict(index=0, quadratic=2.0)]
-            result = dict(
+            result: dict[str, Any] = dict(
                 identity="fixture",
                 weights_hash=info["weights_hash"],
                 case=row["case"],
@@ -192,7 +200,7 @@ def saved_shards(tmp_path, tiny_config, cache_dir, monkeypatch, request):
         output=str(root),
         options=asdict(options),
         jobs=shards,
-        data=manifest["data"],
+        data=data,
         micro_batch_size=cfg.training.micro_batch_size,
         source_hash=source_hash,
         source_snapshot=str(root / "source"),
@@ -201,7 +209,9 @@ def saved_shards(tmp_path, tiny_config, cache_dir, monkeypatch, request):
 
 
 @pytest.mark.parametrize("saved_shards", [False, True], indirect=True, ids=["ordinary", "packed"])
-def test_collect_matches_serial_and_ignores_worker_provenance(saved_shards, monkeypatch):
+def test_collect_matches_serial_and_ignores_worker_provenance(
+    saved_shards, monkeypatch: pytest.MonkeyPatch
+):
     plan = saved_shards
     # Only this integration test performs actual analysis and plotting.
     for shard in plan["jobs"]:
@@ -250,7 +260,9 @@ def test_collect_matches_serial_and_ignores_worker_provenance(saved_shards, monk
 
 
 @pytest.mark.parametrize("saved_shards", [True], indirect=True)
-def test_consensus_collection_validation_and_preflight(saved_shards, monkeypatch):
+def test_consensus_collection_validation_and_preflight(
+    saved_shards, monkeypatch: pytest.MonkeyPatch
+):
     from tiny_llm.analysis import slurm
 
     plan = saved_shards
@@ -315,7 +327,7 @@ def test_collection_rejects_incomplete_or_incompatible(saved_shards, damage):
     assert not (jobs.Path(plan["output"]) / "summary.csv").exists()
 
 
-def test_scheduler_accounting_lag_and_step_rows(monkeypatch):
+def test_scheduler_accounting_lag_and_step_rows(monkeypatch: pytest.MonkeyPatch):
     def execute(command, **kwargs):
         if command[0] == "squeue":
             return SimpleNamespace(stdout="100|COMPLETING\n")
@@ -330,7 +342,7 @@ def test_scheduler_accounting_lag_and_step_rows(monkeypatch):
     assert states["102"]["state"] == "UNKNOWN"
 
 
-def test_waits_for_every_job_before_failure(saved_shards, monkeypatch):
+def test_waits_for_every_job_before_failure(saved_shards, monkeypatch: pytest.MonkeyPatch):
     plan = saved_shards
     calls = iter(
         [
@@ -355,7 +367,7 @@ def test_waits_for_every_job_before_failure(saved_shards, monkeypatch):
     assert not (jobs.Path(plan["output"]) / "summary.csv").exists()
 
 
-def test_wait_unknown_then_success(saved_shards, monkeypatch):
+def test_wait_unknown_then_success(saved_shards, monkeypatch: pytest.MonkeyPatch):
     plan = saved_shards
     calls = iter(
         [
@@ -373,9 +385,9 @@ def test_wait_unknown_then_success(saved_shards, monkeypatch):
     assert result["status"] == "complete"
 
 
-def test_submission_resume_and_commands(saved_shards, monkeypatch):
+def test_submission_resume_and_commands(saved_shards, monkeypatch: pytest.MonkeyPatch):
     plan = saved_shards
-    states = {
+    states: dict[str, dict[str, str | None]] = {
         "100": dict(state="COMPLETED", exit_code="0:0"),
         "101": dict(state="TIMEOUT", exit_code="0:0"),
     }
@@ -403,7 +415,7 @@ def test_submission_resume_and_commands(saved_shards, monkeypatch):
     assert len(commands) == 1  # Reattachment does not submit again.
 
 
-def test_partial_submission_and_interruption(saved_shards, monkeypatch):
+def test_partial_submission_and_interruption(saved_shards, monkeypatch: pytest.MonkeyPatch):
     plan = saved_shards
     for shard in plan["jobs"]:
         shard["attempts"] = []
@@ -434,7 +446,7 @@ def test_partial_submission_and_interruption(saved_shards, monkeypatch):
     assert len(calls) == 2  # No implicit cancellation.
 
 
-def test_uncertain_submission_is_not_duplicated(saved_shards, monkeypatch):
+def test_uncertain_submission_is_not_duplicated(saved_shards, monkeypatch: pytest.MonkeyPatch):
     plan = copy.deepcopy(saved_shards)
     for shard in plan["jobs"]:
         shard["attempts"] = []
@@ -443,7 +455,7 @@ def test_uncertain_submission_is_not_duplicated(saved_shards, monkeypatch):
         jobs.submit_pending(plan, jobs.Path(plan["output"]) / "submission.json", resume=True)
 
 
-def test_dry_run_does_not_create_outputs(tmp_path, monkeypatch):
+def test_dry_run_does_not_create_outputs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     expected = dict(jobs=[dict(index=0)])
     monkeypatch.setattr(jobs, "prepare_plan", lambda *args: expected)
     output = tmp_path / "absent"
@@ -454,7 +466,7 @@ def test_dry_run_does_not_create_outputs(tmp_path, monkeypatch):
     assert not output.exists()
 
 
-def test_resume_checks_saved_settings_and_source(saved_shards, monkeypatch):
+def test_resume_checks_saved_settings_and_source(saved_shards, monkeypatch: pytest.MonkeyPatch):
     plan = saved_shards
     root = jobs.Path(plan["output"])
     plan.update(mode="independent-single-gpu", selected=["all"], config_hash="not-current")
@@ -491,7 +503,7 @@ def test_orchestrator_lock_is_exclusive(saved_shards):
             )
 
 
-def test_repository_resolution_from_saved_source(tmp_path, monkeypatch):
+def test_repository_resolution_from_saved_source(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     import tiny_llm.analysis.slurm as module
 
     repository = tmp_path / "repo"
@@ -507,7 +519,7 @@ def test_repository_resolution_from_saved_source(tmp_path, monkeypatch):
     assert module.repository_root() == repository
 
 
-def test_recursive_source_snapshot(tmp_path):
+def test_recursive_source_snapshot(tmp_path: Path):
     package = tmp_path / "package"
     nested = package / "analysis"
     nested.mkdir(parents=True)
@@ -528,7 +540,7 @@ def test_recursive_source_snapshot(tmp_path):
 
 
 @pytest.mark.parametrize("exit_code", [0, 7])
-def test_launcher_temporary_caches_and_cleanup(tmp_path, exit_code):
+def test_launcher_temporary_caches_and_cleanup(tmp_path: Path, exit_code):
     import os
 
     setup = tmp_path / "setup.sh"

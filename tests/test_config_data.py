@@ -13,7 +13,7 @@ from tiny_llm.model import Llama
 from tiny_llm.runtime import setup_runtime
 
 
-def test_strict_overrides(tmp_path):
+def test_strict_overrides(tmp_path: Path):
     path = tmp_path / "config.yaml"
     path.write_text("optimizer:\n  lr: 0.001\n")
     config = load_config(path, ["optimizer.lr=0.003", "runtime.deterministic=false"])
@@ -40,19 +40,10 @@ def test_parameters_and_epochs(preset, expected):
     assert model.parameter_count == expected == config.model.parameter_count
     boundaries = training_boundaries(config, expected)
     assert len(boundaries) == 40
-    assert 0 <= boundaries[-1] * 1024 - 20 * expected < 1024
-    assert all(
-        abs((end - start) * 1024 - 0.5 * expected) < 1024
-        for start, end in zip([0] + boundaries[:-1], boundaries, strict=True)
-    )
+    assert abs(boundaries[-1] * 1024 - 20 * expected) <= config.training.batch_tokens / 2
+    assert all(boundary * 1024 % config.training.batch_tokens == 0 for boundary in boundaries)
     assert "embedding.weight" in model.state_dict()
     assert not any("lm_head" in key for key in model.state_dict())
-
-
-def test_boundary_rounding(tiny_config):
-    tiny_config.training.max_tokens = 67
-    tiny_config.training.epoch_tokens = 23
-    assert training_boundaries(tiny_config, 100) == [6, 12, 17]
 
 
 @pytest.mark.parametrize(
@@ -86,17 +77,12 @@ def test_packed_presets_fit_ordinary_cache(preset, packed_preset, workers):
     packed_boundaries = training_boundaries(packed, parameters)
     # A cache prepared for the ordinary preset must also cover the packed preset.
     assert packed_boundaries[-1] * length + 1 <= normal_boundaries[-1] * length + 1
-    ordinary_budget = parameters * ordinary.training.tokens_per_parameter
-    assert 0 <= ordinary_budget - packed.training.max_tokens < 8 * length
     assert len(packed_boundaries) == 40
     assert all(boundary % workers == 0 for boundary in packed_boundaries)
-    assert packed_boundaries[-1] * length == packed.training.max_tokens
-    assert (
-        0 < (packed_boundaries[-1] - packed_boundaries[-2]) * length <= packed.training.epoch_tokens
-    )
+    assert packed_boundaries == normal_boundaries
 
 
-def test_cross_shard_shift_and_partial(cache_dir, tiny_config):
+def test_cross_shard_shift_and_partial(cache_dir: Path, tiny_config: Config):
     cache = TokenCache(cache_dir)
     cache.verify()
     np.testing.assert_array_equal(cache.read("train", 8, 26), np.arange(8, 26) % 17)
@@ -113,7 +99,7 @@ def test_cross_shard_shift_and_partial(cache_dir, tiny_config):
     np.testing.assert_array_equal(first, validation_indices(cache, tiny_config, full=False))
 
 
-def test_cache_corruption(cache_dir):
+def test_cache_corruption(cache_dir: Path):
     cache = TokenCache(cache_dir)
     shard = cache_dir / cache.manifest["splits"]["train"]["shards"][0]["file"]
     with shard.open("r+b") as handle:
@@ -125,7 +111,7 @@ def test_cache_corruption(cache_dir):
         TokenCache(cache_dir)
 
 
-def test_cache_manifest_and_config(cache_dir, tiny_config):
+def test_cache_manifest_and_config(cache_dir: Path, tiny_config: Config):
     cache = TokenCache(cache_dir)
     tiny_config.data.shuffle_seed = 12
     with pytest.raises(ValueError, match="preprocessing"):
@@ -138,7 +124,7 @@ def test_cache_manifest_and_config(cache_dir, tiny_config):
         TokenCache(cache_dir)
 
 
-def test_deterministic_default_and_override(tiny_config):
+def test_deterministic_default_and_override(tiny_config: Config):
     setup_runtime(tiny_config)
     assert not torch.are_deterministic_algorithms_enabled()
     tiny_config.runtime.deterministic = True
