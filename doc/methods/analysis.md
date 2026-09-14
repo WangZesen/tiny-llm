@@ -54,11 +54,12 @@ checkpoints are accepted. Identical parameter states are hashed and measured onc
 the manifest and CSV retain each checkpoint filename and training position.
 
 The default analyzes both `seen` (exact replay of epoch 1) and `unseen` (one batch-aligned
-epoch immediately after the entire configured training budget). These are virtual
-epochs in a single token stream, not repeated dataset sweeps. Unseen blocks lie
-outside the physical training prefix and are shuffled independently; extending
-the original shuffled loader would change its permutation and is deliberately
-avoided. Adjacent blocks share the usual one-token autoregressive lookahead, but
+epoch after the final full training shuffle group). These are virtual epochs in
+a single token stream, not repeated dataset sweeps. The final group can select
+training blocks beyond the nominal budget, so unseen data starts after all of
+that group's candidate blocks. The unseen cache suffix retains physical shard
+boundaries and is shuffled with a separate seed. Its final shuffle group must
+also be available in full, even when analysis stops partway through it. Adjacent blocks share the usual one-token autoregressive lookahead, but
 their target positions are disjoint. Insufficient caches produce a preparation
 instruction rather than downloading or altering data automatically.
 

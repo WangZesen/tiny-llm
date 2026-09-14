@@ -235,7 +235,7 @@ def evaluate(
                     "validation",
                     config.model.context_length,
                     count_blocks,
-                    config.data.buffer_size_mib,
+                    config.data.shuffle_group_size,
                     prefetch=config.data.prefetch,
                 )
                 loader = full_loader
@@ -393,7 +393,7 @@ def _train(config: Config, resume: Path | None) -> dict:
         "train",
         length,
         blocks,
-        config.data.buffer_size_mib,
+        config.data.shuffle_group_size,
         seed=config.runtime.seed,
         prefetch=config.data.prefetch,
         cursor=cursor,

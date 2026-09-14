@@ -327,7 +327,7 @@ def test_training_resume(
     config.optimizer.grad_clip = grad_clip
     config.runtime.deterministic = True
     # Cross buffer boundaries inside packed steps and switch prefetch on resume.
-    config.data.buffer_size_mib = 24 / 2**20
+    config.data.shuffle_group_size = 1
     # 12-block epochs: full local batch 2, followed by local batch 1.
     set_budget(config, 128, 64)
     complete = config.model_copy(deep=True)
@@ -378,11 +378,11 @@ def test_buffered_worker_partition(
     config = decentralized_config(tiny_config, 4)
     assert config.decentralized is not None
     config.runtime.deterministic = True
-    config.data.buffer_size_mib = 24 / 2**20
+    config.data.shuffle_group_size = 1
     set_budget(config, 96, 48)
     cache = TokenCache(cache_dir)
     with BufferedTokenLoader(
-        cache, "train", 4, 24, config.data.buffer_size_mib, seed=config.runtime.seed
+        cache, "train", 4, 24, config.data.shuffle_group_size, seed=config.runtime.seed
     ) as loader:
         expected = loader.next_batch(24, torch.device("cpu"))
     original = module.loss_function
@@ -533,12 +533,12 @@ def test_cuda_bf16_and_fused_optimizer(tiny_config: Config):
                 step=1,
                 completed_epochs=1,
                 loader=LoaderState(
-                    version=1,
+                    version=2,
                     cache_identity="cuda-fixture",
                     split="train",
                     length=16,
                     blocks=8,
-                    buffer_blocks=2097152,
+                    shuffle_group_size=2,
                     seed=42,
                     cursor=4,
                 ),

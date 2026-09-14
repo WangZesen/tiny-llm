@@ -16,7 +16,7 @@ data:
   tokenizer_revision: 59f6f375b26bde864a6ca194a9a3044570490064
   shuffle_seed: 42
   shuffle_buffer: 10000
-  buffer_size_mib: 64
+  shuffle_group_size: 2
   prefetch: true
   shard_tokens: 16777216
   tokenize_batch_size: 256

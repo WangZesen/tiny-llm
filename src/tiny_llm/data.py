@@ -112,11 +112,19 @@ def prepare(config: Config) -> CacheManifest:
         or training_boundaries(config, config.model.parameter_count)[-1]
         * config.model.context_length
     )
+    length = config.model.context_length
+    required_blocks = (required + length - 1) // length
+    # Groups own sequences by their start token. Include the whole last group,
+    # align its end to a sequence boundary, and retain the lookahead token.
+    group_tokens = cfg.shuffle_group_size * cfg.shard_tokens
+    group_end = ((required_blocks - 1) * length // group_tokens + 1) * group_tokens
+    train_limit = ((group_end + length - 1) // length) * length + 1
     destination = cfg.cache_dir
     if destination.exists():
         cache = TokenCache(destination)
         cache.validate_config(config)
-        if cache.manifest["splits"]["train"]["tokens"] < required + 1:
+        groups = shuffle_groups(cache, "train", length, cfg.shuffle_group_size, complete=True)
+        if not groups or groups[-1][2] < required_blocks:
             raise ValueError("existing cache is too small; prepare a larger cache at a new path")
         if cfg.prepare_validation_tokens is None and not cache.manifest["validation_complete"]:
             raise ValueError("existing cache has truncated validation; use a new cache path")
@@ -177,7 +185,7 @@ def prepare(config: Config) -> CacheManifest:
             "splits": {},
         }
         for split, limit in (
-            ("train", required + 1),
+            ("train", train_limit),
             ("validation", cfg.prepare_validation_tokens),
         ):
             selected = [
@@ -332,12 +340,11 @@ class TokenCache:
         indices = validation_indices(self, config, full=False)
         tokens = np.zeros((len(indices), length + 1), dtype="<u2")
         valid = np.minimum(length, self.offsets["validation"][-1] - 1 - indices * length)
-        capacity = buffer_blocks(config.data.buffer_size_mib, length)
-        total = self.blocks("validation", length, partial=True)
-        for first in range(0, total, capacity):
+        for _, first, end in shuffle_groups(
+            self, "validation", length, config.data.shuffle_group_size
+        ):
             if should_stop is not None and should_stop():
                 raise InterruptedError("validation subset preparation interrupted")
-            end = min(total, first + capacity)
             values = self.read(
                 "validation", first * length, min(end * length + 1, self.offsets["validation"][-1])
             )
@@ -365,13 +372,6 @@ def subset_batch(tokens: TokenArray, valid: IndexArray, device: torch.device) ->
     return transfer_batch(inputs, targets, device)
 
 
-def buffer_blocks(size_mib: float, length: int) -> int:
-    capacity = int(size_mib * 2**20) // (2 * length)
-    if capacity < 1:
-        raise ValueError("buffer must hold at least one uint16 sequence")
-    return capacity
-
-
 class TokenSource(Protocol):
     manifest: CacheManifest
     offsets: dict[str, list[int]]
@@ -381,15 +381,41 @@ class TokenSource(Protocol):
     def read_into(self, split: str, start: int, stop: int, destination: TokenArray) -> None: ...
 
 
+def shuffle_groups(
+    cache: TokenSource, split: str, length: int, group_size: int, *, complete: bool = False
+) -> list[tuple[int, int, int]]:
+    """Return (physical group ID, first block, end block), independent of run budget.
+
+    A sequence belongs to the group containing its first token. Seeded training
+    needs every shard of a group and its aligned lookahead, so extending a cache
+    cannot change a previously usable group's permutation domain.
+    """
+    if isinstance(group_size, bool) or not isinstance(group_size, int) or group_size < 1:
+        raise ValueError("shuffle group size must be a positive integer")
+    offsets = cache.offsets[split]
+    total = cache.blocks(split, length, partial=True)
+    groups = []
+    for shard in range(0, len(offsets) - 1, group_size):
+        last = min(shard + group_size, len(offsets) - 1)
+        first = (offsets[shard] + length - 1) // length
+        end = (offsets[last] + length - 1) // length
+        if complete and (last - shard < group_size or end * length + 1 > offsets[-1]):
+            break
+        end = min(end, total)
+        if first < end:
+            groups.append((shard // group_size, first, end))
+    return groups
+
+
 class BufferedTokenLoader:
     """Fill, shuffle by row index, and drain; at most two compact token buffers.
 
-    A range contains complete original blocks plus one lookahead token (two extra
-    bytes). Range order and row permutations have independent seed namespaces.
+    Consecutive shard groups are visited in file order. Each group contains
+    original sequences plus lookahead, with a budget-independent row permutation.
     Only the committed sample cursor is needed to resume, even with prefetching.
     """
 
-    VERSION = 1
+    VERSION = 2
 
     def __init__(
         self,
@@ -397,7 +423,7 @@ class BufferedTokenLoader:
         split: str,
         length: int,
         blocks: int,
-        size_mib: float = 64,
+        group_size: int = 2,
         seed: int | None = None,
         prefetch: bool = True,
         cursor: int = 0,
@@ -406,23 +432,21 @@ class BufferedTokenLoader:
             raise ValueError("invalid buffered loader block budget or cursor")
         self.cache, self.split, self.length = cache, split, length
         self.blocks, self.cursor, self.seed = blocks, cursor, seed
-        self.capacity = buffer_blocks(size_mib, length)
-        ranges = math.ceil(blocks / self.capacity)
-        self.order = (
-            np.arange(ranges)
-            if seed is None
-            else np.random.default_rng(np.random.SeedSequence([seed, 0])).permutation(ranges)
-        )
-        sizes = np.minimum(self.capacity, blocks - self.order * self.capacity)
-        self.ends = np.cumsum(sizes)
-        self.range_position = int(np.searchsorted(self.ends, cursor, side="right"))
+        available = shuffle_groups(cache, split, length, group_size, complete=seed is not None)
+        if not available or available[-1][2] < blocks:
+            raise ValueError(
+                "cache too small for complete shuffle groups; prepare a larger cache at a new path"
+            )
+        self.groups = [group for group in available if group[1] < blocks]
+        self.ends = np.array([end for _, _, end in self.groups], dtype=np.int64)
+        self.group_position = int(np.searchsorted(self.ends, cursor, side="right"))
         self.identity: LoaderIdentity = LoaderIdentity(
             version=self.VERSION,
             cache_identity=cache.manifest["identity"],
             split=split,
             length=length,
             blocks=blocks,
-            buffer_blocks=self.capacity,
+            shuffle_group_size=group_size,
             seed=seed,
         )
         self.prefetch = prefetch
@@ -434,8 +458,7 @@ class BufferedTokenLoader:
         self._closed = False
 
     def _load(self, position: int) -> TokenArray:
-        first = int(self.order[position]) * self.capacity
-        end = min(self.blocks, first + self.capacity)
+        _, first, end = self.groups[position]
         values = np.empty((end - first) * self.length + 1, dtype="<u2")
         stop = min(end * self.length + 1, self.cache.offsets[self.split][-1])
         self.cache.read_into(self.split, first * self.length, stop, values)
@@ -446,7 +469,7 @@ class BufferedTokenLoader:
         # Release all views before promoting the future and scheduling another read.
         self._windows = self._active = self._row_order = None
         if self._future is None:
-            self._active = self._load(self.range_position)
+            self._active = self._load(self.group_position)
         else:
             self._active = self._future.result()
             self._future = None
@@ -454,20 +477,20 @@ class BufferedTokenLoader:
         self._windows = np.lib.stride_tricks.sliding_window_view(self._active, self.length + 1)[
             :: self.length
         ]
-        range_id = int(self.order[self.range_position])
+        group_id = self.groups[self.group_position][0]
         self._row_order = (
             np.arange(count)
             if self.seed is None
             else np.random.default_rng(
-                np.random.SeedSequence([self.seed, 1, range_id])
+                np.random.SeedSequence([self.seed, 1, group_id])
             ).permutation(count)
         )
-        if self.prefetch and self.range_position + 1 < len(self.order):
+        if self.prefetch and self.group_position + 1 < len(self.groups):
             if self._executor is None:
                 self._executor = ThreadPoolExecutor(
                     max_workers=1, thread_name_prefix="token-reader"
                 )
-            self._future = self._executor.submit(self._load, self.range_position + 1)
+            self._future = self._executor.submit(self._load, self.group_position + 1)
 
         return self._windows, self._row_order
 
@@ -484,14 +507,14 @@ class BufferedTokenLoader:
                 windows, row_order = self._activate()
             else:
                 windows, row_order = self._windows, self._row_order
-            start = int(self.ends[self.range_position - 1]) if self.range_position else 0
+            start = int(self.ends[self.group_position - 1]) if self.group_position else 0
             offset = self.cursor - start
-            take = min(count - filled, int(self.ends[self.range_position]) - self.cursor)
+            take = min(count - filled, int(self.ends[self.group_position]) - self.cursor)
             rows = row_order[offset : offset + take]
             values = windows[rows]  # Only this microbatch is gathered/copied.
             inputs[filled : filled + take] = values[:, :-1]
             targets[filled : filled + take] = values[:, 1:]
-            first = int(self.order[self.range_position]) * self.capacity
+            first = self.groups[self.group_position][1]
             if (first + len(row_order)) * self.length >= self.cache.offsets[self.split][-1]:
                 valid = self.cache.offsets[self.split][-1] - 1 - (first + rows) * self.length
                 mask = np.arange(self.length)[None, :] >= valid[:, None]
@@ -499,8 +522,8 @@ class BufferedTokenLoader:
                 targets[filled : filled + take][mask] = -100
             self.cursor += take
             filled += take
-            if self.cursor == self.ends[self.range_position]:
-                self.range_position += 1
+            if self.cursor == self.ends[self.group_position]:
+                self.group_position += 1
                 self._windows = self._active = self._row_order = None
             del windows, row_order
         return transfer_batch(inputs, targets, device)

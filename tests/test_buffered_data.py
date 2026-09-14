@@ -7,18 +7,33 @@ import pytest
 import torch
 
 from tiny_llm.config import Config
-from tiny_llm.data import BufferedTokenLoader, TokenCache, subset_batch, validation_indices
+from tiny_llm.data import (
+    BufferedTokenLoader,
+    TokenCache,
+    fingerprint,
+    subset_batch,
+    validation_indices,
+)
 from tiny_llm.model import Llama, token_losses
 from tiny_llm.train import evaluate, recipe_identity, train
 
 CPU = torch.device("cpu")
-# Three four-token sequences, plus a separate lookahead token.
-SIZE = 24 / 2**20
+# One physical shard per group; sequence boundaries may cross shard boundaries.
+GROUP_SIZE = 1
 
 
-def collect(cache, *, seed: int | None = 42, prefetch=True, cursor=0, count=13, batch=5):
+def collect(
+    cache,
+    *,
+    seed: int | None = 42,
+    prefetch=True,
+    cursor=0,
+    count=13,
+    batch=5,
+    group_size=GROUP_SIZE,
+):
     with BufferedTokenLoader(
-        cache, "train", 4, count, SIZE, seed=seed, prefetch=prefetch, cursor=cursor
+        cache, "train", 4, count, group_size, seed=seed, prefetch=prefetch, cursor=cursor
     ) as loader:
         pairs = []
         while loader.cursor < count:
@@ -30,13 +45,13 @@ def collect(cache, *, seed: int | None = 42, prefetch=True, cursor=0, count=13, 
 @pytest.mark.parametrize("prefetch", [False, True])
 def test_coverage_boundaries_and_seeds(cache_dir: Path, prefetch):
     cache = TokenCache(cache_dir)
-    expected = cache.batch("train", list(range(13)), 4, CPU)
+    expected = cache.batch("train", list(range(14)), 4, CPU)
     expected = list(zip(expected[0].tolist(), expected[1].tolist(), strict=True))
-    actual = collect(cache, prefetch=prefetch)
+    actual = collect(cache, prefetch=prefetch, count=14)
     assert sorted(actual) == sorted(expected)
-    assert actual == collect(cache, prefetch=not prefetch, batch=1)
-    assert actual != collect(cache, seed=43, prefetch=prefetch)
-    assert collect(cache, seed=None, prefetch=prefetch) == expected
+    assert actual == collect(cache, prefetch=not prefetch, batch=1, count=14)
+    assert actual != collect(cache, seed=43, prefetch=prefetch, count=14)
+    assert collect(cache, seed=None, prefetch=prefetch, count=14) == expected
 
 
 def test_resume_every_cursor_without_reading_previous_ranges(
@@ -55,9 +70,11 @@ def test_resume_every_cursor_without_reading_previous_ranges(
     for cursor in range(14):
         reads.clear()
         assert collect(cache, cursor=cursor, prefetch=False) == expected[cursor:]
-        with BufferedTokenLoader(cache, "train", 4, 13, SIZE, seed=42, cursor=cursor) as loader:
-            remaining = loader.order[loader.range_position :]
-            assert reads == [(int(i) * 12, min(13, (int(i) + 1) * 3) * 4 + 1) for i in remaining]
+        with BufferedTokenLoader(
+            cache, "train", 4, 13, GROUP_SIZE, seed=42, cursor=cursor
+        ) as loader:
+            remaining = loader.groups[loader.group_position :] if cursor < 13 else []
+            assert reads == [(first * 4, end * 4 + 1) for _, first, end in remaining]
             # State is small metadata only, independent of prefetch timing.
             assert loader.state_dict()["cursor"] == cursor
             loader.validate_state(loader.state_dict())
@@ -140,7 +157,7 @@ def test_reader_failure_and_interruption_cleanup(cache_dir: Path, monkeypatch: p
         return original(split, start, stop, destination)
 
     monkeypatch.setattr(cache, "read_into", fail_second)
-    loader = BufferedTokenLoader(cache, "train", 4, 13, SIZE)
+    loader = BufferedTokenLoader(cache, "train", 4, 13, GROUP_SIZE)
     with pytest.raises(OSError, match="simulated reader failure"):
         with loader:
             loader.next_batch(5, CPU)
@@ -148,7 +165,7 @@ def test_reader_failure_and_interruption_cleanup(cache_dir: Path, monkeypatch: p
     assert not any(t.name.startswith("token-reader") for t in threading.enumerate())
     monkeypatch.setattr(cache, "read_into", original)
     for cursor in (2, 3, 4):
-        loader = BufferedTokenLoader(cache, "train", 4, 13, SIZE)
+        loader = BufferedTokenLoader(cache, "train", 4, 13, GROUP_SIZE)
         with pytest.raises(InterruptedError):
             with loader:
                 loader.next_batch(cursor, CPU)
@@ -165,7 +182,7 @@ def test_validation_scan_subset_reuse_and_loss(
     cache_dir: Path, tiny_config: Config, monkeypatch: pytest.MonkeyPatch
 ):
     cache = TokenCache(cache_dir)
-    tiny_config.data.buffer_size_mib = SIZE
+    tiny_config.data.shuffle_group_size = GROUP_SIZE
     indices = validation_indices(cache, tiny_config, full=False)
     expected_x, expected_y = cache.batch("validation", indices, 4, CPU)
     original = cache.read_into
@@ -189,7 +206,7 @@ def test_validation_scan_subset_reuse_and_loss(
     assert result["loss"] == pytest.approx(expected_loss, abs=1e-6)
     assert reads == [(0, 13), (12, 25), (24, 30)]
     expected = cache.batch("validation", list(range(8)), 4, CPU)
-    with BufferedTokenLoader(cache, "validation", 4, 8, SIZE) as loader:
+    with BufferedTokenLoader(cache, "validation", 4, 8, GROUP_SIZE) as loader:
         x, y = loader.next_batch(8, CPU)
     assert torch.equal(x, expected[0]) and torch.equal(y, expected[1])
     assert (y != -100).sum() == 29
@@ -200,9 +217,72 @@ def test_ordering_compatibility_and_legacy_rejection(cache_dir: Path, tiny_confi
     identity = recipe_identity(tiny_config, cache)
     tiny_config.data.prefetch = False
     assert recipe_identity(tiny_config, cache) == identity
-    tiny_config.data.buffer_size_mib = SIZE
+    tiny_config.data.shuffle_group_size = GROUP_SIZE
     assert recipe_identity(tiny_config, cache) != identity
     checkpoint = cache_dir.parent / "legacy.pt"
     torch.save({"version": 1}, checkpoint)
     with pytest.raises(ValueError, match="incompatible training checkpoint version"):
         train(tiny_config, checkpoint)
+
+
+@pytest.mark.parametrize("group_size", [1, 2, 4])
+@pytest.mark.parametrize("seed", [0, 42, 43])
+def test_every_short_budget_is_prefix_of_long_run(cache_dir: Path, group_size, seed):
+    cache = TokenCache(cache_dir)
+    expected = collect(cache, seed=seed, count=33, group_size=group_size, prefetch=False)
+    for count in range(1, 34):
+        actual = collect(cache, seed=seed, count=count, group_size=group_size, batch=2)
+        assert actual == expected[:count]
+        cursor = count // 2
+        assert (
+            collect(cache, seed=seed, count=count, cursor=cursor, group_size=group_size, batch=3)
+            == expected[cursor:count]
+        )
+
+
+@pytest.mark.parametrize("group_size", [1, 2, 4])
+def test_shard_groups_advance_in_file_order(cache_dir: Path, group_size):
+    cache = TokenCache(cache_dir)
+    with BufferedTokenLoader(cache, "train", 4, 33, group_size, seed=42) as loader:
+        for _, first, end in loader.groups:
+            actual = loader.next_batch(end - first, CPU)
+            expected = cache.batch("train", list(range(first, end)), 4, CPU)
+            assert sorted(zip(*[v.tolist() for v in actual], strict=True)) == sorted(
+                zip(*[v.tolist() for v in expected], strict=True)
+            )
+
+
+def test_incomplete_final_shuffle_group_is_rejected(cache_dir: Path):
+    import json
+
+    manifest_path = cache_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    # Remove only lookahead: the nominal budget still fits, but shuffling the
+    # final group would otherwise depend on where preparation stopped.
+    split = manifest["splits"]["train"]
+    split["shards"] = split["shards"][:-1]
+    split["tokens"] = 132
+    manifest["identity"] = fingerprint(
+        {key: value for key, value in manifest.items() if key != "identity"}
+    )
+    manifest_path.write_text(json.dumps(manifest))
+    cache = TokenCache(cache_dir)
+    assert cache.blocks("train", 4) == 32
+    with pytest.raises(ValueError, match="complete shuffle groups"):
+        collect(cache, count=32, group_size=2)
+    # Earlier complete groups are still usable.
+    assert len(collect(cache, count=27, group_size=2)) == 27
+
+
+@pytest.mark.parametrize("invalid", [0, -1, 1.5, True, "2"])
+def test_shuffle_group_size_must_be_positive_integer(invalid):
+    with pytest.raises(ValueError):
+        Config.model_validate({"data": {"shuffle_group_size": invalid}})
+
+
+def test_shuffle_group_config_default_serialization_and_legacy_rejection():
+    assert Config().data.shuffle_group_size == 2
+    cfg = Config.model_validate({"data": {"shuffle_group_size": 3}})
+    assert Config.model_validate_json(cfg.model_dump_json()) == cfg
+    with pytest.raises(ValueError, match="extra_forbidden"):
+        Config.model_validate({"data": {"buffer_size_mib": 64}})

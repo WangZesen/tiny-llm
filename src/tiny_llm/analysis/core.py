@@ -31,6 +31,7 @@ from tiny_llm.data import (
     TokenCache,
     TokenSource,
     fingerprint,
+    shuffle_groups,
     training_boundaries,
 )
 from tiny_llm.model import Llama, token_losses
@@ -214,16 +215,20 @@ def analysis_runtime(config: Config, options: AnalysisOptions):
 
 
 class _CacheRange:
-    """A read-only block-aligned view; the training loader itself is unchanged."""
+    """A block-aligned cache suffix retaining physical shard boundaries."""
 
-    def __init__(self, cache: TokenCache, start: int, blocks: int, length: int) -> None:
-        self.cache, self.start, self.count = cache, start * length, blocks * length + 1
+    def __init__(self, cache: TokenCache, start: int, length: int) -> None:
+        self.cache, self.start = cache, start * length
+        self.count = cache.offsets["train"][-1] - self.start
         self.manifest = cache.manifest
-        self.offsets = {"train": [0, self.count]}
+        self.offsets = {
+            "train": [0]
+            + [offset - self.start for offset in cache.offsets["train"] if offset > self.start]
+        }
 
     def blocks(self, split: str, length: int, partial: bool = False) -> int:
         assert split == "train"
-        return (self.count - 1) // length
+        return (self.count - 1 + (length - 1 if partial else 0)) // length
 
     def read_into(self, split: str, start: int, stop: int, destination: TokenArray) -> None:
         if not 0 <= start < stop <= self.count:
@@ -252,8 +257,14 @@ class EpochData:
         self.blocks = boundaries[0]
         self.start = 0
         self.seed = config.runtime.seed
+        groups = shuffle_groups(
+            cache, "train", length, config.data.shuffle_group_size, complete=True
+        )
+        if not groups or groups[-1][2] < self.training_blocks:
+            raise ValueError("cache too small for training shuffle groups; prepare a larger cache")
         if case == "unseen":
-            self.start = self.training_blocks
+            # The last training group may select rows beyond the nominal budget.
+            self.start = next(end for _, _, end in groups if end >= self.training_blocks)
             self.seed = int(np.random.SeedSequence([config.runtime.seed, 2]).generate_state(1)[0])
         elif case != "seen":
             raise ValueError("unknown data case")
@@ -264,6 +275,9 @@ class EpochData:
                 "Prepare a new cache with tiny-llm prepare --config RUN/resolved.yaml "
                 f"--set data.cache_dir=NEW_CACHE --set data.prepare_train_tokens={required * length}"
             )
+        # Check the entire final unseen shuffle group before starting analysis.
+        with self.loader():
+            pass
         workers = config.decentralized.num_models if config.decentralized else 1
         if self.blocks % workers:
             raise ValueError("analysis epoch must contain an equal number of blocks per worker")
@@ -282,14 +296,14 @@ class EpochData:
         cache: TokenSource = self.cache
         budget = self.training_blocks
         if self.case == "unseen":
-            cache = _CacheRange(cache, self.start, self.blocks, cfg.model.context_length)
+            cache = _CacheRange(self.cache, self.start, cfg.model.context_length)
             budget = self.blocks
         return BufferedTokenLoader(
             cache,
             "train",
             cfg.model.context_length,
             budget,
-            cfg.data.buffer_size_mib,
+            cfg.data.shuffle_group_size,
             seed=self.seed,
             prefetch=cfg.data.prefetch,
             cursor=cursor,

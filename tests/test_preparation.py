@@ -5,13 +5,22 @@ from types import SimpleNamespace
 
 import numpy as np
 import pytest
+import torch
 
 from tiny_llm.config import Config
-from tiny_llm.data import TokenCache, prepare
+from tiny_llm.data import BufferedTokenLoader, TokenCache, prepare
 
 
+@pytest.mark.parametrize(
+    "shard_tokens,group_size,expected_tokens", [(7, 2, 73), (1, 1, 65), (11, 3, 69)]
+)
 def test_preparation_eos_determinism_and_reuse(
-    tiny_config: Config, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    tiny_config: Config,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    shard_tokens,
+    group_size,
+    expected_tokens,
 ):
 
     class API:
@@ -69,11 +78,12 @@ def test_preparation_eos_determinism_and_reuse(
         ),
     )
     monkeypatch.setitem(sys.modules, "datasets", SimpleNamespace(load_dataset=load))
-    tiny_config.data.shard_tokens = 7
+    tiny_config.data.shard_tokens = shard_tokens
+    tiny_config.data.shuffle_group_size = group_size
     first = prepare(tiny_config)
     cache = TokenCache(tiny_config.data.cache_dir)
     np.testing.assert_array_equal(cache.read("train", 0, 8), [3, 4, 5, 2, 2, 6, 7, 2])
-    assert first["splits"]["train"]["tokens"] == 65
+    assert first["splits"]["train"]["tokens"] == expected_tokens
     assert first["splits"]["validation"]["tokens"] == 80
     assert first["validation_complete"]
     assert prepare(tiny_config) == first
@@ -84,3 +94,21 @@ def test_preparation_eos_determinism_and_reuse(
     tiny_config.data.prepare_train_tokens = 100
     with pytest.raises(ValueError, match="too small"):
         prepare(tiny_config)
+
+    # Separately prepared short and long caches preserve the same sample prefix,
+    # including when a sequence spans multiple tiny shards.
+    tiny_config.data.cache_dir = tmp_path / "short"
+    tiny_config.data.prepare_train_tokens = 32
+    short_manifest = prepare(tiny_config)
+    assert short_manifest["splits"]["train"]["tokens"] < expected_tokens
+    short_cache = TokenCache(tiny_config.data.cache_dir)
+    with (
+        BufferedTokenLoader(short_cache, "train", 4, 8, group_size, seed=42) as short,
+        BufferedTokenLoader(cache, "train", 4, 16, group_size, seed=42) as long,
+    ):
+        for actual, expected in zip(
+            short.next_batch(8, torch.device("cpu")),
+            long.next_batch(8, torch.device("cpu")),
+            strict=True,
+        ):
+            torch.testing.assert_close(actual, expected, rtol=0, atol=0)

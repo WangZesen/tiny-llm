@@ -31,6 +31,7 @@ def tiny_config(tmp_path: Path) -> Config:
     config.runtime.cpu_threads = 1
     config.runtime.output_dir = tmp_path / "run"
     config.data.cache_dir = tmp_path / "cache"
+    config.data.shard_tokens = 11
     # Tiny runs should exercise decay rather than the production 1,000-step warmup.
     config.lr_schedule.warmup_steps = 0
     config.training.batch_tokens = 16
@@ -68,8 +69,8 @@ def cache_dir(tiny_config: Config) -> Path:
         validation_complete=True,
         splits={},
     )
-    for split, count in (("train", 129), ("validation", 30)):
-        writer = TokenWriter(directory, split, shard_tokens=11)
+    for split, count in (("train", 133), ("validation", 30)):
+        writer = TokenWriter(directory, split, shard_tokens=tiny_config.data.shard_tokens)
         writer.write(np.arange(count) % 17)
         manifest["splits"][split] = writer.finish()
     completed_manifest = CacheManifest(**manifest, identity=fingerprint(manifest))

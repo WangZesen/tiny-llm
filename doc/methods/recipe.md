@@ -50,12 +50,13 @@ Virtual epoch boundaries do not reset the schedule, optimizer, or data order.
 The token budget counts tied embeddings once; the report also records the
 non-embedding count to avoid confusing different papers' size conventions.
 
-Training order uses loader v1: sequence-aligned 64 MiB ranges shuffled by seed,
-then independently shuffled sequence indices within each resident range. One
-prefetched range overlaps I/O with model computation. The training prefix and
-virtual epoch boundaries are unchanged; the sequence order differs from the
-previous global permutation. The audited campaign now in `runs/campaign` used
-loader v1 for all twelve runs.
+Current training uses loader v2: consecutive groups of cache shards are visited
+in file order, with independently shuffled sequence indices within each group.
+`data.shuffle_group_size` defaults to 2 shards; one prefetched group overlaps I/O
+with model computation. The stream is independent of the total training budget.
+The audited campaign in `runs/campaign` used loader v1 for all twelve runs:
+sequence-aligned 64 MiB ranges were shuffled globally, then shuffled internally.
+Those results remain tied to their original implementation.
 
 ## Historical basis for the 50M/90M recipes
 
@@ -142,10 +143,10 @@ Parameters, first moments, and second moments each occupy an aligned contiguous
 serialize the three blocks once plus counters and layout metadata. Alignment
 padding is excluded from parameters and optimization. The moment arenas are
 exposed for future experiments but are not mixed by the trainer.
-Packed buffered checkpoints use format v3 and preserve loader v1's committed
+Packed buffered checkpoints use format v3 and preserve loader v2's committed
 cursor; ordinary buffered checkpoints retain upstream format v2. Prefetch may
-change on resume, but buffer size may not. Earlier packed v2 checkpoints remain
-evaluable but cannot resume under the new sample ordering.
+change on resume, but shard-group size may not. Historical loader checkpoints
+require their original source version.
 
 Every training step performs one topology event: complete averaging, alternating
 left/right one-peer ring averaging, or one-peer exponential averaging with

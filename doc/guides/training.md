@@ -24,6 +24,16 @@ uv run tiny-llm prepare --config configs/90m.yaml
 uv run tiny-llm train --config configs/20m.yaml
 ```
 
+Training reads groups of consecutive cache shards in file order and shuffles
+sequences within each group. Set `--set data.shuffle_group_size=4` on preparation
+and training to use four shards per group; the default is 2 (about 64 MiB with
+default shards). This positive integer replaces `data.buffer_size_mib`, which is
+no longer accepted. Larger groups provide wider mixing and use more memory.
+A shorter run uses the exact sample prefix of a longer run under the same seed
+and data settings, even when it stops partway through a group. Preparation-time
+document shuffling remains controlled by `data.shuffle_seed` and `data.shuffle_buffer`.
+See [loader details](../methods/implementation.md#sequential-buffered-loading).
+
 Use `configs/50m.yaml` or `configs/90m.yaml` for larger models. Repeat `--config`
 to merge YAML files in order: later values override earlier values, mappings
 merge recursively, and lists are replaced. Then override fields
@@ -174,11 +184,13 @@ ties round up, and empty epochs are rejected. Every update uses a complete globa
 batch, including the final update; realized tokens may be above or below the
 nominal total by at most B/2.
 
-Increasing only the total ratio preserves earlier epoch batch counts. Learning
-rates, adaptive consensus, and sample shuffling still depend on the total budget.
+Increasing only the total ratio preserves earlier epoch batch counts and samples
+with the same cache contents, shard layout, context length, group size, and seed.
+Learning rates and adaptive consensus still depend on the total budget.
 Changing that budget requires a new run rather than resuming an existing recipe.
-Preparation sizes the cache for the realized budget; changing global batch size
-can change the required capacity. Old token fields and checkpoint policy `all`
+Preparation rounds the realized budget up to a complete shuffle group, plus
+sequence alignment and lookahead; changing global batch size can change the
+required capacity. `data.prepare_train_tokens` is also rounded up this way. Old token fields and checkpoint policy `all`
 are rejected by the new schema. Archived experiments retain their original
 configuration and token positions.
 

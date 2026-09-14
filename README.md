@@ -19,7 +19,13 @@ uv run tiny-llm train --config configs/20m.yaml
 ```
 
 Preparation downloads and caches C4 once; smaller models reuse prefixes of the
-same cache. To run the tuned four-worker AWC recipe:
+same cache. Training visits shard groups in file order and shuffles within each
+group. `data.shuffle_group_size` defaults to 2 shards (about 64 MiB); it replaces
+`data.buffer_size_mib`. Keeping the same seed and data settings preserves earlier
+samples when increasing the training budget. Preparation includes the whole final
+group and lookahead.
+
+To run the tuned four-worker AWC recipe:
 
 ```bash
 uv run tiny-llm train --config configs/packed4-20m-awc.yaml

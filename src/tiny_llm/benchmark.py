@@ -174,7 +174,7 @@ def benchmark_worker(
         cache = TokenCache(config.data.cache_dir)
         cache.validate_config(config)
         cache.verify()
-        # Use the production prefix so range ordering matches real training.
+        # Use the production budget and the same shard-group shuffling as training.
         blocks = training_boundaries(config, model.parameter_count)[-1]
         needed = (warmup + steps * windows + (3 if profile else 1)) * step_blocks
         if needed > blocks:
@@ -184,7 +184,7 @@ def benchmark_worker(
             "train",
             length,
             blocks,
-            config.data.buffer_size_mib,
+            config.data.shuffle_group_size,
             seed=config.runtime.seed,
             prefetch=config.data.prefetch,
         )

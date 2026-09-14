@@ -156,7 +156,7 @@ def test_signed_statistics_and_zero_noise():
 
 def test_epoch_replay_unseen_and_microbatch(tiny_config: Config, cache_dir: Path):
     cfg = tiny_config
-    cfg.data.buffer_size_mib = 24 / 2**20  # Force several shuffled ranges.
+    cfg.data.shuffle_group_size = 1  # Force several shard groups.
     cfg.training.batch_tokens = 28
     set_budget(cfg, 56, 28)  # Seven blocks; uneven microbatches and curvature padding.
     cache = TokenCache(cache_dir)
@@ -166,7 +166,7 @@ def test_epoch_replay_unseen_and_microbatch(tiny_config: Config, cache_dir: Path
         "train",
         4,
         training_boundaries(cfg, cfg.model.parameter_count)[-1],
-        cfg.data.buffer_size_mib,
+        cfg.data.shuffle_group_size,
         seed=cfg.runtime.seed,
     ) as loader:
         expected = loader.next_batch(seen.blocks, torch.device("cpu"))
@@ -408,3 +408,18 @@ def test_cli_defaults_and_invalid_options():
     ):
         with pytest.raises(ValueError):
             AnalysisOptions(**cast(dict[str, Any], kwargs))
+
+
+def test_unseen_starts_after_entire_final_training_group(tiny_config: Config, cache_dir: Path):
+    cache = TokenCache(cache_dir)
+    tiny_config.data.shuffle_group_size = 2
+    set_budget(tiny_config, 64, 32)
+    seen = EpochData(cache, tiny_config, "seen")
+    unseen = EpochData(cache, tiny_config, "unseen")
+    assert seen.training_blocks == 16
+    assert unseen.start == 17  # The last group spans blocks [11, 17).
+    with seen.loader() as loader:
+        assert loader.groups[-1][2] == unseen.start
+    with unseen.loader() as loader:
+        assert loader.cache.offsets["train"][1] == 77 - unseen.start * 4
+        assert loader.groups[-1][2] > unseen.blocks

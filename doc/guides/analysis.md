@@ -4,6 +4,12 @@ title: "Running checkpoint analysis"
 
 ## Analysis
 
+Unseen analysis starts after the entire final training shuffle group, including
+candidate sequences beyond the nominal training budget. Prepare enough additional
+training data to cover an unseen epoch and its full final shuffle group; set
+`data.prepare_train_tokens` when preparing a new cache. Preparation rounds this
+minimum capacity up to include complete groups and sequence lookahead.
+
 For epoch-by-epoch analysis, train with `--set training.checkpoint_policy=interval`.
 Analyze all checkpoints or select filenames relative to the run directory.
 Use a prepared cache with enough data for both seen and unseen cases; the tool

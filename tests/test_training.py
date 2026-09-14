@@ -42,7 +42,7 @@ def test_schedule(tiny_config: Config):
 @pytest.mark.parametrize("full", [False, True])
 def test_evaluation_state_and_weighting(tiny_config: Config, cache_dir: Path, full):
     tiny_config.evaluation.subset_blocks = 8
-    tiny_config.data.buffer_size_mib = 24 / 2**20
+    tiny_config.data.shuffle_group_size = 1
     setup_runtime(tiny_config)
     model = Llama(tiny_config.model, "reference")
     cache = TokenCache(cache_dir)
@@ -95,7 +95,7 @@ def test_offline_train_and_resume(
         tiny_config.lr_schedule = WSDScheduleConfig(decay_fraction=0.5)
     tiny_config.lr_schedule.warmup_steps = 3
     tiny_config.training.checkpoint_policy = "interval"
-    tiny_config.data.buffer_size_mib = 24 / 2**20
+    tiny_config.data.shuffle_group_size = 1
     tiny_config.optimizer.grad_clip = grad_clip
     tiny_config.runtime.device = device
     tiny_config.runtime.amp = device != "cpu"
@@ -121,7 +121,7 @@ def test_offline_train_and_resume(
     b = torch.load(tiny_config.runtime.output_dir / "final.pt", weights_only=False)
     assert a["version"] == b["version"] == 2
     assert a["loader"] == b["loader"]
-    assert a["loader"]["version"] == 1
+    assert a["loader"]["version"] == 2
     assert a["loader"]["cursor"] == a["cursor"] == 16
     assert all(isinstance(v, (str, int)) for v in a["loader"].values())
     for key in a["model"]:
@@ -273,3 +273,42 @@ def test_minimal_checkpoint_policy(
         assert evaluated["loss"] == pytest.approx(result["final_validation"]["loss"])
         resumed = train(config, output / "final.pt")
         assert resumed["final_validation"]["loss"] == pytest.approx(evaluated["loss"])
+
+
+@pytest.mark.parametrize("packed", [False, True])
+def test_longer_training_preserves_early_batches(
+    tiny_config: Config, cache_dir: Path, monkeypatch: pytest.MonkeyPatch, packed
+):
+    from helpers import set_budget
+
+    import tiny_llm.train as module
+    from tiny_llm.config import DecentralizedConfig
+
+    if packed:
+        tiny_config.decentralized = DecentralizedConfig(num_models=2)
+    tiny_config.training.checkpoint_policy = "none"
+    original = module.loss_function
+    batches = []
+
+    def record_loss(model, config, device):
+        loss = original(model, config, device)
+
+        def compute(x, y):
+            batches.append((x.clone(), y.clone()))
+            return loss(x, y)
+
+        return compute
+
+    monkeypatch.setattr(module, "loss_function", record_loss)
+    set_budget(tiny_config, 32, 32)
+    assert train(tiny_config)["status"] == "complete"
+    short_batches = batches.copy()
+    batches.clear()
+    tiny_config.runtime.output_dir = cache_dir.parent / "long"
+    tiny_config.data.prefetch = False
+    set_budget(tiny_config, 64, 32)
+    assert train(tiny_config)["status"] == "complete"
+    assert len(batches) == 2 * len(short_batches)
+    for short, long in zip(short_batches, batches[: len(short_batches)], strict=True):
+        for actual, expected in zip(short, long, strict=True):
+            torch.testing.assert_close(actual, expected, rtol=0, atol=0)

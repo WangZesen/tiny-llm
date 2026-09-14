@@ -54,7 +54,7 @@ class DataConfig(StrictModel):
     shard_tokens: int = Field(default=16_777_216, gt=0)
     tokenize_batch_size: int = Field(default=256, gt=0)
     # Runtime buffering; separate from the document shuffle used during preparation.
-    buffer_size_mib: float = Field(default=64.0, gt=0)
+    shuffle_group_size: int = Field(default=2, gt=0, strict=True)
     prefetch: bool = True
     # Overrides for preparation/smoke runs; None means the complete validation split.
     prepare_train_tokens: int | None = Field(default=None, gt=0)
@@ -184,8 +184,6 @@ class Config(StrictModel):
             raise ValueError("training.batch_tokens must be divisible by context_length")
         if self.training.micro_batch_size > self.training.batch_tokens // length:
             raise ValueError("micro_batch_size exceeds effective batch size")
-        if int(self.data.buffer_size_mib * 2**20) < 2 * length:
-            raise ValueError("data.buffer_size_mib must hold at least one uint16 sequence")
         if self.decentralized is not None:
             expected = self.decentralized.num_models * self.training.micro_batch_size * length
             if self.training.batch_tokens != expected:

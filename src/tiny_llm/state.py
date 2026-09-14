@@ -21,7 +21,7 @@ class LoaderIdentity(TypedDict):
     split: str
     length: int
     blocks: int
-    buffer_blocks: int
+    shuffle_group_size: int
     seed: int | None
 
 

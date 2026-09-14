@@ -21,21 +21,36 @@ per unique trainable parameter, split into 40 virtual epochs. Seeds are saved;
 
 ## Sequential buffered loading
 
-Training partitions the selected cache prefix into sequence-aligned ranges. Each
-range is read sequentially across binary shards into a compact `uint16` buffer,
-then drained using shuffled sequence indices. Only the requested microbatch is
-converted to `int64`; batches and virtual epochs can cross buffer boundaries.
-The original sequence boundaries and next-token targets are preserved.
+Training visits consecutive groups of cache shards in file order. Each group is
+read into a compact `uint16` buffer, then drained using shuffled sequence indices.
+Only the requested microbatch is converted to `int64`; batches and virtual epochs
+can cross group boundaries. A sequence belongs to the group containing its first
+token. Reads align to the original sequence boundaries and include next-token
+lookahead, preserving targets even across shard boundaries.
 
-`data.buffer_size_mib: 64` controls the active token buffer. With the default
-`data.prefetch: true`, one background reader loads the next range, using about
-128 MiB of token storage in total (plus two lookahead tokens, row indices, the
+`data.shuffle_group_size: 2` sets the positive integer number of shards per group.
+With the default shard size this is about 64 MiB per active buffer. With
+`data.prefetch: true`, one background reader loads the next group, using about
+128 MiB of token storage (plus sequence alignment/lookahead, row indices, the
 validation subset, and microbatch tensors). Set prefetch to false for one-buffer
 loading. `data.shuffle_buffer` remains the separate preparation-time document
-shuffle setting. No token-cache regeneration is needed.
+shuffle setting. The former `data.buffer_size_mib` field is rejected.
 
-`runtime.seed` independently determines range order and each range's row order;
-thread timing does not affect samples. Full validation streams in original order.
+`runtime.seed` and the physical group index determine each group's row permutation.
+The entire final group is shuffled even when training stops partway through it.
+For the same cache contents and shard layout, context length, group size, and seed,
+extending the training budget preserves the entire earlier sample stream. Batch
+size and prefetch timing do not change that stream; virtual epochs never reset it.
+Different seeds change the order within groups, while group order stays fixed.
+Mixing is limited to each group; larger groups trade more memory for wider mixing.
+
+Preparation rounds the requested training capacity up through the final full group,
+including sequence alignment and lookahead. Existing caches can be reused when
+these complete groups fit; insufficient caches require preparation at a new path.
+Loader version 2 records group size and the committed cursor in checkpoints.
+Historical loader order and identities require their original source version.
+
+Full validation streams in original order, including its partial final group.
 The fixed epoch-validation subset is collected during one sequential validation
 scan at startup and retained in RAM for subsequent epochs (about 2 MiB by default).
 Startup also retains the existing cache checksum verification.
@@ -195,8 +210,8 @@ uv run tiny-llm train --config runs/baseline/resolved.yaml \
 ```
 
 Device, output directory, prefetch, and checkpoint retention may change on resume.
-Training recipe, total budget, precision, data identity, batch, seed, and buffer
-size must match. The loader reconstructs its range and row position from the
+Training recipe, total budget, precision, data identity, batch, seed, and shard-group
+size must match. The loader reconstructs its group and row position from the
 committed cursor; the normal startup checksum scan still runs. This config
 revision is a clean break: old field names and historical identities are not
 translated. Use the archived source for archived runs.
