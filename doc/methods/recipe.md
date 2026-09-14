@@ -42,7 +42,7 @@ not directly established as optimal by these papers.
   as the gradient denominator.
 - Zero dropout; seed 42; `runtime.deterministic: false`.
 
-Current scheduler configs instead default to 1,000 warmup optimizer updates,
+Current scheduler configs instead default to 312 warmup optimizer updates,
 configured by `lr_schedule.warmup_steps`; see the
 [schedule guide](../guides/training.md#learning-rate-schedules).
 The schedule is evaluated at the end-token position of each optimizer update.

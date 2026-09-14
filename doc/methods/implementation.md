@@ -238,7 +238,7 @@ revision is a clean break: old field names and historical identities are not
 translated. Use the archived source for archived runs.
 
 Learning-rate settings now live in `lr_schedule`, selected by `name: cosine` or
-`name: wsd`, with an integer `warmup_steps` defaulting to 1000. The former
+`name: wsd`, with an integer `warmup_steps` defaulting to 312. The former
 `warmup_fraction` and optimizer-level schedule fields are rejected. The
 schedule is included in the recipe identity, so checkpoints from before this
 schema change require the previous source version. See the

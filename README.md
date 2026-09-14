@@ -43,7 +43,7 @@ The default checkpoint policy saves final training state only. Use
 Model recipes omit scheduler settings and default to cosine. Add
 `--config configs/wsd.yaml` after the recipe's `--config` to use warmup-stable-decay;
 `configs/cosine.yaml` selects cosine explicitly. Both schedules default to
-1,000 warmup updates; override with `--set lr_schedule.warmup_steps=500`.
+312 warmup updates; override with `--set lr_schedule.warmup_steps=500`.
 Repeated config files merge in order, followed by `--set` overrides.
 See the [training and evaluation guide](doc/guides/training.md) for smoke runs,
 resume behavior, alternate recipes, clipping, and checkpoint retention.

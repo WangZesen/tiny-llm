@@ -19,7 +19,7 @@ def test_schedule_config(name, cls, tmp_path: Path):
     config = Config.model_validate({"lr_schedule": {"name": name}})
     assert isinstance(config.lr_schedule, cls)
     assert config.lr_schedule == cls()
-    assert config.lr_schedule.warmup_steps == 1000
+    assert config.lr_schedule.warmup_steps == 312
     path = tmp_path / "resolved.yaml"
     save_config(config, path)
     assert load_config(path) == config
@@ -214,20 +214,20 @@ def test_default_warmup_is_independent_of_budget_and_batch(
     assert [
         learning_rate(tiny_config, step * batch_tokens, total_steps * batch_tokens)
         / tiny_config.optimizer.lr
-        for step in (0, 1, 500, 1000)
-    ] == pytest.approx([0, 0.001, 0.5, 1])
+        for step in (0, 1, 156, 312)
+    ] == pytest.approx([0, 1 / 312, 0.5, 1])
 
 
 @pytest.mark.parametrize("cls", [CosineScheduleConfig, WSDScheduleConfig])
-@pytest.mark.parametrize("total_steps", [500, 1000])
+@pytest.mark.parametrize("total_steps", [156, 312])
 def test_run_finishes_during_warmup(tiny_config: Config, cls, total_steps):
     tiny_config.lr_schedule = cls()
     batch = tiny_config.training.batch_tokens
     assert learning_rate(tiny_config, total_steps * batch, total_steps * batch) == pytest.approx(
-        tiny_config.optimizer.lr * total_steps / 1000
+        tiny_config.optimizer.lr * total_steps / 312
     )
     terminal = 0.1 if cls is CosineScheduleConfig else 0
-    assert learning_rate(tiny_config, 1001 * batch, total_steps * batch) == pytest.approx(
+    assert learning_rate(tiny_config, 313 * batch, total_steps * batch) == pytest.approx(
         tiny_config.optimizer.lr * terminal
     )
 

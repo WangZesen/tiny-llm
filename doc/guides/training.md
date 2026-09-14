@@ -126,14 +126,14 @@ adding `configs/cosine.yaml` or `configs/wsd.yaml` after the model recipe:
 ```bash
 uv run tiny-llm train --config configs/20m.yaml --config configs/cosine.yaml
 uv run tiny-llm train --config configs/20m.yaml --config configs/wsd.yaml \
-  --set lr_schedule.warmup_steps=1000 --set lr_schedule.decay_fraction=0.2 \
+  --set lr_schedule.warmup_steps=312 --set lr_schedule.decay_fraction=0.2 \
   --set runtime.output_dir=runs/20m-wsd
 ```
 
 `lr_schedule.name` selects a separate, strict config class for `cosine` or `wsd`.
 An omitted `lr_schedule` section defaults to cosine; an explicit section requires
 `name`. Both schedules use `optimizer.lr` as the base learning rate and default
-to `lr_schedule.warmup_steps=1000`. This must be a nonnegative integer; zero
+to `lr_schedule.warmup_steps=312`. This must be a nonnegative integer; zero
 disables warmup. Warmup is linear over optimizer updates: update 1 uses
 `optimizer.lr / warmup_steps`, and update `warmup_steps` reaches the base rate.
 Microbatches during accumulation and individual packed workers do not count as
