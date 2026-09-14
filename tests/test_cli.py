@@ -6,6 +6,35 @@ from tiny_llm.cli import build_parser, main
 from tiny_llm.config import PRESETS, Config, save_config
 
 
+def test_repeated_configs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    import tiny_llm.cli as module
+
+    calls = []
+    monkeypatch.setattr(module, "dispatch", lambda args, config, parser: calls.append(config))
+    recipe = tmp_path / "recipe.yaml"
+    recipe.write_text("optimizer: {lr: 0.003}\n")
+    main(
+        [
+            "train",
+            "--config",
+            str(recipe),
+            "--config",
+            "configs/cosine.yaml",
+            "--config",
+            "configs/wsd.yaml",
+            "--set",
+            "lr_schedule.decay_fraction=0.2",
+            "--set",
+            "lr_schedule.warmup_steps=500",
+        ]
+    )
+    assert len(calls) == 1
+    assert calls[0].optimizer.lr == 0.003
+    assert calls[0].lr_schedule.name == "wsd"
+    assert calls[0].lr_schedule.decay_fraction == 0.2
+    assert calls[0].lr_schedule.warmup_steps == 500
+
+
 @pytest.mark.parametrize(
     "command,extra,warmup,steps",
     [

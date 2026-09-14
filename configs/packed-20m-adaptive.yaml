@@ -21,5 +21,3 @@ optimizer:
   eps: 1.0e-08
   weight_decay: 0.1
   grad_clip: 1.0
-  warmup_fraction: 0.05
-  min_lr_ratio: 0.1

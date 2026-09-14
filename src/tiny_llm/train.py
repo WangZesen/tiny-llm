@@ -20,7 +20,7 @@ from tiny_llm.checkpoints import (
     require_new_epoch,
     save_epoch_checkpoint,
 )
-from tiny_llm.config import Config, save_config
+from tiny_llm.config import Config, WSDScheduleConfig, save_config
 from tiny_llm.data import (
     BufferedTokenLoader,
     TokenCache,
@@ -91,14 +91,26 @@ def make_optimizer(
 
 
 def learning_rate(config: Config, consumed: int, total: int) -> float:
-    cfg = config.optimizer
-    warmup = total * cfg.warmup_fraction
-    if consumed < warmup:
-        return cfg.lr * consumed / warmup
+    """Warm up for fixed optimizer updates, each consuming one global token batch."""
+    cfg = config.lr_schedule
+    lr = config.optimizer.lr
+    warmup = cfg.warmup_steps * config.training.batch_tokens
+    if warmup > 0 and consumed <= warmup:
+        return lr * consumed / warmup
+    if isinstance(cfg, WSDScheduleConfig):
+        if cfg.decay_fraction == 0:
+            return lr
+        if consumed >= total:
+            return 0.0
+        stable_end = max(warmup, (1 - cfg.decay_fraction) * total)
+        if consumed <= stable_end:
+            return lr
+        progress = min(1.0, max(0.0, (consumed - stable_end) / (total - stable_end)))
+        return lr * (1 - math.sqrt(progress))
+    if warmup >= total:
+        return lr * cfg.min_lr_ratio
     progress = min(1.0, max(0.0, (consumed - warmup) / (total - warmup)))
-    return cfg.lr * (
-        cfg.min_lr_ratio + (1 - cfg.min_lr_ratio) * (1 + math.cos(math.pi * progress)) / 2
-    )
+    return lr * (cfg.min_lr_ratio + (1 - cfg.min_lr_ratio) * (1 + math.cos(math.pi * progress)) / 2)
 
 
 @dataclass(frozen=True)

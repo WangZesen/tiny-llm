@@ -19,7 +19,9 @@ All studies use 131,072 global targets per full update, without accumulation. Th
 
 ## Optimizer and execution
 
-AdamW uses epsilon $10^{-8}$, weight decay 0.1 on matrix weights, and no decay on normalization scales. The token-based schedule warms up linearly for 5% of the budget, then follows cosine decay to 10% of the peak learning rate. Raw-gradient clipping uses threshold 1.0 except in the explicit no-clipping study.
+AdamW uses epsilon $10^{-8}$, weight decay 0.1 on matrix weights, and no decay on normalization scales. The token-based schedule in these studies warmed up linearly for 5% of the budget, then followed cosine decay to 10% of the peak learning rate. Raw-gradient clipping uses threshold 1.0 except in the explicit no-clipping study.
+
+Current scheduler configs use `lr_schedule.warmup_steps`, defaulting to 1000 optimizer updates. See the [schedule guide](../guides/training.md#learning-rate-schedules) for current configuration; the study schedules above retain their historical settings.
 
 Packed studies use `one_peer_exponential` topology, independent optimizer moments, and no adaptive consensus. GH200 execution uses BF16 autocast, FP32 parameters, compiled SDPA, fused AdamW, and eight CPU threads. Runtime seeds do not guarantee bitwise replay under nondeterministic kernels.
 

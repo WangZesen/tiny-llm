@@ -29,8 +29,6 @@ optimizer:
   eps: 1.0e-08
   weight_decay: 0.1
   grad_clip: 1.0
-  warmup_fraction: 0.05
-  min_lr_ratio: 0.1
 training:
   tokens_per_parameters: 0.012847979172221264
   epoch_tokens_per_parameters: 0.006423989586110632

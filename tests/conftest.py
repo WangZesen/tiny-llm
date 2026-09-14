@@ -31,6 +31,8 @@ def tiny_config(tmp_path: Path) -> Config:
     config.runtime.cpu_threads = 1
     config.runtime.output_dir = tmp_path / "run"
     config.data.cache_dir = tmp_path / "cache"
+    # Tiny runs should exercise decay rather than the production 1,000-step warmup.
+    config.lr_schedule.warmup_steps = 0
     config.training.batch_tokens = 16
     config.training.micro_batch_size = 2
     config.training = TrainingConfig(

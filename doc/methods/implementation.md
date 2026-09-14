@@ -143,8 +143,8 @@ For zero-based update `r`, activation begins at
 using complete global batches. Before activation, `gamma = 1`.
 After activation, `gamma = (lr / lr_max)**p`, where `lr` is the LR assigned to that
 update and `lr_max` is the largest LR among all active updates in the original run.
-The maximum is computed from the existing token-based LR schedule, so activation
-during warmup is supported. Step fractions and token fractions need not coincide.
+The maximum is computed from the selected LR schedule, including its fixed
+`warmup_steps`, so activation during warmup is supported.
 
 Mixing uses `W' = gamma * W + (1 - gamma) * I`. Smaller gamma weakens averaging;
 gamma zero leaves parameters unchanged at the mixing event. Backward and local
@@ -200,6 +200,13 @@ size must match. The loader reconstructs its range and row position from the
 committed cursor; the normal startup checksum scan still runs. This config
 revision is a clean break: old field names and historical identities are not
 translated. Use the archived source for archived runs.
+
+Learning-rate settings now live in `lr_schedule`, selected by `name: cosine` or
+`name: wsd`, with an integer `warmup_steps` defaulting to 1000. The former
+`warmup_fraction` and optimizer-level schedule fields are rejected. The
+schedule is included in the recipe identity, so checkpoints from before this
+schema change require the previous source version. See the
+[schedule configuration guide](../guides/training.md#learning-rate-schedules).
 
 Resume `.pt` files are trusted local pickle artifacts. Use `.safetensors` when
 exchanging model weights. The experiment runner resumes incomplete runs from

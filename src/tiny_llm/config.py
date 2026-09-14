@@ -68,8 +68,18 @@ class OptimizerConfig(StrictModel):
     eps: float = Field(default=1e-8, gt=0)
     weight_decay: float = Field(default=0.1, ge=0)
     grad_clip: float | None = Field(default=1.0, gt=0)
-    warmup_fraction: float = Field(default=0.05, ge=0, lt=1)
+
+
+class CosineScheduleConfig(StrictModel):
+    name: Literal["cosine"] = "cosine"
+    warmup_steps: int = Field(default=1000, ge=0, strict=True)
     min_lr_ratio: float = Field(default=0.1, ge=0, le=1)
+
+
+class WSDScheduleConfig(StrictModel):
+    name: Literal["wsd"] = "wsd"
+    warmup_steps: int = Field(default=1000, ge=0, strict=True)
+    decay_fraction: float = Field(default=0.1, ge=0, le=1)
 
 
 class TrainingConfig(StrictModel):
@@ -159,6 +169,9 @@ class Config(StrictModel):
     model: ModelConfig = Field(default_factory=ModelConfig)
     data: DataConfig = Field(default_factory=DataConfig)
     optimizer: OptimizerConfig = Field(default_factory=OptimizerConfig)
+    lr_schedule: Annotated[
+        CosineScheduleConfig | WSDScheduleConfig, Field(discriminator="name")
+    ] = Field(default_factory=CosineScheduleConfig)
     training: TrainingConfig = Field(default_factory=TrainingConfig)
     evaluation: EvaluationConfig = Field(default_factory=EvaluationConfig)
     runtime: RuntimeConfig = Field(default_factory=RuntimeConfig)
@@ -183,12 +196,36 @@ class Config(StrictModel):
         return self
 
 
-def load_config(path: str | Path | None = None, overrides: Sequence[str] = ()) -> Config:
-    raw = yaml.safe_load(Path(path).read_text()) if path else {}
-    if raw is None:
-        raw = {}
-    if not isinstance(raw, dict):
-        raise ValueError("configuration must be a YAML mapping")
+def _merge_config(target: dict, source: dict, *, root: bool = True) -> None:
+    for key, value in source.items():
+        previous = target.get(key)
+        if isinstance(previous, dict) and isinstance(value, dict):
+            if (
+                root
+                and key == "lr_schedule"
+                and "name" in previous
+                and "name" in value
+                and previous["name"] != value["name"]
+            ):
+                previous.clear()
+            _merge_config(previous, value, root=False)
+        else:
+            target[key] = value
+
+
+def load_config(
+    path: str | Path | Sequence[str | Path] | None = None, overrides: Sequence[str] = ()
+) -> Config:
+    """Merge YAML files in order, then apply dotted overrides and validate once."""
+    paths = () if path is None else (path,) if isinstance(path, (str, Path)) else path
+    raw: dict = {}
+    for filename in paths:
+        value = yaml.safe_load(Path(filename).read_text())
+        if value is None:
+            continue
+        if not isinstance(value, dict):
+            raise ValueError(f"configuration must be a YAML mapping: {filename}")
+        _merge_config(raw, value)
     for override in overrides:
         key, sep, value = override.partition("=")
         if not sep or not key or any(not part for part in key.split(".")):
@@ -199,7 +236,10 @@ def load_config(path: str | Path | None = None, overrides: Sequence[str] = ()) -
             node = node.setdefault(part, {})
             if not isinstance(node, dict):
                 raise ValueError(f"cannot descend into scalar configuration: {key}")
-        node[parts[-1]] = yaml.safe_load(value)
+        parsed = yaml.safe_load(value)
+        if parts == ["lr_schedule", "name"] and "name" in node and node["name"] != parsed:
+            node.clear()
+        node[parts[-1]] = parsed
     return Config.model_validate(raw)
 
 

@@ -7,7 +7,7 @@ from helpers import assert_nested_equal, set_budget
 from safetensors.torch import load_file
 from torch.func import functional_call
 
-from tiny_llm.config import Config, ModelConfig, load_config
+from tiny_llm.config import Config, ModelConfig, WSDScheduleConfig, load_config
 from tiny_llm.data import BufferedTokenLoader, TokenCache
 from tiny_llm.model import Llama, token_losses
 from tiny_llm.packed import PackedLlama, local_mean_losses
@@ -79,7 +79,7 @@ def test_independent_worker_parity(
         raw = tiny_config.model_dump()
         raw["decentralized"] = dict(num_models=n, adaptive_consensus=dict(start_frac=0.2, p=2))
         raw["training"]["batch_tokens"] = 24
-        raw["optimizer"]["min_lr_ratio"] = 0
+        raw["lr_schedule"]["min_lr_ratio"] = 0
         tiny_config = Config.model_validate(raw)
         schedule = adaptive_consensus_schedule(tiny_config, [9, 15])
     torch.manual_seed(13)
@@ -308,9 +308,17 @@ def decentralized_config(config, n=2, topology="one_peer_ring"):
 
 @pytest.mark.parametrize("scheme", ["awc", "atc"])
 @pytest.mark.parametrize("grad_clip", [1.0, None])
+@pytest.mark.parametrize("lr_schedule", ["cosine", "wsd"])
 def test_training_resume(
-    tiny_config: Config, cache_dir: Path, monkeypatch: pytest.MonkeyPatch, scheme, grad_clip
+    tiny_config: Config,
+    cache_dir: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    scheme,
+    grad_clip,
+    lr_schedule,
 ):
+    if lr_schedule == "wsd":
+        tiny_config.lr_schedule = WSDScheduleConfig(warmup_steps=1, decay_fraction=0.5)
     tiny_config.training.checkpoint_policy = "interval"
     topology = "one_peer_exponential"
     config = decentralized_config(tiny_config, n=4, topology=topology)

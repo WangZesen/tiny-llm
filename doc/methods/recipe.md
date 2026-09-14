@@ -34,13 +34,17 @@ not directly established as optimal by these papers.
   for 50M/90M. All use beta1 0.9, epsilon 1e-8, and weight decay 0.1.
   Matrix weights, including tied embeddings, receive decay; norm scales do not.
 - Global raw-gradient clipping at norm 1.0, after accumulation and before AdamW.
-- Linear token-based warmup for 5% of training, then cosine decay to 10% of peak.
+- The reported studies used linear token-based warmup for 5% of training, then
+  cosine decay to 10% of peak.
 - Synchronous 20M: 131,072 prediction targets per update, microbatch 128,
   without accumulation. 50M/90M: 32,768 targets per update, microbatch 32.
   Shortened batches at virtual epoch boundaries use their actual target count
   as the gradient denominator.
 - Zero dropout; seed 42; `runtime.deterministic: false`.
 
+Current scheduler configs instead default to 1,000 warmup optimizer updates,
+configured by `lr_schedule.warmup_steps`; see the
+[schedule guide](../guides/training.md#learning-rate-schedules).
 The schedule is evaluated at the end-token position of each optimizer update.
 Virtual epoch boundaries do not reset the schedule, optimizer, or data order.
 The token budget counts tied embeddings once; the report also records the

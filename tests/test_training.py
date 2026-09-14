@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 import torch
 
-from tiny_llm.config import Config
+from tiny_llm.config import Config, CosineScheduleConfig, WSDScheduleConfig
 from tiny_llm.data import TokenCache
 from tiny_llm.model import Llama, token_losses
 from tiny_llm.runtime import rng_state, setup_runtime
@@ -32,9 +32,11 @@ def test_accumulation_matches_full(tiny_config: Config):
 
 
 def test_schedule(tiny_config: Config):
-    assert learning_rate(tiny_config, 0, 1000) == 0
-    assert learning_rate(tiny_config, 50, 1000) == tiny_config.optimizer.lr
-    assert learning_rate(tiny_config, 1000, 1000) == pytest.approx(tiny_config.optimizer.lr * 0.1)
+    tiny_config.lr_schedule.warmup_steps = 2
+    assert learning_rate(tiny_config, 0, 640) == 0
+    assert learning_rate(tiny_config, 16, 640) == tiny_config.optimizer.lr * 0.5
+    assert learning_rate(tiny_config, 32, 640) == tiny_config.optimizer.lr
+    assert learning_rate(tiny_config, 640, 640) == pytest.approx(tiny_config.optimizer.lr * 0.1)
 
 
 @pytest.mark.parametrize("full", [False, True])
@@ -80,10 +82,18 @@ def test_evaluation_state_and_weighting(tiny_config: Config, cache_dir: Path, fu
     ],
 )
 @pytest.mark.parametrize("grad_clip", [1.0, None])
+@pytest.mark.parametrize("lr_schedule", ["cosine", "wsd"])
 def test_offline_train_and_resume(
-    tiny_config: Config, cache_dir: Path, monkeypatch: pytest.MonkeyPatch, device, grad_clip
+    tiny_config: Config,
+    cache_dir: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    device,
+    grad_clip,
+    lr_schedule,
 ):
-
+    if lr_schedule == "wsd":
+        tiny_config.lr_schedule = WSDScheduleConfig(decay_fraction=0.5)
+    tiny_config.lr_schedule.warmup_steps = 3
     tiny_config.training.checkpoint_policy = "interval"
     tiny_config.data.buffer_size_mib = 24 / 2**20
     tiny_config.optimizer.grad_clip = grad_clip
@@ -95,6 +105,13 @@ def test_offline_train_and_resume(
     result = train(complete)
     assert result["tokens"] == 64 and result["epochs"] == 2
     assert result["final_validation"]["tokens"] == 29
+    rows = [
+        json.loads(line)
+        for line in (complete.runtime.output_dir / "metrics.jsonl").read_text().splitlines()
+    ]
+    assert [row["lr"] / tiny_config.optimizer.lr for row in rows if row["event"] == "train"] == (
+        pytest.approx([1 / 3, 2 / 3, 1, 0 if lr_schedule == "wsd" else 0.1])
+    )
     tiny_config.data.prefetch = False
     resumed = train(tiny_config, complete.runtime.output_dir / "epoch-001.pt")
     assert resumed["final_validation"]["loss"] == pytest.approx(
@@ -122,6 +139,14 @@ def test_offline_train_and_resume(
     changed.training.tokens_per_parameters *= 2
     with pytest.raises(ValueError, match="incompatible"):
         train(changed, complete.runtime.output_dir / "epoch-001.pt")
+    changed = tiny_config.model_copy(deep=True)
+    changed.lr_schedule = CosineScheduleConfig() if lr_schedule == "wsd" else WSDScheduleConfig()
+    with pytest.raises(ValueError, match="incompatible"):
+        train(changed, complete.runtime.output_dir / "epoch-001.pt")
+    if lr_schedule == "wsd":
+        changed.lr_schedule = WSDScheduleConfig(warmup_steps=3, decay_fraction=0.25)
+        with pytest.raises(ValueError, match="incompatible"):
+            train(changed, complete.runtime.output_dir / "epoch-001.pt")
 
 
 def test_throughput_excludes_startup_evaluation_and_checkpoints(
@@ -181,7 +206,7 @@ def test_compiled_microbatch_remainder_resume(
     tiny_config.runtime.compile = True
     # A full four-sequence global batch is accumulated as microbatches of three and one.
     tiny_config.training.micro_batch_size = 3
-    test_offline_train_and_resume(tiny_config, cache_dir, monkeypatch, "cuda:0", 1.0)
+    test_offline_train_and_resume(tiny_config, cache_dir, monkeypatch, "cuda:0", 1.0, "cosine")
 
 
 @pytest.mark.parametrize("workers", [1, 4, 8])

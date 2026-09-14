@@ -1,0 +1,4 @@
+lr_schedule:
+  name: cosine
+  warmup_steps: 1000
+  min_lr_ratio: 0.1

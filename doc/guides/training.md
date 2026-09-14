@@ -24,7 +24,9 @@ uv run tiny-llm prepare --config configs/90m.yaml
 uv run tiny-llm train --config configs/20m.yaml
 ```
 
-Use `configs/50m.yaml` or `configs/90m.yaml` for larger models. Override fields
+Use `configs/50m.yaml` or `configs/90m.yaml` for larger models. Repeat `--config`
+to merge YAML files in order: later values override earlier values, mappings
+merge recursively, and lists are replaced. Then override fields
 with repeated `--set dotted.key=value` arguments; unknown fields are rejected.
 Give separate experiments their own output directories:
 
@@ -83,6 +85,80 @@ uv run tiny-llm train --config configs/smoke.yaml
 ```
 
 The smoke configuration truncates C4, so its evaluation is marked incomplete.
+
+### Learning-rate schedules
+
+Model recipes under `configs/` omit scheduler settings. Select a scheduler by
+adding `configs/cosine.yaml` or `configs/wsd.yaml` after the model recipe:
+
+```bash
+uv run tiny-llm train --config configs/20m.yaml --config configs/cosine.yaml
+uv run tiny-llm train --config configs/20m.yaml --config configs/wsd.yaml \
+  --set lr_schedule.warmup_steps=1000 --set lr_schedule.decay_fraction=0.2 \
+  --set runtime.output_dir=runs/20m-wsd
+```
+
+`lr_schedule.name` selects a separate, strict config class for `cosine` or `wsd`.
+An omitted `lr_schedule` section defaults to cosine; an explicit section requires
+`name`. Both schedules use `optimizer.lr` as the base learning rate and default
+to `lr_schedule.warmup_steps=1000`. This must be a nonnegative integer; zero
+disables warmup. Warmup is linear over optimizer updates: update 1 uses
+`optimizer.lr / warmup_steps`, and update `warmup_steps` reaches the base rate.
+Microbatches during accumulation and individual packed workers do not count as
+additional updates. Changing the total budget does not change the warmup length,
+and epoch boundaries or resumes do not reset it.
+
+The scheduler tracks consumed tokens, with one optimizer update consuming
+`training.batch_tokens` targets. Thus the warmup token count is
+`warmup_steps * training.batch_tokens`; decay uses the realized total budget.
+If a run ends during warmup, it keeps its linear warmup rate through the final
+update. The configured warmup length is never capped to the run length.
+
+Cosine decays immediately after warmup, reaching
+`optimizer.lr * lr_schedule.min_lr_ratio` at the end if the run extends beyond
+warmup. The minimum ratio defaults to `0.1` and must be in `[0, 1]`.
+
+WSD holds the base learning rate after warmup, then decays over the final
+`lr_schedule.decay_fraction` of the budget (default `0.1`). For consumed tokens
+$T$, total tokens $N$, warmup tokens $W$, base learning rate $\eta$, and decay
+fraction $d$, decay starts at $S=\max(W,(1-d)N)$ and follows
+
+$$
+\mathrm{lr}(T)=\eta(1-\sqrt{q}),\qquad
+q=\operatorname{clamp}\left(\frac{T-S}{N-S},0,1\right).
+$$
+
+The decay fraction must be in `[0, 1]`. When warmup reaches into the requested
+decay window, there is no stable phase and decay is shortened to the remaining
+updates after warmup. If warmup covers the whole run, decay is never entered.
+A zero decay fraction holds the base rate after warmup, including at the end of
+training. Positive decay reaches zero at the total budget when the run extends
+beyond warmup. WSD has no `min_lr_ratio` field.
+
+Changing `lr_schedule.name` in a later config file or a `--set` override resets
+the scheduler section, so fields from the previous variant do not carry over.
+Partial sections and overrides otherwise retain earlier fields. Config files
+are merged before any `--set` overrides, and validation occurs only after all
+inputs are combined. The saved `resolved.yaml` contains the complete config and
+can be loaded on its own.
+
+The Python API also accepts multiple paths:
+
+```python
+from tiny_llm.config import load_config
+
+config = load_config(
+    ["configs/20m.yaml", "configs/wsd.yaml"],
+    ["lr_schedule.warmup_steps=500"],
+)
+```
+
+The old `lr_schedule.warmup_fraction`, `optimizer.warmup_fraction`, and
+`optimizer.min_lr_ratio` fields are rejected. Old configs and checkpoint
+identities are not translated; use the
+previous source version for existing runs. New runs require the same schedule
+and phase settings on resume. Adaptive consensus uses the selected schedule;
+any nonempty active window must contain a positive learning rate when `p > 0`.
 
 ### Token budget and epochs
 

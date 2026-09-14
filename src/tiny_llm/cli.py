@@ -75,7 +75,13 @@ def build_parser() -> argparse.ArgumentParser:
         "report",
     ):
         child = commands.add_parser(name)
-        child.add_argument("--config", type=Path)
+        child.add_argument(
+            "--config",
+            type=Path,
+            action="append",
+            default=[],
+            help="YAML file; repeat to merge in order",
+        )
         child.add_argument("--set", action="append", default=[], metavar="KEY=VALUE")
         if name == "train":
             child.add_argument("--resume", type=Path)

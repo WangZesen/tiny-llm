@@ -8,7 +8,7 @@ from helpers import assert_nested_equal
 from test_packed import assert_storage, matrix
 
 from tiny_llm.checkpoints import load_training_checkpoint
-from tiny_llm.config import AdaptiveConsensusConfig, Config
+from tiny_llm.config import AdaptiveConsensusConfig, Config, WSDScheduleConfig
 from tiny_llm.data import TokenCache, training_boundaries
 from tiny_llm.packed import PackedLlama
 from tiny_llm.packed_benchmark import benchmark_packed, benchmark_packed_worker
@@ -47,12 +47,12 @@ def test_config_validation(tiny_config: Config):
 
 @pytest.mark.parametrize(
     "start_frac,warmup,p",
-    [(0, 0.5, 1), (0.3, 0.6, 2), (0.6, 0.2, 0.5), (1, 0.5, 1), (0.99, 0, 1), (0, 0, 0)],
+    [(0, 2, 1), (0.3, 3, 2), (0.6, 1, 0.5), (1, 2, 1), (0.99, 0, 1), (0, 0, 0)],
 )
 def test_realized_schedule(tiny_config: Config, start_frac, warmup, p):
     config = adaptive_config(tiny_config, start_frac, p)
     assert config.decentralized is not None and config.decentralized.adaptive_consensus is not None
-    config.optimizer.warmup_fraction = warmup
+    config.lr_schedule.warmup_steps = warmup
     before = torch.get_rng_state()
     schedule = adaptive_consensus_schedule(
         config, training_boundaries(config, config.model.parameter_count)
@@ -67,15 +67,20 @@ def test_realized_schedule(tiny_config: Config, start_frac, warmup, p):
     for r, lr in enumerate(rates):
         expected = 1 if r < expected_start or p == 0 else (lr / max(rates[expected_start:])) ** p
         assert schedule.gamma(r, lr) == expected
-    if start_frac == 0 and warmup == 0.5:
+    if start_frac == 0 and warmup == 2:
         assert schedule.lr_max is not None
         assert schedule.lr_max > rates[0]  # Maximum occurs after activation.
 
 
-def test_zero_lr_and_empty_window(tiny_config: Config):
+@pytest.mark.parametrize("lr_schedule", ["cosine", "wsd"])
+def test_zero_lr_and_empty_window(tiny_config: Config, lr_schedule):
     config = adaptive_config(tiny_config, 0)
     assert config.decentralized is not None and config.decentralized.adaptive_consensus is not None
-    config.optimizer.min_lr_ratio = 0
+    if lr_schedule == "wsd":
+        config.lr_schedule = WSDScheduleConfig(warmup_steps=0)
+    else:
+        assert config.lr_schedule.name == "cosine"
+        config.lr_schedule.min_lr_ratio = 0
     with pytest.raises(ValueError, match="positive maximum LR"):
         adaptive_consensus_schedule(config, [8])
     config.decentralized.adaptive_consensus.p = 0
@@ -87,6 +92,18 @@ def test_zero_lr_and_empty_window(tiny_config: Config):
     assert schedule is not None
     assert schedule.start_step == 1 and schedule.lr_max is None
     assert schedule.gamma(0, 0) == 1
+
+
+def test_wsd_consensus(tiny_config: Config):
+    config = adaptive_config(tiny_config, start_frac=0.3, p=2)
+    config.lr_schedule = WSDScheduleConfig(warmup_steps=1, decay_fraction=0.5)
+    schedule = adaptive_consensus_schedule(config, [8, 16, 24, 32])
+    assert schedule is not None
+    assert schedule.start_step == 2
+    rates = [learning_rate(config, tokens, 128) for tokens in (32, 64, 96, 128)]
+    # Only the final two steps are active, so the first decay update is normalized to one.
+    assert schedule.lr_max == pytest.approx(config.optimizer.lr * (1 - 0.5**0.5))
+    assert [schedule.gamma(step, lr) for step, lr in enumerate(rates)] == [1, 1, 1, 0]
 
 
 @pytest.mark.parametrize("topology", ["complete", "one_peer_ring", "one_peer_exponential"])
@@ -165,13 +182,17 @@ def test_identity_and_benchmark_guards(tiny_config: Config, cache_dir: Path, tmp
 
 @pytest.mark.parametrize("resume_epoch", [1, 3])
 @pytest.mark.parametrize("scheme", ["awc", "atc"])
-def test_adaptive_resume(tiny_config: Config, cache_dir: Path, resume_epoch, scheme):
+@pytest.mark.parametrize("lr_schedule", ["cosine", "wsd"])
+def test_adaptive_resume(tiny_config: Config, cache_dir: Path, resume_epoch, scheme, lr_schedule):
     config = adaptive_config(tiny_config)
     assert config.decentralized is not None and config.decentralized.adaptive_consensus is not None
     config.decentralized.scheme = scheme
     config.training.checkpoint_policy = "interval"
     config.runtime.deterministic = True
-    config.optimizer.warmup_fraction = 0.6
+    if lr_schedule == "wsd":
+        config.lr_schedule = WSDScheduleConfig(warmup_steps=1, decay_fraction=0.5)
+    else:
+        config.lr_schedule.warmup_steps = 3
     baseline = config.model_copy(deep=True)
     baseline.runtime.output_dir = cache_dir.parent / "baseline"
     expected = train(baseline)
