@@ -1,0 +1,79 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import WsdExplorer from '../../components/WsdExplorer';
+import data from '../../generated/wsd.json';
+import type { WsdData } from '../../lib/wsd';
+import { url } from '../../lib/links';
+const measurements = data as WsdData;
+const download = (name: string) => url('assets/data/wsd-horizon-tuning/' + name);
+---
+
+<Layout title="WSD horizon explorer" wide>
+  <div class="explorer-intro" data-pagefind-body>
+    <div>
+      <p class="eyebrow">594 seed/horizon results · 198 configuration/horizon comparisons</p>
+      <h1>Learning across training horizons.</h1>
+      <p class="lead">
+        Synchronous and packed-8 AWC training with WSD. Five global token budgets, three runtime
+        seeds, and checkpoint continuation.
+      </p>
+    </div>
+    <a href={url('results/wsd-horizon-tuning/')}>Analysis & protocol ↗</a>
+  </div>
+  <p>
+    <a href={url('explorer/')}>Earlier cosine-study explorer</a> ·{' '}
+    <a href={download('provenance.json')}>Audit & provenance</a>
+  </p>
+  <section aria-label="WSD static summary" data-pagefind-body>
+    <h2>Winning configurations</h2>
+    <p>
+      Final full-validation mean ± sample SD over seeds 42, 43, and 44. Later winners are
+      conditional on earlier LR pruning; continued horizons share training history.
+    </p>
+    <div class="table-wrap">
+      <table aria-label="WSD winning configurations">
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Horizon</th>
+            <th>LR</th>
+            <th>β₁</th>
+            <th>β₂</th>
+            <th>Mean ± sample SD</th>
+            <th>Seed results</th>
+          </tr>
+        </thead>
+        <tbody>
+          {measurements.campaigns.flatMap((c) =>
+            c.stages.map((s) => (
+              <tr>
+                <td>{c.title}</td>
+                <td>{s.horizon}</td>
+                <td>{s.groups[0].lr}</td>
+                <td>{s.groups[0].beta1}</td>
+                <td>{s.groups[0].beta2}</td>
+                <td>
+                  {s.groups[0].mean.toFixed(6)} ± {s.groups[0].sd.toFixed(6)}
+                </td>
+                <td>{s.runs}</td>
+              </tr>
+            )),
+          )}
+        </tbody>
+      </table>
+    </div>
+    <p>
+      <a href={download('runs.csv')}>All seed results CSV</a> ·{' '}
+      <a href={download('configurations.csv')}>All rankings CSV</a> ·{' '}
+      <a href={download('dataset.json')}>Dataset JSON</a> ·{' '}
+      <a href={download('winner-comparison.pdf')}>Comparison figure PDF</a>
+    </p>
+  </section>
+  <WsdExplorer data={measurements} client:load />
+  <noscript>
+    <p class="note">
+      Enable JavaScript for filters and interactive plots. Winner tables, articles, figures, and
+      source downloads remain available.
+    </p>
+  </noscript>
+</Layout>

@@ -3,9 +3,17 @@ title: Optimizer tuning
 description: Learning-rate response, AdamW moments, and the difference between tuned winners and matched mixing-order comparisons.
 ---
 
-Learning rate and AdamW moment settings interact strongly in these small-model experiments. The useful region is not captured by a single learning rate shared across all methods. The current studies search synchronous training, adapt-while-combine (AWC), and adapt-then-combine (ATC) under the [128K-token protocol](../methods/protocol.md).
+Learning rate and AdamW moment settings interact strongly in these small-model experiments. The useful region is not captured by a single learning rate shared across all methods. The earlier cosine studies search synchronous training, adapt-while-combine (AWC), and adapt-then-combine (ATC) under the [128K-token protocol](../methods/protocol.md).
 
-## Synchronous baseline
+## WSD across training horizons
+
+The [WSD campaigns](wsd-horizon-tuning.md) tune both beta1 values (0.9, 0.95) and beta2 values (0.9, 0.98, 0.999) at five horizons. AWC selects beta1 0.95 and beta2 0.999 throughout, with LR 0.006 at 20–40 tokens/parameter and 0.003 at 80–160. Synchronous training selects beta1 0.95 throughout: beta2 0.98 with LR 0.004 at 20–40, then beta2 0.999 with LR 0.003 at 80–160.
+
+These are validation-selected preferences within successively pruned grids. At AWC horizon 80, LR 0.003 beats 0.004 by only **0.000015** nats in the three-seed mean; two seeds favor 0.004. That decision excludes 0.004 at horizons 120 and 160, where it remains unmeasured. Three seeds and shared continuation histories limit the evidence for close preferences.
+
+Independently tuned winners favor synchronous training at all five horizons. Separately, the 90 comparisons matching horizon, LR, beta pair, and seeds favor synchronous training in 88 cases. The [WSD explorer](/tiny-llm/explorer/wsd/) separates those analyses and marks pruning explicitly. Differences from the cosine studies below are not controlled schedule comparisons.
+
+## Synchronous baseline: earlier cosine study
 
 The synchronous grid contains 24 configurations and 72 runs: eight learning rates and three beta2 values, with beta1 fixed at 0.9. LR 0.0056 and beta2 0.98 give the lowest mean final loss, 3.558689 ± 0.004887 nats. At the same beta2, LR 0.004 measures 3.562837 ± 0.004298.
 

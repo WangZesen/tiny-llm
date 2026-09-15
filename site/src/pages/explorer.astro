@@ -10,7 +10,7 @@ const studies = data as Study[];
 <Layout title="Results explorer" wide>
   <div class="explorer-intro">
     <div>
-      <p class="eyebrow">753 runs · 251 configurations · five studies</p>
+      <p class="eyebrow">Earlier cosine studies · 753 runs · 251 configurations</p>
       <h1>Explore the measurements.</h1>
       <p class="lead">
         From response surfaces to individual seeds. Every point is a recorded experiment; every
@@ -19,6 +19,10 @@ const studies = data as Study[];
     </div>
     <a href={url('methods/protocol/')}>Protocol & interpretation ↗</a>
   </div>
+  <p>
+    <a href={url('explorer/wsd/')}>Explore the new WSD horizon campaigns →</a> · These earlier
+    studies use cosine decay and a single 20-token-per-parameter budget.
+  </p>
   <Explorer studies={studies} client:load />
   <details>
     <summary>Static summary and source downloads</summary>

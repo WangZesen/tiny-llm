@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import studies from '../generated/studies.json';
+import wsd from '../generated/wsd.json';
 import { url } from '../lib/links';
 const total = studies.reduce((n, s) => n + s.runs, 0);
 const configurations = studies.reduce((n, s) => n + s.configurations, 0);
@@ -23,7 +24,7 @@ const xpos = (loss: number) => 165 + ((loss - 3.54) / 0.2) * 275;
         updates, and gradient clipping shape their learning.
       </p>
       <div class="actions">
-        <a class="button" href={url('explorer/')}>
+        <a class="button" href={url('explorer/wsd/')}>
           Explore the results <span>↗</span>
         </a>
         <a class="button secondary" href={url('guides/training/')}>
@@ -33,11 +34,11 @@ const xpos = (loss: number) => 165 + ((loss - 3.54) / 0.2) * 275;
     </div>
     <div class="hero-visual">
       <div class="chart-heading">
-        <h3>Best tested validation loss</h3>
-        <span class="tag">20M · C4</span>
+        <h3>Earlier cosine-study winners</h3>
+        <span class="tag">20M · 20 tokens/parameter</span>
       </div>
       <svg viewBox="0 0 480 330" role="img" aria-labelledby="chart-title chart-description">
-        <title id="chart-title">Five separately tuned recipes</title>
+        <title id="chart-title">Five separately tuned historical cosine recipes</title>
         <desc id="chart-description">
           Mean final full-validation cross-entropy with sample standard deviations across three
           seeds. Lower loss is better.
@@ -114,11 +115,11 @@ const xpos = (loss: number) => 165 + ((loss - 3.54) / 0.2) * 275;
   <section class="metrics-strip" aria-label="Experiment scope">
     <div>
       <strong>{total}</strong>
-      <span>completed tuning runs</span>
+      <span>historical cosine run results</span>
     </div>
     <div>
       <strong>{configurations}</strong>
-      <span>measured configurations</span>
+      <span>historical cosine configurations</span>
     </div>
     <div>
       <strong>20.4M</strong>
@@ -128,6 +129,57 @@ const xpos = (loss: number) => 165 + ((loss - 3.54) / 0.2) * 275;
       <strong>128K</strong>
       <span>global batch tokens</span>
     </div>
+  </section>
+  <section data-pagefind-body>
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">New · WSD horizon campaigns</p>
+        <h2>More training. Different optimizer choices.</h2>
+      </div>
+      <a href={url('explorer/wsd/')}>Open the WSD explorer ↗</a>
+    </div>
+    <p>
+      594 seed/horizon results across 198 configuration/horizon comparisons, in addition to the 753
+      historical cosine results. Continued horizons share training history. Synchronous training has
+      lower selected mean loss at every measured horizon; the gap to packed-8 AWC narrows with
+      budget.
+    </p>
+    <div class="table-wrap">
+      <table aria-label="WSD homepage winners">
+        <thead>
+          <tr>
+            <th>Tokens/parameter</th>
+            <th>Synchronous mean ± SD</th>
+            <th>Packed-8 AWC mean ± SD</th>
+            <th>AWC − sync</th>
+          </tr>
+        </thead>
+        <tbody>
+          {wsd.campaigns[0].stages.map((s, i) => {
+            const a = wsd.campaigns[1].stages[i].groups[0],
+              b = s.groups[0];
+            return (
+              <tr>
+                <td>{s.horizon}</td>
+                <td>
+                  {b.mean.toFixed(6)} ± {b.sd.toFixed(6)}
+                </td>
+                <td>
+                  {a.mean.toFixed(6)} ± {a.sd.toFixed(6)}
+                </td>
+                <td>{(a.mean - b.mean).toFixed(6)}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+    <p>
+      <a href={url('results/wsd-horizon-tuning/')}>
+        Read the WSD findings and pruning qualifications →
+      </a>{' '}
+      · <a href={url('assets/data/wsd-horizon-tuning/winners.csv')}>Download winners CSV</a>
+    </p>
   </section>
   <section>
     <div class="section-heading">
@@ -178,8 +230,8 @@ const xpos = (loss: number) => 165 + ((loss - 3.54) / 0.2) * 275;
   </section>
   <section>
     <div class="section-heading">
-      <h2>A recipe to start with.</h2>
-      <a href={url('explorer/')}>Inspect all {configurations} configurations ↗</a>
+      <h2>Earlier cosine-study recipes.</h2>
+      <a href={url('explorer/')}>Inspect {configurations} historical configurations ↗</a>
     </div>
     <div class="table-wrap">
       <table aria-label="Best tested recipes">

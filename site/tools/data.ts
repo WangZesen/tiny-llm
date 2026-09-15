@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { parse } from 'yaml';
 import type { RegistryEntry, Study, Curves, Configuration } from '../src/lib/types.ts';
 import { configurationId, mean, sd, validatePoints } from '../src/lib/statistics.ts';
+import { loadWsd } from './wsd.ts';
 
 export const root = fileURLToPath(new URL('../../', import.meta.url));
 export const dataRoot = path.join(root, 'doc/data');
@@ -180,6 +181,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const generated = path.join(root, 'site/src/generated');
   mkdirSync(generated, { recursive: true });
   writeFileSync(path.join(generated, 'studies.json'), JSON.stringify(studies));
+  writeFileSync(path.join(generated, 'wsd.json'), JSON.stringify(loadWsd()));
   const assets = path.join(root, 'site/public/assets');
   mkdirSync(assets, { recursive: true });
   cpSync(dataRoot, path.join(assets, 'data'), { recursive: true });

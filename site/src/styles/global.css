@@ -914,3 +914,55 @@ summary {
     transition: none !important;
   }
 }
+.wsd-explorer section {
+  margin-block: 2.5rem;
+  min-width: 0;
+}
+.wsd-charts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+.wsd-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: end;
+  margin-block: 1rem;
+}
+.wsd-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+.wsd-controls input[type='checkbox'] {
+  width: auto;
+}
+.wsd-controls select {
+  font: inherit;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.wsd-controls label:has(input[type='checkbox']) {
+  flex-direction: row;
+  align-items: center;
+  min-height: 44px;
+}
+.wsd-explorer tr.selected {
+  background: var(--soft);
+  outline: 1px solid var(--line);
+}
+.wsd-explorer .table-wrap {
+  max-height: 34rem;
+}
+@media (max-width: 760px) {
+  .wsd-charts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -1,25 +1,37 @@
 ---
 title: Experimental protocol
-description: The common measurement contract behind the five current tuning studies.
+description: Measurement conventions for WSD horizon campaigns and earlier cosine tuning studies.
 ---
 
-## Model and data
+The model, validation metric, and seed aggregation conventions are shared. Schedule and realized training budgets differ between the WSD campaigns and the earlier cosine studies.
+
+## WSD horizon campaigns
+
+The [WSD publication](../results/wsd-horizon-tuning.md) covers synchronous and eight-worker AWC training at 20, 40, 80, 120, and 160 global tokens per single-model parameter. Both use 131,072-token global batches, 312 warmup updates, and square-root decay over the final 10% of each realized budget. Global targets are 408,027,136; 816,185,344; 1,632,239,616; 2,448,424,960; and 3,264,610,304, respectively. Eight AWC workers each process one eighth of these tokens; full evaluation uses their averaged parameters.
+
+Each eligible optimizer triple requires complete, finite final full-validation losses for seeds 42–44. Rank by arithmetic mean, breaking exact ties by lower LR, then lower beta1, then lower beta2. The global winner sets the next horizon’s LR ceiling; retain every beta pair at eligible LRs, and never restore a pruned LR. These campaigns contain 594 seed/horizon results across 198 comparisons, including 90 comparisons matched across methods.
+
+Each configuration and seed continues its own trajectory from the previous horizon’s pre-decay checkpoint. The 40, 80, 160, and 240 epoch horizons save at epochs 35, 72, 143, and 216, respectively; the final horizon has 320 epochs. Boundaries follow realized tokens and the unchanged scheduler. Warmup, AdamW moments, RNG state, and the committed data cursor continue. Each horizon still completes its own decay and full validation before selection.
+
+Published curves splice parent history only through that saved cursor and append child observations strictly after it, excluding earlier terminal decays. All 594 results have reconstructed curves; continued horizons share training history. Native receipts, recipe/cache identities, continuation metadata, retirement records, and retained checksums are recorded in the [publication provenance](../data/wsd-horizon-tuning/provenance.json). Website builds use the committed export.
+
+## Earlier cosine studies: model and data
 
 Each local Llama-style model has 20,403,520 unique trainable parameters: eight layers, width 320, five attention heads, feed-forward width 896, and a 32,000-token vocabulary. Context length is 1,024. Tied embeddings count once. Training uses the prepared English C4 cache with preprocessing seed 42; runtime seeds 42, 43, and 44 vary initialization and sample order.
 
 The intended budget is 20 prediction targets per unique parameter. Actual complete-block budgets differ slightly because epoch and worker partitions must divide into sequences:
 
-| System | Global training targets | Targets per local model | Updates | Epochs |
-|---|---:|---:|---:|---:|
-| Synchronous | 408,071,168 | 408,071,168 | 3,120 | 40 |
-| Four-worker packed | 408,068,096 | 102,017,024 | 3,119 | 40 |
-| Eight-worker packed | 408,068,096 | 51,008,512 | 3,119 | 40 |
+| System              | Global training targets | Targets per local model | Updates | Epochs |
+| ------------------- | ----------------------: | ----------------------: | ------: | -----: |
+| Synchronous         |             408,071,168 |             408,071,168 |   3,120 |     40 |
+| Four-worker packed  |             408,068,096 |             102,017,024 |   3,119 |     40 |
+| Eight-worker packed |             408,068,096 |              51,008,512 |   3,119 |     40 |
 
-All studies use 131,072 global targets per full update, without accumulation. The microbatch contains 128 sequences for synchronous training, 32 per worker for four workers, and 16 per worker for eight. Short epoch-ending updates use their actual target counts. Virtual epochs partition a single token stream; they are not repeated passes over the entire C4 dataset.
+The earlier cosine studies use 131,072 global targets per full update, without accumulation. The microbatch contains 128 sequences for synchronous training, 32 per worker for four workers, and 16 per worker for eight. Short epoch-ending updates use their actual target counts. Virtual epochs partition a single token stream; they are not repeated passes over the entire C4 dataset.
 
 ## Optimizer and execution
 
-AdamW uses epsilon $10^{-8}$, weight decay 0.1 on matrix weights, and no decay on normalization scales. The token-based schedule in these studies warmed up linearly for 5% of the budget, then followed cosine decay to 10% of the peak learning rate. Raw-gradient clipping uses threshold 1.0 except in the explicit no-clipping study.
+AdamW uses epsilon $10^{-8}$, weight decay 0.1 on matrix weights, and no decay on normalization scales. The token-based schedule in the earlier cosine studies warmed up linearly for 5% of the budget, then followed cosine decay to 10% of the peak learning rate. Raw-gradient clipping uses threshold 1.0 except in the explicit no-clipping study.
 
 Current scheduler configs use `lr_schedule.warmup_steps`, defaulting to 1000 optimizer updates. See the [schedule guide](../guides/training.md#learning-rate-schedules) for current configuration; the study schedules above retain their historical settings.
 
@@ -46,7 +58,7 @@ The SD describes seed variation. It is not a confidence interval. Validation is 
 
 ## Curves and coverage
 
-The five primary datasets contain 753 runs and 251 configurations. The beta99 report reuses AWC measurements and adds no unique primary runs. Exported curves cover 726 runs; 27 AWC logs are unavailable at their recorded paths. Final results for all runs remain available.
+The five earlier cosine datasets contain 753 runs and 251 configurations. The beta99 report reuses AWC measurements and adds no unique primary runs. Exported curves cover 726 runs; 27 AWC logs are unavailable at their recorded paths. Final results for all runs remain available.
 
 Training curves use the logged token-weighted loss over each logging window, plotted at its ending global token count. Packed training loss concerns local models. Validation curves use the epoch subset, evaluated at averaged weights for packed methods. Final full-validation losses are displayed separately.
 

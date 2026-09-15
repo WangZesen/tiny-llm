@@ -4,7 +4,10 @@ export const sd = (xs: number[]) =>
   xs.length > 1 ? Math.sqrt(xs.reduce((s, x) => s + (x - mean(xs)) ** 2, 0) / (xs.length - 1)) : 0;
 export const configurationId = (study: string, lr: number, beta1: number, beta2: number) =>
   `${study}--${lr}--${beta1}--${beta2}`;
-export function aggregate(runs: CurveRun[], kind: 'train' | 'validation') {
+export function aggregate(
+  runs: Pick<CurveRun, 'train' | 'validation'>[],
+  kind: 'train' | 'validation',
+) {
   const positions = new Map<number, number[]>();
   for (const run of runs)
     for (const [tokens, loss] of run[kind]) {

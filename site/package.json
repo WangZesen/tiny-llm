@@ -12,7 +12,7 @@
     "check": "astro check && tsc --noEmit",
     "data:check": "tsx tools/data.ts",
     "data:refresh": "tsx tools/export-curves.ts",
-    "test": "tsx --test tests/data.test.ts",
+    "test": "tsx --test tests/*.test.ts",
     "test:browser": "playwright test"
   },
   "dependencies": {
