@@ -52,7 +52,11 @@ def test_benchmark_reuse_identity(tiny_config: Config):
 
 
 @pytest.mark.parametrize("data_mode", ["synthetic", "real"])
-def test_worker_windows(tiny_config: Config, cache_dir: Path, tmp_path: Path, data_mode):
+@pytest.mark.parametrize("optimizer_name", ["adamw", "accumadamw"])
+def test_worker_windows(
+    tiny_config: Config, cache_dir: Path, tmp_path: Path, data_mode, optimizer_name
+):
+    tiny_config.optimizer.name = optimizer_name
     tiny_config.training.tokens_per_parameters = 128 / tiny_config.model.parameter_count
     result = benchmark_worker(
         tiny_config,

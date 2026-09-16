@@ -1,0 +1,4 @@
+# Compose after a model recipe; all other optimizer settings come from that recipe.
+optimizer:
+  name: accumadamw
+  accum_iter: 4

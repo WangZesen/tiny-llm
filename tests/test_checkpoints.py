@@ -14,9 +14,8 @@ from tiny_llm.checkpoints import load_training_checkpoint, save_epoch_checkpoint
 from tiny_llm.config import Config
 from tiny_llm.data import TokenCache, file_digest
 from tiny_llm.packed import PackedLlama
-from tiny_llm.packed_optimizer import PackedAdamW
 from tiny_llm.runtime import rng_state
-from tiny_llm.train import evaluate_checkpoint, recipe_identity, train
+from tiny_llm.train import evaluate_checkpoint, make_optimizer, recipe_identity, train
 
 
 @pytest.mark.parametrize(
@@ -104,8 +103,9 @@ def test_interruption_keeps_only_committed_epochs(
     assert {path.name for path in output.glob("*.safetensors")} == {"epoch-001.safetensors"}
 
 
-@pytest.fixture
-def packed_epoch(tiny_config: Config, cache_dir: Path):
+@pytest.fixture(params=["adamw", "accumadamw"])
+def packed_epoch(tiny_config: Config, cache_dir: Path, request: pytest.FixtureRequest):
+    tiny_config.optimizer.name = request.param
     raw = tiny_config.model_dump()
     raw["decentralized"] = dict(num_models=4, topology="one_peer_exponential")
     raw["training"].update(
@@ -120,8 +120,15 @@ def packed_epoch(tiny_config: Config, cache_dir: Path):
     return config, config.runtime.output_dir / "epoch-001.pt"
 
 
-@pytest.mark.parametrize("workers", [1, 4])
-def test_epoch_continuation_and_retention(tiny_config: Config, cache_dir: Path, workers):
+@pytest.mark.parametrize("workers,checkpoint_format", [(1, "epoch"), (4, "epoch"), (4, "combined")])
+@pytest.mark.parametrize(
+    "optimizer_name,accum_iter", [("adamw", 4), ("accumadamw", 3), ("accumadamw", 4)]
+)
+def test_epoch_continuation_and_retention(
+    tiny_config: Config, cache_dir: Path, workers, checkpoint_format, optimizer_name, accum_iter
+):
+    tiny_config.optimizer.name = optimizer_name
+    tiny_config.optimizer.accum_iter = accum_iter
     raw = tiny_config.model_dump()
     raw["training"].update(
         checkpoint_policy="interval",
@@ -137,6 +144,11 @@ def test_epoch_continuation_and_retention(tiny_config: Config, cache_dir: Path, 
     train(config)
     output = config.runtime.output_dir
     epoch = output / "epoch-001.pt"
+    if optimizer_name == "adamw":
+        legacy = torch.load(epoch, weights_only=False)
+        legacy["config"]["optimizer"].pop("name")
+        legacy["config"]["optimizer"].pop("accum_iter")
+        torch.save(legacy, epoch)
     original = load_training_checkpoint(epoch)
     assert original["completed_epochs"] == original["best_epoch"] == 1
     assert original["cursor"] == 12 and original["step"] == 3
@@ -147,7 +159,11 @@ def test_epoch_continuation_and_retention(tiny_config: Config, cache_dir: Path, 
     branch.data.prefetch = False
     branch.training.save_epoch_training_state = False
     assert recipe_identity(branch, TokenCache(cache_dir)) == original["recipe_identity"]
-    train(branch, epoch)
+    continuation = epoch
+    if checkpoint_format == "combined":
+        continuation = output / "combined.pt"
+        torch.save(original, continuation)
+    train(branch, continuation)
     actual = load_training_checkpoint(branch.runtime.output_dir / "final.pt")
     for key in (
         "model",
@@ -214,7 +230,7 @@ def test_worker_files_compact_and_validated(packed_epoch):
     worker_path = path.parent / root["workers"][0]["path"]
     original = worker_path.read_bytes()
     local = torch.load(worker_path, weights_only=False)
-    for damage in (
+    damages = [
         "missing",
         "truncated",
         "swapped",
@@ -224,7 +240,10 @@ def test_worker_files_compact_and_validated(packed_epoch):
         "position",
         "counter",
         "moment",
-    ):
+    ]
+    if config.optimizer.name == "accumadamw":
+        damages.extend(["buffer", "buffer_shape", "buffer_missing", "window", "optimizer"])
+    for damage in damages:
         broken = copy.deepcopy(local)
         manifest = copy.deepcopy(root)
         if damage == "missing":
@@ -245,6 +264,16 @@ def test_worker_files_compact_and_validated(packed_epoch):
                 broken["cursor"] += 4
             elif damage == "counter":
                 broken["optimizer"]["state"][name]["step"].add_(1)
+            elif damage == "buffer":
+                broken["optimizer"]["state"][name]["accum_grad"].fill_(float("nan"))
+            elif damage == "buffer_shape":
+                broken["optimizer"]["state"][name]["accum_grad"] = torch.zeros(1)
+            elif damage == "buffer_missing":
+                broken["optimizer"]["state"][name].pop("accum_grad")
+            elif damage == "window":
+                broken["optimizer"]["param_groups"][0]["accum_iter"] = 2
+            elif damage == "optimizer":
+                broken["optimizer"]["optimizer"] = "adamw"
             else:
                 broken["optimizer"]["state"][name]["exp_avg_sq"].fill_(float("nan"))
             torch.save(broken, worker_path)
@@ -265,7 +294,7 @@ def test_interrupted_worker_export_and_immutability(packed_epoch, monkeypatch: p
     state = load_training_checkpoint(original)
     model = PackedLlama(config.model, 4)
     model.load_packed_state_dict(state["model"])
-    optimizer = PackedAdamW(model, config)
+    optimizer = make_optimizer(model, config, torch.device("cpu"))
     optimizer.load_state_dict(state["optimizer"])
     directory = original.parent.parent / "partial"
     directory.mkdir()

@@ -45,6 +45,8 @@ Model recipes omit scheduler settings and default to cosine. Add
 `configs/cosine.yaml` selects cosine explicitly. Both schedules default to
 312 warmup updates; override with `--set lr_schedule.warmup_steps=500`.
 Repeated config files merge in order, followed by `--set` overrides.
+AdamW is the default optimizer. Add `--config configs/accumadamw.yaml` to select
+AccumAdamW; `--set optimizer.accum_iter=4` sets its moment-accumulation window.
 See the [training and evaluation guide](doc/guides/training.md) for smoke runs,
 resume behavior, alternate recipes, clipping, and checkpoint retention.
 

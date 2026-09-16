@@ -10,9 +10,10 @@ from torch.func import functional_call
 from tiny_llm.config import Config, ModelConfig, WSDScheduleConfig, load_config
 from tiny_llm.data import BufferedTokenLoader, TokenCache
 from tiny_llm.model import Llama, token_losses
+from tiny_llm.optimizers import AccumAdamW
 from tiny_llm.packed import PackedLlama, local_mean_losses
 from tiny_llm.packed_benchmark import benchmark_packed_worker
-from tiny_llm.packed_optimizer import PackedAdamW
+from tiny_llm.packed_optimizer import PackedAccumAdamW, PackedAdamW
 from tiny_llm.runtime import preserve_rng, rng_state, setup_runtime
 from tiny_llm.state import LoaderState, TrainingState
 from tiny_llm.train import (
@@ -71,9 +72,12 @@ def matrix(n, topology, step, device="cpu", dtype=torch.float64):
         ("sdpa", "complete", False, "atc", None),
     ],
 )
+@pytest.mark.parametrize("optimizer_name", ["adamw", "accumadamw"])
 def test_independent_worker_parity(
-    tiny_config: Config, backend, topology, adaptive, scheme, grad_clip
+    tiny_config: Config, backend, topology, adaptive, scheme, grad_clip, optimizer_name
 ):
+    tiny_config.optimizer.name = optimizer_name
+    tiny_config.optimizer.accum_iter = 2
     n = 3
     schedule = None
     if adaptive:
@@ -92,7 +96,7 @@ def test_independent_worker_parity(
     locals_ = [Llama(tiny_config.model, backend).double() for _ in range(n)]
     for i, model in enumerate(locals_):
         model.load_state_dict(packed.local_state_dict(i))
-    optimizer = PackedAdamW(packed, tiny_config)
+    optimizer = make_optimizer(packed, tiny_config, torch.device("cpu"))
     optimizers = [make_optimizer(model, tiny_config, torch.device("cpu")) for model in locals_]
     consumed = 0
     for step, batch in enumerate((2, 1, 2)):
@@ -128,8 +132,16 @@ def test_independent_worker_parity(
             for local_optimizer in optimizers:
                 local_optimizer.step()
         moments_before = optimizer.first_moment_storage.clone()
+        buffer_before = (
+            optimizer.accum_grad_storage.clone()
+            if optimizer.accum_grad_storage is not None
+            else None
+        )
         packed.mix_(topology, step, gamma=gamma)
         assert torch.equal(moments_before, optimizer.first_moment_storage)
+        if buffer_before is not None:
+            assert optimizer.accum_grad_storage is not None
+            assert torch.equal(buffer_before, optimizer.accum_grad_storage)
         w = gamma * matrix(n, topology, step) + (1 - gamma) * torch.eye(n, dtype=torch.float64)
         with torch.no_grad():
             for name, _ in locals_[0].named_parameters():
@@ -146,10 +158,13 @@ def test_independent_worker_parity(
                 torch.testing.assert_close(
                     packed.get_parameter(entry.name)[i], p, rtol=1e-9, atol=1e-11
                 )
-                for arena, key in (
+                states = [
                     (optimizer.first_moment_storage, "exp_avg"),
                     (optimizer.second_moment_storage, "exp_avg_sq"),
-                ):
+                ]
+                if optimizer.accum_grad_storage is not None:
+                    states.append((optimizer.accum_grad_storage, "accum_grad"))
+                for arena, key in states:
                     torch.testing.assert_close(
                         packed.parameter_view(arena, entry)[i],
                         local_optimizer.state[p][key],
@@ -309,6 +324,7 @@ def decentralized_config(config, n=2, topology="one_peer_ring"):
 
 @pytest.mark.parametrize("scheme", ["awc", "atc"])
 @pytest.mark.parametrize("lr_schedule,grad_clip", [("cosine", 1.0), ("wsd", None)])
+@pytest.mark.parametrize("optimizer_name", ["adamw", "accumadamw"])
 def test_training_resume(
     tiny_config: Config,
     cache_dir: Path,
@@ -316,7 +332,9 @@ def test_training_resume(
     scheme,
     grad_clip,
     lr_schedule,
+    optimizer_name,
 ):
+    tiny_config.optimizer.name = optimizer_name
     if lr_schedule == "wsd":
         tiny_config.lr_schedule = WSDScheduleConfig(warmup_steps=1, decay_fraction=0.5)
     tiny_config.training.checkpoint_policy = "interval"
@@ -418,6 +436,7 @@ def test_buffered_worker_partition(
         ("sequential", "atc", 1.0),
     ],
 )
+@pytest.mark.parametrize("optimizer_name", ["adamw", "accumadamw"])
 def test_benchmark_worker(
     tiny_config: Config,
     tmp_path: Path,
@@ -425,14 +444,19 @@ def test_benchmark_worker(
     scheme,
     monkeypatch: pytest.MonkeyPatch,
     grad_clip,
+    optimizer_name,
 ):
+    tiny_config.optimizer.name = optimizer_name
     config = decentralized_config(tiny_config)
     assert config.decentralized is not None
     config.decentralized.scheme = scheme
     config.optimizer.grad_clip = grad_clip
     events = []
     original_mix = PackedLlama.mix_
-    original_step = PackedAdamW.step if execution == "packed" else torch.optim.AdamW.step
+    packed_cls = PackedAccumAdamW if optimizer_name == "accumadamw" else PackedAdamW
+    local_cls = AccumAdamW if optimizer_name == "accumadamw" else torch.optim.AdamW
+    optimizer_cls = packed_cls if execution == "packed" else local_cls
+    original_step = optimizer_cls.step
 
     def mix(self, *args, **kwargs):
         events.append("mix")
@@ -443,7 +467,7 @@ def test_benchmark_worker(
         return original_step(self, *args, **kwargs)
 
     monkeypatch.setattr(PackedLlama, "mix_", mix)
-    monkeypatch.setattr(PackedAdamW if execution == "packed" else torch.optim.AdamW, "step", update)
+    monkeypatch.setattr(optimizer_cls, "step", update)
     destination = tmp_path / f"{execution}.json"
     result = benchmark_packed_worker(config, destination, execution, warmup=1, steps=1)
     assert result["status"] == "ok"
@@ -464,11 +488,14 @@ def test_benchmark_worker(
 
 @pytest.mark.cuda
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA required")
-def test_cuda_bf16_and_fused_optimizer(tiny_config: Config):
+@pytest.mark.parametrize("optimizer_name", ["adamw", "accumadamw"])
+def test_cuda_bf16_and_fused_optimizer(tiny_config: Config, optimizer_name):
     from tiny_llm.checkpoints import load_training_checkpoint, save_epoch_checkpoint
     from tiny_llm.config import DecentralizedConfig
 
     cfg = tiny_config
+    cfg.optimizer.name = optimizer_name
+    cfg.optimizer.accum_iter = 2
     cfg.runtime.device, cfg.runtime.amp = "cuda:0", True
     cfg.runtime.deterministic = False
     cfg.training.batch_tokens = 64
@@ -477,7 +504,7 @@ def test_cuda_bf16_and_fused_optimizer(tiny_config: Config):
     )
     torch.use_deterministic_algorithms(False)
     packed = PackedLlama(cfg.model, 2).cuda()
-    optimizer = PackedAdamW(packed, cfg)
+    optimizer = make_optimizer(packed, cfg, torch.device("cuda"))
     locals_ = [Llama(cfg.model).cuda() for _ in range(2)]
     for i, model in enumerate(locals_):
         model.load_state_dict(packed.local_state_dict(i))
@@ -488,7 +515,7 @@ def test_cuda_bf16_and_fused_optimizer(tiny_config: Config):
             return local_mean_losses(packed(x), y)
 
     loss = torch.compile(compute, fullgraph=True)
-    for _step in range(2):
+    for _step in range(3):
         x = torch.randint(128, (2, 2, 16), device="cuda")
         optimizer.zero_grad()
         actual = loss(x, x)
@@ -558,6 +585,8 @@ def test_cuda_bf16_and_fused_optimizer(tiny_config: Config):
                 packed.parameter_storage.zero_()
                 optimizer.first_moment_storage.zero_()
                 optimizer.second_moment_storage.zero_()
+                if optimizer.accum_grad_storage is not None:
+                    optimizer.accum_grad_storage.zero_()
             packed.load_packed_state_dict(restored["model"])
             optimizer.load_state_dict(restored["optimizer"])
             assert_storage(packed, optimizer)
@@ -565,10 +594,13 @@ def test_cuda_bf16_and_fused_optimizer(tiny_config: Config):
         for name, q in model.named_parameters():
             torch.testing.assert_close(packed.get_parameter(name)[i], q, rtol=1e-6, atol=1e-8)
         for entry, q in zip(packed.layout, model.parameters(), strict=True):
-            for arena, key in (
+            states = [
                 (optimizer.first_moment_storage, "exp_avg"),
                 (optimizer.second_moment_storage, "exp_avg_sq"),
-            ):
+            ]
+            if optimizer.accum_grad_storage is not None:
+                states.append((optimizer.accum_grad_storage, "accum_grad"))
+            for arena, key in states:
                 torch.testing.assert_close(
                     packed.parameter_view(arena, entry)[i],
                     optimizers[i].state[q][key],

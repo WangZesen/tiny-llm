@@ -41,6 +41,45 @@ $$
 
 ATC mixes updated parameters, but it still does not mix moment buffers. For synchronous training there is one model and no parameter mixing. Both methods follow the same token-based learning-rate schedule in the tuning studies.
 
+## AccumAdamW
+
+AccumAdamW follows [Appendix C of *From Promise to Practice*](https://openreview.net/pdf?id=lo3nlFHOft),
+with the persistent second-moment coefficient corrected to $\beta_2$ and epsilon
+outside the square root, matching the
+[authors' implementation](https://github.com/WangZesen/Decent-DP/blob/main/src/decent_dp/optim.py).
+The optimizer uses the same clipped gradients and parameter-mixing order as above.
+
+Using the zero-based update index $t$ from above, let $s$ be `optimizer.accum_iter`
+and $k=\lfloor t/s\rfloor+1$. Initialize persistent moments $M_i,V_i$ and buffer
+$b_i$ to zero. Before committing the current window, form
+
+$$
+\begin{aligned}
+m_i^t &= \beta_1 M_i+(1-\beta_1)\widetilde g_i^t,\\
+v_i^t &= \beta_2 V_i+(1-\beta_2)(\widetilde g_i^t)^2,\\
+u_i^t &= \frac{m_i^t/(1-\beta_1^k)}{\sqrt{v_i^t/(1-\beta_2^k)}+\epsilon}.
+\end{aligned}
+$$
+
+Apply the ordinary, AWC, or ATC parameter update with this direction, including
+decoupled weight decay every step. Add $\widetilde g_i^t/s$ to $b_i$. Only when
+$(t+1)\bmod s=0$, commit
+
+$$
+M_i\leftarrow\beta_1 M_i+(1-\beta_1)b_i,\qquad
+V_i\leftarrow\beta_2 V_i+(1-\beta_2)b_i^2,\qquad b_i\leftarrow0.
+$$
+
+The second moment uses the square of the mean gradient, so opposite gradients
+within a window can cancel. Parameters still update on every step. With $s=1$,
+these equations reduce to AdamW. All three buffers remain local to each worker.
+Incomplete windows carry across epochs and checkpoints without a forced commit.
+
+In saved state, `exp_avg` and `exp_avg_sq` hold $M_i,V_i$, and `accum_grad` holds
+$b_i$. The reference implementation stores moments pre-multiplied by their
+respective betas; our unscaled representation produces the same update equations
+and directly exposes the moments defined here.
+
 ## Topology and evaluation
 
 One-peer exponential mixing uses incoming offsets 1, 2, 4, and so on below the number of workers, cycling across updates. Each row assigns half its weight to the worker itself and half to its selected incoming peer. Other supported topologies include complete averaging and an alternating one-peer ring. Details and checkpoint behavior are in the [implementation reference](implementation.md).

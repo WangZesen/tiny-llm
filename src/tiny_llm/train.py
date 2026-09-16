@@ -29,8 +29,9 @@ from tiny_llm.data import (
     training_boundaries,
 )
 from tiny_llm.model import Llama, token_losses
+from tiny_llm.optimizers import make_local_optimizer
 from tiny_llm.packed import PackedLlama, local_mean_losses
-from tiny_llm.packed_optimizer import PackedAdamW
+from tiny_llm.packed_optimizer import PackedAccumAdamW, PackedAdamW, PackedOptimizer
 from tiny_llm.runtime import (
     actual_backend,
     append_metric,
@@ -49,40 +50,24 @@ from tiny_llm.state import Batch, EvaluationResult, LossFunction, TrainingState
 
 
 @overload
-def make_optimizer(model: Llama, config: Config, device: torch.device) -> torch.optim.AdamW: ...
+def make_optimizer(model: Llama, config: Config, device: torch.device) -> torch.optim.Optimizer: ...
 
 
 @overload
-def make_optimizer(model: PackedLlama, config: Config, device: torch.device) -> PackedAdamW: ...
+def make_optimizer(model: PackedLlama, config: Config, device: torch.device) -> PackedOptimizer: ...
 
 
 def make_optimizer(
     model: Llama | PackedLlama, config: Config, device: torch.device
-) -> torch.optim.AdamW | PackedAdamW:
+) -> torch.optim.Optimizer | PackedOptimizer:
     if isinstance(model, PackedLlama):
-        return PackedAdamW(model, config)
-    cfg = config.optimizer
-    decay = [p for p in model.parameters() if p.ndim >= 2]
-    no_decay = [p for p in model.parameters() if p.ndim < 2]
-    fused = (
-        config.runtime.fused_optimizer
-        and device.type == "cuda"
-        and not config.runtime.deterministic
-    )
-    optimizer = torch.optim.AdamW(
-        [
-            {"params": decay, "weight_decay": cfg.weight_decay},
-            {"params": no_decay, "weight_decay": 0.0},
-        ],
-        lr=cfg.lr,
-        betas=(cfg.beta1, cfg.beta2),
-        eps=cfg.eps,
-        fused=fused,
-        foreach=False if config.runtime.deterministic else None,
-    )
+        cls = PackedAccumAdamW if config.optimizer.name == "accumadamw" else PackedAdamW
+        return cls(model, config)
+    optimizer = make_local_optimizer(model.parameters(), config, device)
     logger.info(
-        "AdamW fused={} | attention={} | deterministic={}",
-        fused,
+        "{} fused={} | attention={} | deterministic={}",
+        type(optimizer).__name__,
+        optimizer.param_groups[0].get("fused", False),
         actual_backend(config),
         config.runtime.deterministic,
     )
@@ -177,7 +162,7 @@ def loss_function(model: Llama | PackedLlama, config: Config, device: torch.devi
 
 def optimizer_update(
     model: Llama,
-    optimizer: torch.optim.AdamW,
+    optimizer: torch.optim.Optimizer,
     compute_loss: LossFunction,
     next_batch: Callable[[int, torch.device], Batch],
     config: Config,
@@ -286,6 +271,10 @@ def evaluate(
 
 def recipe_identity(config: Config, cache: TokenCache) -> str:
     value = config.model_dump(mode="json")
+    if config.optimizer.name == "adamw":
+        # Preserve identities of recipes saved before optimizer selection existed.
+        value["optimizer"].pop("name")
+        value["optimizer"].pop("accum_iter")
     for key in RETENTION_FIELDS:
         value["training"].pop(key)
     for name in ("output_dir", "device", "cpu_threads"):
@@ -493,7 +482,7 @@ def _train(config: Config, resume: Path | None) -> dict:
                 for group in optimizer.param_groups:
                     group["lr"] = lr
                 if isinstance(model, PackedLlama):
-                    assert isinstance(optimizer, PackedAdamW) and decentralized is not None
+                    assert isinstance(optimizer, PackedOptimizer) and decentralized is not None
                     optimizer.zero_grad(set_to_none=True)
                     local_batch = step_blocks // num_models
                     x, y = loader.next_batch(step_blocks, device)
@@ -518,7 +507,7 @@ def _train(config: Config, resume: Path | None) -> dict:
                         optimizer.step()
                     packed_metrics = (means.detach(), local_grad_norms, mixing_gamma)
                 else:
-                    assert isinstance(optimizer, torch.optim.AdamW)
+                    assert isinstance(optimizer, torch.optim.Optimizer)
                     step_loss, grad_norm = optimizer_update(
                         model,
                         optimizer,

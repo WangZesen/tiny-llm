@@ -161,6 +161,15 @@ edits should occur under `torch.no_grad()` between updates. Use
 `model.local_state_dict(i)` for ordinary Llama-compatible weights, and the
 training resume checkpoints to preserve arena bindings and optimizer counters.
 
+For `config.optimizer.name = "accumadamw"`, use `PackedAccumAdamW` or the shared
+`tiny_llm.train.make_optimizer` factory. Both packed wrappers derive from
+`PackedOptimizer`. AccumAdamW adds `optimizer.accum_grad_storage`, a fourth arena
+with the same layout, whose worker views alias local `accum_grad` state. The
+moment arenas hold unscaled persistent moments; they change only on completed
+accumulation windows. The buffer and CPU integer counters survive `zero_grad()`,
+mixing, and checkpoint restoration. Ordinary training uses
+`tiny_llm.optimizers.AccumAdamW` with the same state and update rules.
+
 ### Adaptive consensus
 
 Add this optional section to a packed configuration; both fields are required:
@@ -252,7 +261,7 @@ Runs without a retained state require a fresh output directory.
 ### Full epoch state and local worker inspection
 
 Snapshots are captured after epoch validation, best-result updates, and advancement
-of the completed-epoch counter. They contain parameters, both AdamW moment states,
+of the completed-epoch counter. They contain parameters, both optimizer moment states,
 optimizer counters and groups, Python/NumPy/PyTorch/CUDA RNG states, committed
 loader position, global step, configuration/recipe identity, and best-validation
 metadata. The token cursor restores learning-rate progress; the global step
@@ -261,12 +270,21 @@ and compiler caches are not algorithmic training state.
 
 Ordinary epoch files use the existing full checkpoint format v2. Packed epoch
 roots use version 4 (`kind: packed_epoch`) and contain shared state plus ordered
-worker references and SHA-256 checksums. Each `node-NNN/epoch-NNN.pt` uses version 1
+worker references and SHA-256 checksums. AdamW's `node-NNN/epoch-NNN.pt` uses version 1
 (`kind: packed_worker`) and contains that worker's model configuration, index,
 worker count, recipe identity, epoch/step/cursor, named parameters, and named AdamW
 state. Parameter groups reference names rather than opaque parameter indices.
 All worker tensors are compact CPU clones with their original shapes; arena
 padding and other workers' backing storage are excluded.
+
+AccumAdamW worker files use version 2 and tag their optimizer as `accumadamw`.
+They additionally retain each parameter's partial `accum_grad` buffer and the
+`accum_iter` group setting. Its combined packed optimizer state uses version 2
+with an additional accumulation arena; AdamW retains optimizer version 1.
+The enclosing training-checkpoint versions remain unchanged. Loading validates
+the optimizer identity, window, counters, buffer shapes and finite values;
+completed windows must have empty accumulation buffers. Execution flags follow
+the current runtime, while mathematical settings and partial windows resume.
 
 ```python
 import torch
@@ -295,7 +313,8 @@ together with its referenced worker files, preserving their relative paths.
 
 The root stores no duplicate parameter or moment arrays. Each full epoch archive
 adds approximately three FP32 model copies per worker (weights plus two moments),
-in addition to existing weight exports and rolling/final checkpoints. Snapshots
+or four with AccumAdamW's gradient buffer, in addition to existing weight exports
+and rolling/final checkpoints. Snapshots
 are retained per epoch, not per periodic save interval.
 
 The new retention field is excluded from recipe identity, so older configurations
@@ -303,3 +322,8 @@ and checkpoints remain compatible and retention can change on resume. Complete
 state restoration supports bitwise continuation with deterministic execution under
 matching conditions. Nondeterministic CUDA kernels and hardware/software changes
 retain their existing numerical reproducibility limits.
+
+For AdamW, the added optimizer name and inactive accumulation-window field are
+also excluded from recipe identity, preserving existing checkpoint compatibility.
+AccumAdamW identities include both fields, preventing a change of optimizer or
+window on resume.

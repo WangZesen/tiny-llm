@@ -12,7 +12,7 @@ import torch
 from tiny_llm.config import Config, save_config
 from tiny_llm.model import Llama
 from tiny_llm.packed import PackedLlama
-from tiny_llm.packed_optimizer import PackedAdamW
+from tiny_llm.packed_optimizer import PackedOptimizer
 from tiny_llm.runtime import (
     actual_backend,
     atomic_json,
@@ -78,7 +78,7 @@ def benchmark_packed_worker(
     def clip():
         if execution == "packed":
             optimizer = optimizers[0]
-            assert isinstance(optimizer, PackedAdamW)
+            assert isinstance(optimizer, PackedOptimizer)
             optimizer.clip_grad_norm_(config.optimizer.grad_clip)
         else:
             for model in models:

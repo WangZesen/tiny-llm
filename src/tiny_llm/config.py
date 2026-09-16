@@ -63,6 +63,8 @@ class DataConfig(StrictModel):
 
 
 class OptimizerConfig(StrictModel):
+    name: Literal["adamw", "accumadamw"] = "adamw"
+    accum_iter: int = Field(default=4, gt=0, strict=True)
     lr: float = Field(default=1e-3, gt=0)
     beta1: float = Field(default=0.9, ge=0, lt=1)
     beta2: float = Field(default=0.95, ge=0, lt=1)

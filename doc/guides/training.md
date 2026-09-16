@@ -96,7 +96,7 @@ a retained `epoch-NNN.pt` or `final.pt`; without one, start in a new output dire
 only weights at selected epochs, plus final training state.
 
 Packed epoch snapshots store each
-worker's weights and AdamW moments in `node-NNN/epoch-NNN.pt`; the root file holds
+worker's weights and optimizer state in `node-NNN/epoch-NNN.pt`; the root file holds
 shared state and references to those files. Keep the complete set together.
 To branch from an earlier epoch, use its root checkpoint and a new output directory:
 
@@ -117,6 +117,41 @@ uv run tiny-llm train --config configs/smoke.yaml
 ```
 
 The smoke configuration truncates C4, so its evaluation is marked incomplete.
+
+### Optimizers
+
+`optimizer.name` accepts `adamw` (the default) and `accumadamw`. Select AccumAdamW
+with an overlay or `--set optimizer.name=accumadamw`:
+
+```bash
+uv run tiny-llm train --config configs/packed4-20m-awc.yaml \
+  --config configs/accumadamw.yaml --set optimizer.accum_iter=4 \
+  --set runtime.output_dir=runs/packed4-20m-accumadamw
+```
+
+Both optimizers support ordinary and packed training, AWC/ATC, adaptive consensus,
+both learning-rate schedules, benchmarks, and checkpoint resume. The overlay
+changes only the optimizer name and accumulation window. Learning rate, betas,
+epsilon, weight decay, and clipping retain the base recipe's values; in particular,
+selecting AccumAdamW does not change `beta2` to the paper's experimental setting.
+
+AccumAdamW updates parameters every optimizer step and commits its persistent
+moments every `optimizer.accum_iter` steps. This strict positive integer defaults
+to 4, independently of worker count; 1 reduces to AdamW. It counts optimizer
+updates, separately from the microbatches used to form a gradient. The second
+moment uses the square of the window's mean clipped gradient. See the
+[corrected equations](../methods/algorithms.md#accumadamw).
+
+Partial accumulation windows persist across epochs and resume, including runs
+whose update counts are not divisible by the window. Neither evaluation nor
+`zero_grad()` clears them, and finishing a run does not force a moment commit.
+Keep the optimizer name and window unchanged when resuming. Existing AdamW
+checkpoints remain compatible; `accum_iter` has no effect on AdamW.
+
+AccumAdamW uses foreach tensor operations on CUDA and scalar operations on CPU
+or under deterministic execution. `runtime.fused_optimizer` controls AdamW only;
+AccumAdamW has no custom fused kernel. Its additional persistent gradient buffer
+costs one parameter-sized tensor per worker.
 
 ### Learning-rate schedules
 
