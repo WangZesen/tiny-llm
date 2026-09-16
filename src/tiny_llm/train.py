@@ -323,12 +323,26 @@ def _train(config: Config, resume: Path | None) -> dict:
     if (output / "resolved.yaml").exists() and resume is None:
         raise ValueError(f"run already exists at {output}; use --resume or a new output directory")
     setup_logging(output / "run.log")
+    startup_start = stage_start = time.monotonic()
+
+    def startup_stage(name: str) -> None:
+        nonlocal stage_start
+        now = time.monotonic()
+        logger.info(
+            "Startup {}: {:.3f}s (total {:.3f}s)", name, now - stage_start, now - startup_start
+        )
+        stage_start = now
+
+    logger.info("Startup training initialization (token checksums skipped)")
     device = setup_runtime(config)
+    startup_stage("runtime initialization")
     cache = TokenCache(config.data.cache_dir)
     cache.validate_config(config)
-    cache.verify()
+    # Prepared caches are immutable. Explicit `prepare` reuse verifies checksums;
+    # training only checks metadata instead of scanning every cached token.
     config.data.revision = cache.manifest["dataset_revision"]
     config.data.tokenizer_revision = cache.manifest["tokenizer_revision"]
+    startup_stage("cache checks")
     decentralized = config.decentralized
     num_models = decentralized.num_models if decentralized else 1
     boundaries = training_boundaries(config, config.model.parameter_count)
@@ -356,6 +370,7 @@ def _train(config: Config, resume: Path | None) -> dict:
         raise ValueError(f"cache too small: need {blocks * length + 1:,} training tokens")
     optimizer = make_optimizer(model, config, device)
     compute_loss = loss_function(model, config, device)
+    startup_stage("model and optimizer setup")
     identity = recipe_identity(config, cache)
     cursor, step, completed_epochs, best_loss = 0, 0, 0, float("inf")
     best_epoch = None
@@ -398,6 +413,7 @@ def _train(config: Config, resume: Path | None) -> dict:
     )
     if state is not None:
         loader.validate_state(state["loader"])
+    startup_stage("checkpoint and loader setup")
     save_config(config, output / "resolved.yaml")
     metadata = environment()
     metadata.update(
@@ -424,6 +440,7 @@ def _train(config: Config, resume: Path | None) -> dict:
     if consensus_schedule is not None:
         metadata["adaptive_consensus"] = asdict(consensus_schedule)
     atomic_json(output / ("environment-resume.json" if resume else "environment.json"), metadata)
+    startup_stage("run metadata")
     logger.info(
         "Training {:,} parameters ({:,} excluding embeddings and tied LM head) "
         "for {:,} targets in {} virtual epochs",
@@ -483,7 +500,9 @@ def _train(config: Config, resume: Path | None) -> dict:
         model.train()
         if device.type == "cuda":
             torch.cuda.synchronize(device)
+        startup_stage("validation subset")
         training_start = window_start = time.monotonic()
+        first_session_step = step + 1
         packed_metrics: tuple[torch.Tensor, torch.Tensor, float] | None = None
         for epoch_index in range(completed_epochs, len(boundaries)):
             boundary = boundaries[epoch_index]
@@ -532,6 +551,9 @@ def _train(config: Config, resume: Path | None) -> dict:
                 step += 1
                 window_loss += step_loss.item()
                 window_tokens += step_blocks * length
+                if step == first_session_step:
+                    # Reuse the existing scalar synchronization above; no extra GPU barrier.
+                    startup_stage("first update (including data loading and compilation)")
                 if step % config.training.log_every == 0 or cursor == boundary:
                     if device.type == "cuda":
                         torch.cuda.synchronize(device)

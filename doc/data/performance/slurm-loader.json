@@ -1,0 +1,1173 @@
+{
+  "date": "2026-09-16",
+  "account": "naiss2026-4-1590-gpu",
+  "source_revision": "4886ffe9ec695c5cffc3a9c684512b0972232dca",
+  "protocol": {
+    "config_files": [
+      "configs/20m.yaml",
+      "configs/packed8-20m-awc.yaml"
+    ],
+    "overrides": {
+      "training.tokens_per_parameters": 14,
+      "training.epoch_tokens_per_parameters": 14,
+      "training.checkpoint_policy": "none",
+      "training.log_every": 100
+    },
+    "stopping": "The profiler invokes the training signal handler on update 2100; the update finishes and the loader closes normally. The harness requires the exact expected interrupted status and exits successfully. No full validation is run.",
+    "steps_per_trial": 2100,
+    "excluded_initial_steps": 100,
+    "group_size_shards": 2,
+    "shard_tokens": 33554432,
+    "group_transitions_per_trial": 4,
+    "profiling": "Instrumented wall-clock time for next_batch, pin_memory, copy enqueue, group reads, and activation. CUDA events sample copies every 64 batches without extra per-batch synchronization. All variants use the same instrumentation.",
+    "batch_time": "Time in next_batch through GPU-copy enqueue, excluding GPU-copy completion. Includes preparation, allocation, and any group-activation wait.",
+    "pin_time": "One observation per tensor, two per baseline batch; includes allocation and copying into pinned memory. Candidate allocates pinned tensors directly, included in batch time.",
+    "throughput": "Training targets divided by update-window duration over steps 101-2100; initial compilation, startup, validation and checkpoint I/O excluded.",
+    "prefetch_comparison": "Prefetch enabled then disabled on one GPU. OS page caches were not cleared, so disabled-prefetch reads were warm.",
+    "candidate_comparison": "Candidate/baseline and baseline/candidate on two additional GPUs; compare within each allocation.",
+    "environment": "Existing aarch64 environment used without uv sync; explicit snapshot PYTHONPATH; fresh Inductor/Triton caches per process.",
+    "raw_artifacts": "runs/loader-overhead-20260916-121554",
+    "correctness": "63 CPU tests passed; 4 CUDA tests passed for each source variant, checking variable batch sizes, group crossings, padding, and host-storage lifetime on a nondefault CUDA stream."
+  },
+  "jobs": [
+    {
+      "job_id": 2532756,
+      "order": [
+        "baseline-1",
+        "baseline-0"
+      ]
+    },
+    {
+      "job_id": 2532892,
+      "order": [
+        "candidate-1",
+        "baseline-1"
+      ]
+    },
+    {
+      "job_id": 2533005,
+      "order": [
+        "baseline-1",
+        "candidate-1"
+      ]
+    },
+    {
+      "job_id": 2533594,
+      "order": [
+        "baseline",
+        "candidate",
+        "candidate",
+        "baseline"
+      ]
+    }
+  ],
+  "accounting": "JobID|State|ExitCode|Elapsed|NodeList\n2532756|COMPLETED|0:0|00:08:54|n474\n2532892|COMPLETED|0:0|00:08:36|n458\n2533005|COMPLETED|0:0|00:08:39|n466\n2533594|COMPLETED|0:0|00:05:08|n115\n",
+  "comparisons": [
+    {
+      "job_id": 2532892,
+      "baseline_batch_mean_ms": 0.45728305840020766,
+      "candidate_batch_mean_ms": 0.39020749638439156,
+      "batch_mean_reduction_fraction": 0.14668280572317327,
+      "baseline_batch_p99_ms": 0.8424869253212819,
+      "candidate_batch_p99_ms": 0.5971061506716069,
+      "throughput_change_fraction": 3.9993616258504616e-05
+    },
+    {
+      "job_id": 2533005,
+      "baseline_batch_mean_ms": 0.3700476621161215,
+      "candidate_batch_mean_ms": 0.3135698916303227,
+      "batch_mean_reduction_fraction": 0.15262296257414543,
+      "baseline_batch_p99_ms": 0.6976879097055643,
+      "candidate_batch_p99_ms": 0.42602260495186783,
+      "throughput_change_fraction": -0.0002443233943378864
+    }
+  ],
+  "trials": [
+    {
+      "job_id": "2532756",
+      "prefetch": true,
+      "steps": 2100,
+      "tokens_per_second": 1472821.8774475742,
+      "batch_seconds": {
+        "count": 2000,
+        "total": 0.9104561179410666,
+        "mean": 0.00045522805897053333,
+        "median": 0.0004778579968842678,
+        "p95": 0.000561822402960388,
+        "p99": 0.0006950551796762738,
+        "maximum": 0.0024919580027926713
+      },
+      "pin_seconds": {
+        "count": 4000,
+        "total": 0.2264867175836116,
+        "mean": 5.6621679395902904e-05,
+        "median": 5.766200047219172e-05,
+        "p95": 9.25121988984756e-05,
+        "p99": 0.00010643184315995304,
+        "maximum": 0.0003244700055802241
+      },
+      "copy_enqueue_seconds": {
+        "count": 4000,
+        "total": 0.1270819984783884,
+        "mean": 3.17704996195971e-05,
+        "median": 3.1998999475035816e-05,
+        "p95": 5.593404712271877e-05,
+        "p99": 5.878391602891493e-05,
+        "maximum": 8.476499351672828e-05
+      },
+      "copy_gpu_seconds": {
+        "count": 62,
+        "total": 0.0031557759996503594,
+        "mean": 5.0899612897586444e-05,
+        "median": 4.926399886608124e-05,
+        "p95": 8.29359997063875e-05,
+        "p99": 8.952607788145542e-05,
+        "maximum": 9.091199934482575e-05
+      },
+      "reads": [
+        {
+          "split": "validation",
+          "start": 0,
+          "stop": 67108865,
+          "bytes": 134217730,
+          "seconds": 0.13911631600058172,
+          "thread": "MainThread"
+        },
+        {
+          "split": "validation",
+          "start": 67108864,
+          "stop": 134217729,
+          "bytes": 134217730,
+          "seconds": 0.1626993579993723,
+          "thread": "MainThread"
+        },
+        {
+          "split": "validation",
+          "start": 134217728,
+          "stop": 197411296,
+          "bytes": 126387136,
+          "seconds": 0.16662381700007245,
+          "thread": "MainThread"
+        },
+        {
+          "split": "train",
+          "start": 0,
+          "stop": 67108865,
+          "bytes": 134217730,
+          "seconds": 0.16151856200303882,
+          "thread": "MainThread"
+        },
+        {
+          "split": "train",
+          "start": 67108864,
+          "stop": 134217729,
+          "bytes": 134217730,
+          "seconds": 0.15590224899642635,
+          "thread": "token-reader_0"
+        },
+        {
+          "split": "train",
+          "start": 134217728,
+          "stop": 201326593,
+          "bytes": 134217730,
+          "seconds": 0.1596643470111303,
+          "thread": "token-reader_0"
+        },
+        {
+          "split": "train",
+          "start": 201326592,
+          "stop": 268435457,
+          "bytes": 134217730,
+          "seconds": 0.21510233198932838,
+          "thread": "token-reader_0"
+        },
+        {
+          "split": "train",
+          "start": 268435456,
+          "stop": 335544321,
+          "bytes": 134217730,
+          "seconds": 0.2071939610032132,
+          "thread": "token-reader_0"
+        }
+      ],
+      "activations": [
+        {
+          "batch": 1,
+          "group": 0,
+          "cursor": 0,
+          "prefetched": false,
+          "ready": null,
+          "seconds": 0.1654882680013543
+        },
+        {
+          "batch": 513,
+          "group": 1,
+          "cursor": 65536,
+          "prefetched": true,
+          "ready": true,
+          "seconds": 0.001654414998483844
+        },
+        {
+          "batch": 1025,
+          "group": 2,
+          "cursor": 131072,
+          "prefetched": true,
+          "ready": true,
+          "seconds": 0.0015342910046456382
+        },
+        {
+          "batch": 1537,
+          "group": 3,
+          "cursor": 196608,
+          "prefetched": true,
+          "ready": true,
+          "seconds": 0.0010674240038497373
+        },
+        {
+          "batch": 2049,
+          "group": 4,
+          "cursor": 262144,
+          "prefetched": true,
+          "ready": true,
+          "seconds": 0.0008241359901148826
+        }
+      ],
+      "condition": "baseline",
+      "position_in_allocation": 1,
+      "hostname": "n474",
+      "gpu": "NVIDIA GH200 120GB",
+      "versions": {
+        "torch": "2.14.0",
+        "triton": "3.8.0",
+        "numpy": "2.5.3",
+        "pydantic": "2.13.5",
+        "datasets": "5.0.1",
+        "transformers": "5.16.1"
+      },
+      "source_hash": "9a297951c59607af6961d18bc80ce7469ee03a5470028041ed74617a2bc30c4a",
+      "cache_identity": "7618ae8749071f012cd3e3e27f96480ea18c5da5dca59cf90330f35beaa4da1c",
+      "cpu_threads": 8,
+      "training_targets": 275251200,
+      "last_training_window_loss": 3.699788360595703,
+      "pending_prefetches": 0
+    },
+    {
+      "job_id": "2532756",
+      "prefetch": false,
+      "steps": 2100,
+      "tokens_per_second": 1461506.8177400795,
+      "batch_seconds": {
+        "count": 2000,
+        "total": 1.0262410120340064,
+        "mean": 0.0005131205060170032,
+        "median": 0.00048665749636711553,
+        "p95": 0.0005683702016540338,
+        "p99": 0.0007932633708696808,
+        "maximum": 0.040959902995382436
+      },
+      "pin_seconds": {
+        "count": 4000,
+        "total": 0.2379128758184379,
+        "mean": 5.947821895460948e-05,
+        "median": 6.022250454407185e-05,
+        "p95": 9.663859891588799e-05,
+        "p99": 0.00012326160431257445,
+        "maximum": 0.00040654800250194967
+      },
+      "copy_enqueue_seconds": {
+        "count": 4000,
+        "total": 0.12711990289972164,
+        "mean": 3.177997572493041e-05,
+        "median": 3.236699558328837e-05,
+        "p95": 5.5839598644524806e-05,
+        "p99": 5.926392521359953e-05,
+        "maximum": 8.508599421475083e-05
+      },
+      "copy_gpu_seconds": {
+        "count": 62,
+        "total": 0.0031986240036785607,
+        "mean": 5.159070973675098e-05,
+        "median": 5.030400119721889e-05,
+        "p95": 8.668159805238246e-05,
+        "p99": 9.171039998531343e-05,
+        "maximum": 9.571199864149093e-05
+      },
+      "reads": [
+        {
+          "split": "validation",
+          "start": 0,
+          "stop": 67108865,
+          "bytes": 134217730,
+          "seconds": 0.015744653006549925,
+          "thread": "MainThread"
+        },
+        {
+          "split": "validation",
+          "start": 67108864,
+          "stop": 134217729,
+          "bytes": 134217730,
+          "seconds": 0.014987714996095747,
+          "thread": "MainThread"
+        },
+        {
+          "split": "validation",
+          "start": 134217728,
+          "stop": 197411296,
+          "bytes": 126387136,
+          "seconds": 0.013526765993447043,
+          "thread": "MainThread"
+        },
+        {
+          "split": "train",
+          "start": 0,
+          "stop": 67108865,
+          "bytes": 134217730,
+          "seconds": 0.015312057992559858,
+          "thread": "MainThread"
+        },
+        {
+          "split": "train",
+          "start": 67108864,
+          "stop": 134217729,
+          "bytes": 134217730,
+          "seconds": 0.016478710997034796,
+          "thread": "MainThread"
+        },
+        {
+          "split": "train",
+          "start": 134217728,
+          "stop": 201326593,
+          "bytes": 134217730,
+          "seconds": 0.022011699009453878,
+          "thread": "MainThread"
+        },
+        {
+          "split": "train",
+          "start": 201326592,
+          "stop": 268435457,
+          "bytes": 134217730,
+          "seconds": 0.0383524920034688,
+          "thread": "MainThread"
+        },
+        {
+          "split": "train",
+          "start": 268435456,
+          "stop": 335544321,
+          "bytes": 134217730,
+          "seconds": 0.02695487899472937,
+          "thread": "MainThread"
+        }
+      ],
+      "activations": [
+        {
+          "batch": 1,
+          "group": 0,
+          "cursor": 0,
+          "prefetched": false,
+          "ready": null,
+          "seconds": 0.016592626998317428
+        },
+        {
+          "batch": 513,
+          "group": 1,
+          "cursor": 65536,
+          "prefetched": false,
+          "ready": null,
+          "seconds": 0.01760565298900474
+        },
+        {
+          "batch": 1025,
+          "group": 2,
+          "cursor": 131072,
+          "prefetched": false,
+          "ready": null,
+          "seconds": 0.023642881991690956
+        },
+        {
+          "batch": 1537,
+          "group": 3,
+          "cursor": 196608,
+          "prefetched": false,
+          "ready": null,
+          "seconds": 0.040274642989970744
+        },
+        {
+          "batch": 2049,
+          "group": 4,
+          "cursor": 262144,
+          "prefetched": false,
+          "ready": null,
+          "seconds": 0.028617229996598326
+        }
+      ],
+      "condition": "baseline",
+      "position_in_allocation": 2,
+      "hostname": "n474",
+      "gpu": "NVIDIA GH200 120GB",
+      "versions": {
+        "torch": "2.14.0",
+        "triton": "3.8.0",
+        "numpy": "2.5.3",
+        "pydantic": "2.13.5",
+        "datasets": "5.0.1",
+        "transformers": "5.16.1"
+      },
+      "source_hash": "9a297951c59607af6961d18bc80ce7469ee03a5470028041ed74617a2bc30c4a",
+      "cache_identity": "7618ae8749071f012cd3e3e27f96480ea18c5da5dca59cf90330f35beaa4da1c",
+      "cpu_threads": 8,
+      "training_targets": 275251200,
+      "last_training_window_loss": 3.704879336357117,
+      "pending_prefetches": 0
+    },
+    {
+      "job_id": "2532892",
+      "prefetch": true,
+      "steps": 2100,
+      "tokens_per_second": 1496316.4758053015,
+      "batch_seconds": {
+        "count": 2000,
+        "total": 0.7804149927687831,
+        "mean": 0.00039020749638439154,
+        "median": 0.00035829300031764433,
+        "p95": 0.00047717865018057635,
+        "p99": 0.0005971061506716068,
+        "maximum": 0.003108575998339802
+      },
+      "pin_seconds": {
+        "count": 0,
+        "total": 0
+      },
+      "copy_enqueue_seconds": {
+        "count": 4000,
+        "total": 0.15420791388169164,
+        "mean": 3.855197847042291e-05,
+        "median": 3.841450234176591e-05,
+        "p95": 7.282904625753872e-05,
+        "p99": 7.606263228808528e-05,
+        "maximum": 0.0003787730020121671
+      },
+      "copy_gpu_seconds": {
+        "count": 62,
+        "total": 0.0040685440003871915,
+        "mean": 6.562167742559987e-05,
+        "median": 5.44160008430481e-05,
+        "p95": 9.581919983029365e-05,
+        "p99": 0.00023610464371740837,
+        "maximum": 0.000427264004945755
+      },
+      "reads": [
+        {
+          "split": "validation",
+          "start": 0,
+          "stop": 67108865,
+          "bytes": 134217730,
+          "seconds": 0.18919688999449136,
+          "thread": "MainThread"
+        },
+        {
+          "split": "validation",
+          "start": 67108864,
+          "stop": 134217729,
+          "bytes": 134217730,
+          "seconds": 0.20494408899685368,
+          "thread": "MainThread"
+        },
+        {
+          "split": "validation",
+          "start": 134217728,
+          "stop": 197411296,
+          "bytes": 126387136,
+          "seconds": 0.14070429699495435,
+          "thread": "MainThread"
+        },
+        {
+          "split": "train",
+          "start": 0,
+          "stop": 67108865,
+          "bytes": 134217730,
+          "seconds": 0.16841884000314167,
+          "thread": "MainThread"
+        },
+        {
+          "split": "train",
+          "start": 67108864,
+          "stop": 134217729,
+          "bytes": 134217730,
+          "seconds": 0.17301837799459463,
+          "thread": "token-reader_0"
+        },
+        {
+          "split": "train",
+          "start": 134217728,
+          "stop": 201326593,
+          "bytes": 134217730,
+          "seconds": 0.19073815300362185,
+          "thread": "token-reader_0"
+        },
+        {
+          "split": "train",
+          "start": 201326592,
+          "stop": 268435457,
+          "bytes": 134217730,
+          "seconds": 0.22230071199737722,
+          "thread": "token-reader_0"
+        },
+        {
+          "split": "train",
+          "start": 268435456,
+          "stop": 335544321,
+          "bytes": 134217730,
+          "seconds": 0.18429393799306126,
+          "thread": "token-reader_0"
+        }
+      ],
+      "activations": [
+        {
+          "batch": 1,
+          "group": 0,
+          "cursor": 0,
+          "prefetched": false,
+          "ready": null,
+          "seconds": 0.17265499899804126
+        },
+        {
+          "batch": 513,
+          "group": 1,
+          "cursor": 65536,
+          "prefetched": true,
+          "ready": true,
+          "seconds": 0.0015254589961841702
+        },
+        {
+          "batch": 1025,
+          "group": 2,
+          "cursor": 131072,
+          "prefetched": true,
+          "ready": true,
+          "seconds": 0.0015402719945996068
+        },
+        {
+          "batch": 1537,
+          "group": 3,
+          "cursor": 196608,
+          "prefetched": true,
+          "ready": true,
+          "seconds": 0.0016528449996258132
+        },
+        {
+          "batch": 2049,
+          "group": 4,
+          "cursor": 262144,
+          "prefetched": true,
+          "ready": true,
+          "seconds": 0.0010344000038458034
+        }
+      ],
+      "condition": "candidate",
+      "position_in_allocation": 1,
+      "hostname": "n458",
+      "gpu": "NVIDIA GH200 120GB",
+      "versions": {
+        "torch": "2.14.0",
+        "triton": "3.8.0",
+        "numpy": "2.5.3",
+        "pydantic": "2.13.5",
+        "datasets": "5.0.1",
+        "transformers": "5.16.1"
+      },
+      "source_hash": "bd5acbe373f48180b13d7d082a66b43b7c144f6a5ba0bcd8e3fde62978d30b8c",
+      "cache_identity": "7618ae8749071f012cd3e3e27f96480ea18c5da5dca59cf90330f35beaa4da1c",
+      "cpu_threads": 8,
+      "training_targets": 275251200,
+      "last_training_window_loss": 3.696786706447601,
+      "pending_prefetches": 0
+    },
+    {
+      "job_id": "2532892",
+      "prefetch": true,
+      "steps": 2100,
+      "tokens_per_second": 1496256.6350916135,
+      "batch_seconds": {
+        "count": 2000,
+        "total": 0.9145661168004153,
+        "mean": 0.0004572830584002077,
+        "median": 0.0004179229981673416,
+        "p95": 0.0005678635967342416,
+        "p99": 0.0008424869253212819,
+        "maximum": 0.003230171998438891
+      },
+      "pin_seconds": {
+        "count": 4000,
+        "total": 0.22634976408153307,
+        "mean": 5.6587441020383264e-05,
+        "median": 5.825400148751214e-05,
+        "p95": 9.359860159747768e-05,
+        "p99": 0.0001006715231051202,
+        "maximum": 0.0017989199986914173
+      },
+      "copy_enqueue_seconds": {
+        "count": 4000,
+        "total": 0.12482205611740937,
+        "mean": 3.1205514029352344e-05,
+        "median": 3.241499507566914e-05,
+        "p95": 5.64139994821744e-05,
+        "p99": 6.067258458642751e-05,
+        "maximum": 0.00026588000037008896
+      },
+      "copy_gpu_seconds": {
+        "count": 62,
+        "total": 0.003319007996469736,
+        "mean": 5.353238703983445e-05,
+        "median": 5.224000103771687e-05,
+        "p95": 8.760799728333949e-05,
+        "p99": 9.850816160440446e-05,
+        "maximum": 0.00010713600367307663
+      },
+      "reads": [
+        {
+          "split": "validation",
+          "start": 0,
+          "stop": 67108865,
+          "bytes": 134217730,
+          "seconds": 0.018103599999449216,
+          "thread": "MainThread"
+        },
+        {
+          "split": "validation",
+          "start": 67108864,
+          "stop": 134217729,
+          "bytes": 134217730,
+          "seconds": 0.014894451000145636,
+          "thread": "MainThread"
+        },
+        {
+          "split": "validation",
+          "start": 134217728,
+          "stop": 197411296,
+          "bytes": 126387136,
+          "seconds": 0.01378350899904035,
+          "thread": "MainThread"
+        },
+        {
+          "split": "train",
+          "start": 0,
+          "stop": 67108865,
+          "bytes": 134217730,
+          "seconds": 0.014813398003752809,
+          "thread": "MainThread"
+        },
+        {
+          "split": "train",
+          "start": 67108864,
+          "stop": 134217729,
+          "bytes": 134217730,
+          "seconds": 0.017778649998945184,
+          "thread": "token-reader_0"
+        },
+        {
+          "split": "train",
+          "start": 134217728,
+          "stop": 201326593,
+          "bytes": 134217730,
+          "seconds": 0.01736858299409505,
+          "thread": "token-reader_0"
+        },
+        {
+          "split": "train",
+          "start": 201326592,
+          "stop": 268435457,
+          "bytes": 134217730,
+          "seconds": 0.04136504999769386,
+          "thread": "token-reader_0"
+        },
+        {
+          "split": "train",
+          "start": 268435456,
+          "stop": 335544321,
+          "bytes": 134217730,
+          "seconds": 0.026791440999659244,
+          "thread": "token-reader_0"
+        }
+      ],
+      "activations": [
+        {
+          "batch": 1,
+          "group": 0,
+          "cursor": 0,
+          "prefetched": false,
+          "ready": null,
+          "seconds": 0.016472129995236173
+        },
+        {
+          "batch": 513,
+          "group": 1,
+          "cursor": 65536,
+          "prefetched": true,
+          "ready": true,
+          "seconds": 0.0010714550007833168
+        },
+        {
+          "batch": 1025,
+          "group": 2,
+          "cursor": 131072,
+          "prefetched": true,
+          "ready": true,
+          "seconds": 0.0014944819995434955
+        },
+        {
+          "batch": 1537,
+          "group": 3,
+          "cursor": 196608,
+          "prefetched": true,
+          "ready": true,
+          "seconds": 0.001655596002819948
+        },
+        {
+          "batch": 2049,
+          "group": 4,
+          "cursor": 262144,
+          "prefetched": true,
+          "ready": true,
+          "seconds": 0.0009583700011717156
+        }
+      ],
+      "condition": "baseline",
+      "position_in_allocation": 2,
+      "hostname": "n458",
+      "gpu": "NVIDIA GH200 120GB",
+      "versions": {
+        "torch": "2.14.0",
+        "triton": "3.8.0",
+        "numpy": "2.5.3",
+        "pydantic": "2.13.5",
+        "datasets": "5.0.1",
+        "transformers": "5.16.1"
+      },
+      "source_hash": "9a297951c59607af6961d18bc80ce7469ee03a5470028041ed74617a2bc30c4a",
+      "cache_identity": "7618ae8749071f012cd3e3e27f96480ea18c5da5dca59cf90330f35beaa4da1c",
+      "cpu_threads": 8,
+      "training_targets": 275251200,
+      "last_training_window_loss": 3.710232858657837,
+      "pending_prefetches": 0
+    },
+    {
+      "job_id": "2533005",
+      "prefetch": true,
+      "steps": 2100,
+      "tokens_per_second": 1538975.9066220173,
+      "batch_seconds": {
+        "count": 2000,
+        "total": 0.740095324232243,
+        "mean": 0.0003700476621161215,
+        "median": 0.0003602465076255612,
+        "p95": 0.0003913947468390688,
+        "p99": 0.0006976879097055642,
+        "maximum": 0.002620952989673242
+      },
+      "pin_seconds": {
+        "count": 4000,
+        "total": 0.18461485907027964,
+        "mean": 4.615371476756991e-05,
+        "median": 5.5486001656390727e-05,
+        "p95": 6.58859935356304e-05,
+        "p99": 7.270295420312321e-05,
+        "maximum": 0.0002545850002206862
+      },
+      "copy_enqueue_seconds": {
+        "count": 4000,
+        "total": 0.1018288777268026,
+        "mean": 2.545721943170065e-05,
+        "median": 2.9503004043363035e-05,
+        "p95": 3.8686994230374694e-05,
+        "p99": 4.166362195974214e-05,
+        "maximum": 0.0002572090015746653
+      },
+      "copy_gpu_seconds": {
+        "count": 62,
+        "total": 0.002646303998306394,
+        "mean": 4.268232255332894e-05,
+        "median": 4.1840000078082085e-05,
+        "p95": 5.902399886399508e-05,
+        "p99": 7.148319914937019e-05,
+        "maximum": 7.372800260782241e-05
+      },
+      "reads": [
+        {
+          "split": "validation",
+          "start": 0,
+          "stop": 67108865,
+          "bytes": 134217730,
+          "seconds": 0.20295501701184548,
+          "thread": "MainThread"
+        },
+        {
+          "split": "validation",
+          "start": 67108864,
+          "stop": 134217729,
+          "bytes": 134217730,
+          "seconds": 0.16527961500105448,
+          "thread": "MainThread"
+        },
+        {
+          "split": "validation",
+          "start": 134217728,
+          "stop": 197411296,
+          "bytes": 126387136,
+          "seconds": 0.17376348200195935,
+          "thread": "MainThread"
+        },
+        {
+          "split": "train",
+          "start": 0,
+          "stop": 67108865,
+          "bytes": 134217730,
+          "seconds": 0.18136039900127798,
+          "thread": "MainThread"
+        },
+        {
+          "split": "train",
+          "start": 67108864,
+          "stop": 134217729,
+          "bytes": 134217730,
+          "seconds": 0.19243053199897986,
+          "thread": "token-reader_0"
+        },
+        {
+          "split": "train",
+          "start": 134217728,
+          "stop": 201326593,
+          "bytes": 134217730,
+          "seconds": 0.15980910100915935,
+          "thread": "token-reader_0"
+        },
+        {
+          "split": "train",
+          "start": 201326592,
+          "stop": 268435457,
+          "bytes": 134217730,
+          "seconds": 0.1919410370028345,
+          "thread": "token-reader_0"
+        },
+        {
+          "split": "train",
+          "start": 268435456,
+          "stop": 335544321,
+          "bytes": 134217730,
+          "seconds": 0.18537465400004294,
+          "thread": "token-reader_0"
+        }
+      ],
+      "activations": [
+        {
+          "batch": 1,
+          "group": 0,
+          "cursor": 0,
+          "prefetched": false,
+          "ready": null,
+          "seconds": 0.18334930499258917
+        },
+        {
+          "batch": 513,
+          "group": 1,
+          "cursor": 65536,
+          "prefetched": true,
+          "ready": true,
+          "seconds": 0.0011792320001404732
+        },
+        {
+          "batch": 1025,
+          "group": 2,
+          "cursor": 131072,
+          "prefetched": true,
+          "ready": true,
+          "seconds": 0.0009968049998860806
+        },
+        {
+          "batch": 1537,
+          "group": 3,
+          "cursor": 196608,
+          "prefetched": true,
+          "ready": true,
+          "seconds": 0.0010187560110352933
+        },
+        {
+          "batch": 2049,
+          "group": 4,
+          "cursor": 262144,
+          "prefetched": true,
+          "ready": true,
+          "seconds": 0.000986245009698905
+        }
+      ],
+      "condition": "baseline",
+      "position_in_allocation": 1,
+      "hostname": "n466",
+      "gpu": "NVIDIA GH200 120GB",
+      "versions": {
+        "torch": "2.14.0",
+        "triton": "3.8.0",
+        "numpy": "2.5.3",
+        "pydantic": "2.13.5",
+        "datasets": "5.0.1",
+        "transformers": "5.16.1"
+      },
+      "source_hash": "9a297951c59607af6961d18bc80ce7469ee03a5470028041ed74617a2bc30c4a",
+      "cache_identity": "7618ae8749071f012cd3e3e27f96480ea18c5da5dca59cf90330f35beaa4da1c",
+      "cpu_threads": 8,
+      "training_targets": 275251200,
+      "last_training_window_loss": 3.706099135875702,
+      "pending_prefetches": 0,
+      "cuda_tests_passed": 4
+    },
+    {
+      "job_id": "2533005",
+      "prefetch": true,
+      "steps": 2100,
+      "tokens_per_second": 1538599.8988047072,
+      "batch_seconds": {
+        "count": 2000,
+        "total": 0.6271397832606453,
+        "mean": 0.00031356989163032267,
+        "median": 0.00030608750239480287,
+        "p95": 0.00032716544592403807,
+        "p99": 0.0004260226049518678,
+        "maximum": 0.0025440899917157367
+      },
+      "pin_seconds": {
+        "count": 0,
+        "total": 0
+      },
+      "copy_enqueue_seconds": {
+        "count": 4000,
+        "total": 0.12618705170461908,
+        "mean": 3.154676292615477e-05,
+        "median": 3.654300235211849e-05,
+        "p95": 5.030298852943815e-05,
+        "p99": 5.299095893860792e-05,
+        "maximum": 0.002254209990496747
+      },
+      "copy_gpu_seconds": {
+        "count": 62,
+        "total": 0.003091103991493582,
+        "mean": 4.985651599183197e-05,
+        "median": 5.3839998319745065e-05,
+        "p95": 6.31871972233057e-05,
+        "p99": 0.00017000480093061937,
+        "maximum": 0.00032489600777626035
+      },
+      "reads": [
+        {
+          "split": "validation",
+          "start": 0,
+          "stop": 67108865,
+          "bytes": 134217730,
+          "seconds": 0.01587656199990306,
+          "thread": "MainThread"
+        },
+        {
+          "split": "validation",
+          "start": 67108864,
+          "stop": 134217729,
+          "bytes": 134217730,
+          "seconds": 0.014866957993945107,
+          "thread": "MainThread"
+        },
+        {
+          "split": "validation",
+          "start": 134217728,
+          "stop": 197411296,
+          "bytes": 126387136,
+          "seconds": 0.01360187200771179,
+          "thread": "MainThread"
+        },
+        {
+          "split": "train",
+          "start": 0,
+          "stop": 67108865,
+          "bytes": 134217730,
+          "seconds": 0.014821550998021848,
+          "thread": "MainThread"
+        },
+        {
+          "split": "train",
+          "start": 67108864,
+          "stop": 134217729,
+          "bytes": 134217730,
+          "seconds": 0.01828872101032175,
+          "thread": "token-reader_0"
+        },
+        {
+          "split": "train",
+          "start": 134217728,
+          "stop": 201326593,
+          "bytes": 134217730,
+          "seconds": 0.0173068290023366,
+          "thread": "token-reader_0"
+        },
+        {
+          "split": "train",
+          "start": 201326592,
+          "stop": 268435457,
+          "bytes": 134217730,
+          "seconds": 0.032582446991000324,
+          "thread": "token-reader_0"
+        },
+        {
+          "split": "train",
+          "start": 268435456,
+          "stop": 335544321,
+          "bytes": 134217730,
+          "seconds": 0.020698640000773594,
+          "thread": "token-reader_0"
+        }
+      ],
+      "activations": [
+        {
+          "batch": 1,
+          "group": 0,
+          "cursor": 0,
+          "prefetched": false,
+          "ready": null,
+          "seconds": 0.016598654998233542
+        },
+        {
+          "batch": 513,
+          "group": 1,
+          "cursor": 65536,
+          "prefetched": true,
+          "ready": true,
+          "seconds": 0.001181792002171278
+        },
+        {
+          "batch": 1025,
+          "group": 2,
+          "cursor": 131072,
+          "prefetched": true,
+          "ready": true,
+          "seconds": 0.001077442997484468
+        },
+        {
+          "batch": 1537,
+          "group": 3,
+          "cursor": 196608,
+          "prefetched": true,
+          "ready": true,
+          "seconds": 0.0010886750096688047
+        },
+        {
+          "batch": 2049,
+          "group": 4,
+          "cursor": 262144,
+          "prefetched": true,
+          "ready": true,
+          "seconds": 0.001034916000207886
+        }
+      ],
+      "condition": "candidate",
+      "position_in_allocation": 2,
+      "hostname": "n466",
+      "gpu": "NVIDIA GH200 120GB",
+      "versions": {
+        "torch": "2.14.0",
+        "triton": "3.8.0",
+        "numpy": "2.5.3",
+        "pydantic": "2.13.5",
+        "datasets": "5.0.1",
+        "transformers": "5.16.1"
+      },
+      "source_hash": "bd5acbe373f48180b13d7d082a66b43b7c144f6a5ba0bcd8e3fde62978d30b8c",
+      "cache_identity": "7618ae8749071f012cd3e3e27f96480ea18c5da5dca59cf90330f35beaa4da1c",
+      "cpu_threads": 8,
+      "training_targets": 275251200,
+      "last_training_window_loss": 3.70442893743515,
+      "pending_prefetches": 0,
+      "cuda_tests_passed": 4
+    }
+  ],
+  "within_process_ablation": {
+    "job_id": "2533594",
+    "ablation": [
+      {
+        "condition": "baseline",
+        "batch_seconds": {
+          "count": 1000,
+          "total": 0.3805358549943776,
+          "mean": 0.0003805358549943776,
+          "median": 0.00037325400080590043,
+          "p95": 0.00039752975008013893,
+          "p99": 0.0005042976694312524,
+          "maximum": 0.0015671229994040914
+        },
+        "tokens_per_second": 1530362.5160164617,
+        "training_seconds": 85.64768061699579
+      },
+      {
+        "condition": "candidate",
+        "batch_seconds": {
+          "count": 1000,
+          "total": 0.3259374050430779,
+          "mean": 0.0003259374050430779,
+          "median": 0.0003208069974789396,
+          "p95": 0.00034316120072617193,
+          "p99": 0.0004287832004411029,
+          "maximum": 0.0013985209989186842
+        },
+        "tokens_per_second": 1525303.9228433575,
+        "training_seconds": 85.93172681000215
+      }
+    ],
+    "activations": [
+      {
+        "batch": 1,
+        "group": 0,
+        "cursor": 0,
+        "prefetched": false,
+        "ready": null,
+        "seconds": 0.17892556999868248
+      },
+      {
+        "batch": 513,
+        "group": 1,
+        "cursor": 65536,
+        "prefetched": true,
+        "ready": true,
+        "seconds": 0.0010570900012680795
+      },
+      {
+        "batch": 1025,
+        "group": 2,
+        "cursor": 131072,
+        "prefetched": true,
+        "ready": true,
+        "seconds": 0.00099590800164151
+      },
+      {
+        "batch": 1537,
+        "group": 3,
+        "cursor": 196608,
+        "prefetched": true,
+        "ready": true,
+        "seconds": 0.001037475001794519
+      },
+      {
+        "batch": 2049,
+        "group": 4,
+        "cursor": 262144,
+        "prefetched": true,
+        "ready": true,
+        "seconds": 0.0008007780015759636
+      }
+    ],
+    "hostname": "n115",
+    "source_hash": "bd5acbe373f48180b13d7d082a66b43b7c144f6a5ba0bcd8e3fde62978d30b8c",
+    "order": [
+      "baseline",
+      "candidate",
+      "candidate",
+      "baseline"
+    ],
+    "updates_per_window": 500,
+    "excluded_initial_steps": 100,
+    "method": "Both next_batch implementations alternate on the same loader, training process, GPU and compiled model; sample order continues across all windows."
+  }
+}

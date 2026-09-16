@@ -24,6 +24,11 @@ uv run tiny-llm prepare --config configs/90m.yaml
 uv run tiny-llm train --config configs/20m.yaml
 ```
 
+Training, including resume, assumes the prepared token cache is immutable. Startup
+checks the manifest, shard sizes, and configuration compatibility without hashing
+token contents. To explicitly verify every shard checksum, rerun `prepare` with a
+matching configuration and cache path; an existing cache is verified and reused.
+
 Preparation uses `data.prepare_workers=8` tokenizer processes, each loading the
 saved tokenizer locally. Set `--set data.prepare_workers=1` for serial preparation,
 or another positive integer to change the process count. Worker count does not

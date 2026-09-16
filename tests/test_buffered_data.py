@@ -54,6 +54,37 @@ def test_coverage_boundaries_and_seeds(cache_dir: Path):
     assert collect(cache, seed=None, prefetch=prefetch, count=14) == expected
 
 
+@pytest.mark.cuda
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA required")
+@pytest.mark.parametrize("prefetch", [False, True])
+@pytest.mark.parametrize(
+    "split,seed,counts", [("train", 42, [1, 4, 2, 5, 1]), ("validation", None, [1, 4, 2, 1])]
+)
+def test_cuda_batch_storage_and_stream_order(cache_dir: Path, prefetch, split, seed, counts):
+    cache = TokenCache(cache_dir)
+    blocks = sum(counts)
+    with BufferedTokenLoader(
+        cache, split, 4, blocks, GROUP_SIZE, seed=seed, prefetch=False
+    ) as reference:
+        expected = reference.next_batch(blocks, CPU)
+
+    # Queue varying batch sizes across groups on a nondefault stream. Retain the
+    # GPU batches while their temporary host buffers are freed and reused.
+    stream = torch.cuda.Stream()
+    batches = []
+    with BufferedTokenLoader(
+        cache, split, 4, blocks, GROUP_SIZE, seed=seed, prefetch=prefetch
+    ) as loader:
+        with torch.cuda.stream(stream):
+            for count in counts:
+                batches.append(loader.next_batch(count, torch.device("cuda:0")))
+    stream.synchronize()
+    for axis in (0, 1):
+        assert all(batch[axis].is_cuda and batch[axis].dtype == torch.int64 for batch in batches)
+        actual = torch.cat([batch[axis].cpu() for batch in batches])
+        assert torch.equal(actual, expected[axis])
+
+
 def test_resume_every_cursor_without_reading_previous_ranges(
     cache_dir: Path, monkeypatch: pytest.MonkeyPatch
 ):

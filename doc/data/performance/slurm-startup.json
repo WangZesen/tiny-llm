@@ -1,0 +1,480 @@
+{
+  "date": "2026-09-16",
+  "timezone": "Europe/Stockholm",
+  "account": "naiss2026-4-1590-gpu",
+  "source_revision": "4886ffe9ec695c5cffc3a9c684512b0972232dca",
+  "method": {
+    "baseline": "Instrumented candidate source with the original training cache.verify() call restored.",
+    "candidate": "Skip token-content checksums at training startup; retain manifest, size, and configuration checks.",
+    "allocations": "Two concurrent single-GH200 allocations on n135; baseline/candidate order reversed between allocations; both completed with exit code 0.",
+    "environment": "Existing aarch64 Python 3.12.13 environment used without uv sync; explicit snapshot PYTHONPATH; fresh Inductor and Triton cache directories for every process.",
+    "cache_state": "OS page caches were not cleared. Compare startup by position in allocation, and steady-state throughput within each allocation.",
+    "time_boundaries": "Announcement and first-update latencies start at Python entry and use second-resolution log timestamps. Stage durations use monotonic time. Process totals include srun, training, full validation and shutdown; queue time is excluded.",
+    "throughput": "Training targets divided by training-update time for steps 21-78; excludes the first 20-step window, evaluation, and checkpoint I/O.",
+    "numerics": "Production BF16, compiled, nondeterministic execution; GPU losses are reported without claiming bitwise equality. Deterministic CPU training and resumed weights match exactly after unused-shard corruption.",
+    "configs": [
+      "configs/20m.yaml",
+      "configs/packed8-20m-awc.yaml"
+    ],
+    "overrides": {
+      "training.tokens_per_parameters": 0.5,
+      "training.epoch_tokens_per_parameters": 0.5,
+      "training.checkpoint_policy": "none"
+    },
+    "training_steps": 78,
+    "training_targets": 10223616,
+    "batch_tokens": 131072,
+    "micro_batch_size": 16,
+    "num_models": 8,
+    "raw_artifacts": "runs/startup-overhead-20260916-113700"
+  },
+  "cache": {
+    "identity": "7618ae8749071f012cd3e3e27f96480ea18c5da5dca59cf90330f35beaa4da1c",
+    "bytes": 46028850114,
+    "shards": 687
+  },
+  "jobs": [
+    {
+      "job_id": 2529889,
+      "order": [
+        "baseline",
+        "candidate"
+      ],
+      "elapsed_seconds": 435,
+      "state": "COMPLETED",
+      "exit_code": "0:0"
+    },
+    {
+      "job_id": 2529890,
+      "order": [
+        "candidate",
+        "baseline"
+      ],
+      "elapsed_seconds": 396,
+      "state": "COMPLETED",
+      "exit_code": "0:0"
+    }
+  ],
+  "startup_by_position": [
+    {
+      "position_in_allocation": 1,
+      "baseline_announcement_seconds": 166.0,
+      "candidate_announcement_seconds": 53.0,
+      "announcement_reduction_fraction": 0.6807228915662651,
+      "baseline_first_update_seconds": 183.0,
+      "candidate_first_update_seconds": 101.0
+    },
+    {
+      "position_in_allocation": 2,
+      "baseline_announcement_seconds": 37.0,
+      "candidate_announcement_seconds": 7.0,
+      "announcement_reduction_fraction": 0.8108108108108107,
+      "baseline_first_update_seconds": 54.0,
+      "candidate_first_update_seconds": 25.0
+    }
+  ],
+  "within_allocation_comparisons": [
+    {
+      "job_id": 2529889,
+      "steady_state_throughput_change_fraction": 0.007847208400890926,
+      "final_validation_loss_change": -0.004327103104812657,
+      "maximum_training_window_loss_change": 0.0039327859878541815
+    },
+    {
+      "job_id": 2529890,
+      "steady_state_throughput_change_fraction": 0.0038653892919404687,
+      "final_validation_loss_change": 0.008925599247069371,
+      "maximum_training_window_loss_change": 0.007643090354071624
+    }
+  ],
+  "trials": [
+    {
+      "job_id": 2529889,
+      "position_in_allocation": 1,
+      "condition": "baseline",
+      "hostname": "n135",
+      "source_hash": "01a21d6cfb891e8262414e7c7c8fd0244c42d16e3e41ece23617dbeee9eefa12",
+      "python_to_training_announcement_seconds": 166.0,
+      "python_to_first_update_seconds": 183.0,
+      "cli_import_seconds": 29.376,
+      "stages": {
+        "runtime initialization": {
+          "seconds": 11.76,
+          "total_seconds": 11.76
+        },
+        "cache checks": {
+          "seconds": 122.009,
+          "total_seconds": 133.77
+        },
+        "model and optimizer setup": {
+          "seconds": 1.941,
+          "total_seconds": 135.711
+        },
+        "checkpoint and loader setup": {
+          "seconds": 0.001,
+          "total_seconds": 135.712
+        },
+        "run metadata": {
+          "seconds": 0.338,
+          "total_seconds": 136.05
+        },
+        "validation subset": {
+          "seconds": 0.073,
+          "total_seconds": 136.123
+        },
+        "first update (including data loading and compilation)": {
+          "seconds": 17.108,
+          "total_seconds": 153.231
+        }
+      },
+      "process_seconds_including_srun": 295.22,
+      "steady_state_tokens_per_second": 1504975.6059733774,
+      "training_windows": [
+        {
+          "step": 20,
+          "tokens": 2621440,
+          "loss": 9.711895608901978,
+          "lr": 0.000358974358974359,
+          "grad_norm": 1.5271155834197998,
+          "tokens_per_second": 139717.51052702995,
+          "training_seconds": 18.762429921000148
+        },
+        {
+          "step": 40,
+          "tokens": 5242880,
+          "loss": 7.922253227233886,
+          "lr": 0.000717948717948718,
+          "grad_norm": 0.5148489475250244,
+          "tokens_per_second": 1497677.1769339815,
+          "training_seconds": 1.7503371490020072
+        },
+        {
+          "step": 60,
+          "tokens": 7864320,
+          "loss": 7.073042559623718,
+          "lr": 0.001076923076923077,
+          "grad_norm": 0.8519750237464905,
+          "tokens_per_second": 1509603.7977311378,
+          "training_seconds": 1.7365086150020943
+        },
+        {
+          "step": 78,
+          "tokens": 10223616,
+          "loss": 6.709754175610012,
+          "lr": 0.0014,
+          "grad_norm": 1.856130599975586,
+          "tokens_per_second": 1508003.9016789806,
+          "training_seconds": 1.5645158459956292
+        }
+      ],
+      "final_validation": {
+        "loss": 6.547893494649289,
+        "perplexity": 697.7727625342565,
+        "tokens": 197411295,
+        "seconds": 100.88858601600077,
+        "split": "full",
+        "validation_complete": true
+      },
+      "versions": {
+        "torch": "2.14.0",
+        "triton": "3.8.0",
+        "numpy": "2.5.3",
+        "pydantic": "2.13.5",
+        "datasets": "5.0.1",
+        "transformers": "5.16.1"
+      },
+      "gpu": "NVIDIA GH200 120GB"
+    },
+    {
+      "job_id": 2529889,
+      "position_in_allocation": 2,
+      "condition": "candidate",
+      "hostname": "n135",
+      "source_hash": "9a297951c59607af6961d18bc80ce7469ee03a5470028041ed74617a2bc30c4a",
+      "python_to_training_announcement_seconds": 7.0,
+      "python_to_first_update_seconds": 25.0,
+      "cli_import_seconds": 2.389,
+      "stages": {
+        "runtime initialization": {
+          "seconds": 2.586,
+          "total_seconds": 2.586
+        },
+        "cache checks": {
+          "seconds": 0.042,
+          "total_seconds": 2.628
+        },
+        "model and optimizer setup": {
+          "seconds": 1.939,
+          "total_seconds": 4.567
+        },
+        "checkpoint and loader setup": {
+          "seconds": 0.001,
+          "total_seconds": 4.568
+        },
+        "run metadata": {
+          "seconds": 0.284,
+          "total_seconds": 4.852
+        },
+        "validation subset": {
+          "seconds": 0.073,
+          "total_seconds": 4.925
+        },
+        "first update (including data loading and compilation)": {
+          "seconds": 17.464,
+          "total_seconds": 22.389
+        }
+      },
+      "process_seconds_including_srun": 135.99,
+      "steady_state_tokens_per_second": 1516785.4631917076,
+      "training_windows": [
+        {
+          "step": 20,
+          "tokens": 2621440,
+          "loss": 9.711895275115968,
+          "lr": 0.000358974358974359,
+          "grad_norm": 1.5445300340652466,
+          "tokens_per_second": 137037.83003937808,
+          "training_seconds": 19.12931632999971
+        },
+        {
+          "step": 40,
+          "tokens": 5242880,
+          "loss": 7.920599627494812,
+          "lr": 0.000717948717948718,
+          "grad_norm": 0.5104029178619385,
+          "tokens_per_second": 1523348.4468462702,
+          "training_seconds": 1.7208406950012431
+        },
+        {
+          "step": 60,
+          "tokens": 7864320,
+          "loss": 7.069109773635864,
+          "lr": 0.001076923076923077,
+          "grad_norm": 0.7717335224151611,
+          "tokens_per_second": 1512272.9231220502,
+          "training_seconds": 1.7334437190002063
+        },
+        {
+          "step": 78,
+          "tokens": 10223616,
+          "loss": 6.706964598761664,
+          "lr": 0.0014,
+          "grad_norm": 0.8566635847091675,
+          "tokens_per_second": 1514556.8498895,
+          "training_seconds": 1.5577467429975513
+        }
+      ],
+      "final_validation": {
+        "loss": 6.543566391544476,
+        "perplexity": 694.7599509212273,
+        "tokens": 197411295,
+        "seconds": 101.00747879400296,
+        "split": "full",
+        "validation_complete": true
+      },
+      "versions": {
+        "torch": "2.14.0",
+        "triton": "3.8.0",
+        "numpy": "2.5.3",
+        "pydantic": "2.13.5",
+        "datasets": "5.0.1",
+        "transformers": "5.16.1"
+      },
+      "gpu": "NVIDIA GH200 120GB"
+    },
+    {
+      "job_id": 2529890,
+      "position_in_allocation": 1,
+      "condition": "candidate",
+      "hostname": "n135",
+      "source_hash": "9a297951c59607af6961d18bc80ce7469ee03a5470028041ed74617a2bc30c4a",
+      "python_to_training_announcement_seconds": 53.0,
+      "python_to_first_update_seconds": 101.0,
+      "cli_import_seconds": 29.368,
+      "stages": {
+        "runtime initialization": {
+          "seconds": 11.784,
+          "total_seconds": 11.784
+        },
+        "cache checks": {
+          "seconds": 0.229,
+          "total_seconds": 12.013
+        },
+        "model and optimizer setup": {
+          "seconds": 9.668,
+          "total_seconds": 21.682
+        },
+        "checkpoint and loader setup": {
+          "seconds": 0.002,
+          "total_seconds": 21.683
+        },
+        "run metadata": {
+          "seconds": 2.039,
+          "total_seconds": 23.722
+        },
+        "validation subset": {
+          "seconds": 0.519,
+          "total_seconds": 24.241
+        },
+        "first update (including data loading and compilation)": {
+          "seconds": 46.822,
+          "total_seconds": 71.064
+        }
+      },
+      "process_seconds_including_srun": 226.64,
+      "steady_state_tokens_per_second": 1565951.1718373648,
+      "training_windows": [
+        {
+          "step": 20,
+          "tokens": 2621440,
+          "loss": 9.711897897720338,
+          "lr": 0.000358974358974359,
+          "grad_norm": 1.5989367961883545,
+          "tokens_per_second": 54118.16544051086,
+          "training_seconds": 48.43918818500242
+        },
+        {
+          "step": 40,
+          "tokens": 5242880,
+          "loss": 7.921362590789795,
+          "lr": 0.000717948717948718,
+          "grad_norm": 1.6272400617599487,
+          "tokens_per_second": 1573145.6613465054,
+          "training_seconds": 1.6663682610014803
+        },
+        {
+          "step": 60,
+          "tokens": 7864320,
+          "loss": 7.069589161872864,
+          "lr": 0.001076923076923077,
+          "grad_norm": 1.1421757936477661,
+          "tokens_per_second": 1563460.7094047829,
+          "training_seconds": 1.6766906799966819
+        },
+        {
+          "step": 78,
+          "tokens": 10223616,
+          "loss": 6.705002970165676,
+          "lr": 0.0014,
+          "grad_norm": 1.5583940744400024,
+          "tokens_per_second": 1560782.557626125,
+          "training_seconds": 1.5116109470036463
+        }
+      ],
+      "final_validation": {
+        "loss": 6.5453954947408866,
+        "perplexity": 696.0319014779881,
+        "tokens": 197411295,
+        "seconds": 100.15220947600028,
+        "split": "full",
+        "validation_complete": true
+      },
+      "versions": {
+        "torch": "2.14.0",
+        "triton": "3.8.0",
+        "numpy": "2.5.3",
+        "pydantic": "2.13.5",
+        "datasets": "5.0.1",
+        "transformers": "5.16.1"
+      },
+      "gpu": "NVIDIA GH200 120GB"
+    },
+    {
+      "job_id": 2529890,
+      "position_in_allocation": 2,
+      "condition": "baseline",
+      "hostname": "n135",
+      "source_hash": "01a21d6cfb891e8262414e7c7c8fd0244c42d16e3e41ece23617dbeee9eefa12",
+      "python_to_training_announcement_seconds": 37.0,
+      "python_to_first_update_seconds": 54.0,
+      "cli_import_seconds": 2.181,
+      "stages": {
+        "runtime initialization": {
+          "seconds": 2.407,
+          "total_seconds": 2.407
+        },
+        "cache checks": {
+          "seconds": 30.234,
+          "total_seconds": 32.641
+        },
+        "model and optimizer setup": {
+          "seconds": 1.798,
+          "total_seconds": 34.438
+        },
+        "checkpoint and loader setup": {
+          "seconds": 0.001,
+          "total_seconds": 34.439
+        },
+        "run metadata": {
+          "seconds": 0.275,
+          "total_seconds": 34.715
+        },
+        "validation subset": {
+          "seconds": 0.047,
+          "total_seconds": 34.762
+        },
+        "first update (including data loading and compilation)": {
+          "seconds": 16.534,
+          "total_seconds": 51.295
+        }
+      },
+      "process_seconds_including_srun": 163.87,
+      "steady_state_tokens_per_second": 1559921.4680983096,
+      "training_windows": [
+        {
+          "step": 20,
+          "tokens": 2621440,
+          "loss": 9.711897277832032,
+          "lr": 0.000358974358974359,
+          "grad_norm": 1.5973851680755615,
+          "tokens_per_second": 144407.37614048587,
+          "training_seconds": 18.153089336999983
+        },
+        {
+          "step": 40,
+          "tokens": 5242880,
+          "loss": 7.921290683746338,
+          "lr": 0.000717948717948718,
+          "grad_norm": 0.5100597143173218,
+          "tokens_per_second": 1563611.3678810894,
+          "training_seconds": 1.6765291260016966
+        },
+        {
+          "step": 60,
+          "tokens": 7864320,
+          "loss": 7.068687772750854,
+          "lr": 0.001076923076923077,
+          "grad_norm": 1.025484323501587,
+          "tokens_per_second": 1561267.5534751383,
+          "training_seconds": 1.6790459740004735
+        },
+        {
+          "step": 78,
+          "tokens": 10223616,
+          "loss": 6.6973598798116045,
+          "lr": 0.0014,
+          "grad_norm": 0.9729418754577637,
+          "tokens_per_second": 1554356.8153513724,
+          "training_seconds": 1.5178599770006258
+        }
+      ],
+      "final_validation": {
+        "loss": 6.536469895493817,
+        "perplexity": 689.8470425088582,
+        "tokens": 197411295,
+        "seconds": 100.26986602400575,
+        "split": "full",
+        "validation_complete": true
+      },
+      "versions": {
+        "torch": "2.14.0",
+        "triton": "3.8.0",
+        "numpy": "2.5.3",
+        "pydantic": "2.13.5",
+        "datasets": "5.0.1",
+        "transformers": "5.16.1"
+      },
+      "gpu": "NVIDIA GH200 120GB"
+    }
+  ]
+}

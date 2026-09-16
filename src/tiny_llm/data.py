@@ -600,8 +600,18 @@ class BufferedTokenLoader:
             raise RuntimeError("loader is closed")
         if count <= 0 or self.cursor + count > self.blocks:
             raise ValueError("batch exceeds remaining token blocks")
-        inputs = np.empty((count, self.length), dtype=np.int64)
-        targets = np.empty_like(inputs)
+        host_batch: Batch | None = None
+        if device.type == "cuda":
+            # Fill pinned storage directly instead of copying ordinary arrays into it.
+            shape = (count, self.length)
+            host_batch = (
+                torch.empty(shape, dtype=torch.int64, pin_memory=True),
+                torch.empty(shape, dtype=torch.int64, pin_memory=True),
+            )
+            inputs, targets = (tensor.numpy() for tensor in host_batch)
+        else:
+            inputs = np.empty((count, self.length), dtype=np.int64)
+            targets = np.empty_like(inputs)
         filled = 0
         while filled < count:
             if self._windows is None or self._row_order is None:
@@ -627,6 +637,11 @@ class BufferedTokenLoader:
                 self.group_position += 1
                 self._windows = self._active = self._row_order = None
             del windows, row_order
+        if host_batch is not None:
+            return (
+                host_batch[0].to(device, non_blocking=True),
+                host_batch[1].to(device, non_blocking=True),
+            )
         return transfer_batch(inputs, targets, device)
 
     def state_dict(self, committed_cursor: int | None = None) -> LoaderState:

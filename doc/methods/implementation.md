@@ -49,6 +49,12 @@ can cross group boundaries. A sequence belongs to the group containing its first
 token. Reads align to the original sequence boundaries and include next-token
 lookahead, preserving targets even across shard boundaries.
 
+CUDA batches are assembled directly into pinned `int64` host tensors through
+NumPy views, avoiding an extra copy from ordinary host arrays into pinned memory.
+The owning tensors are then copied to the target device with `non_blocking=True`.
+Batch preparation runs on the training thread and transfers use its current CUDA
+stream; only shard reads are prefetched. CPU batches retain the NumPy path.
+
 `data.shuffle_group_size: 2` sets the positive integer number of shards per group.
 With the default shard size this is about 128 MiB per active buffer. With
 `data.prefetch: true`, one background reader loads the next group, using about
@@ -56,6 +62,13 @@ With the default shard size this is about 128 MiB per active buffer. With
 validation subset, and microbatch tensors). Set prefetch to false for one-buffer
 loading. `data.shuffle_buffer` remains the separate preparation-time document
 shuffle setting. The former `data.buffer_size_mib` field is rejected.
+
+The first group is loaded synchronously. At later boundaries the loader waits
+if the prefetched group is not ready; filesystem reads have no timeout. With
+default sizes, a group supplies 512 updates at 131,072 targets per update, giving
+the background reader tens of seconds to fetch the next 128 MiB. See the
+[GH200 loading measurements](../performance/training.md#data-loading-on-gh200)
+for observed read times and batch preparation overhead.
 
 `runtime.seed` and the physical group index determine each group's row permutation.
 The entire final group is shuffled even when training stops partway through it.
@@ -74,7 +87,9 @@ Historical loader order and identities require their original source version.
 Full validation streams in original order, including its partial final group.
 The fixed epoch-validation subset is collected during one sequential validation
 scan at startup and retained in RAM for subsequent epochs (about 2 MiB by default).
-Startup also retains the existing cache checksum verification.
+Training startup validates the manifest, shard sizes, and configuration without
+hashing token contents. Prepared caches are assumed immutable; rerun `prepare`
+with matching settings to explicitly verify every shard checksum.
 
 ## Packed decentralized training
 
@@ -233,7 +248,7 @@ uv run tiny-llm train --config runs/baseline/resolved.yaml \
 Device, output directory, prefetch, and checkpoint retention may change on resume.
 Training recipe, total budget, precision, data identity, batch, seed, and shard-group
 size must match. The loader reconstructs its group and row position from the
-committed cursor; the normal startup checksum scan still runs. This config
+committed cursor, without a full-cache checksum scan at startup. This config
 revision is a clean break: old field names and historical identities are not
 translated. Use the archived source for archived runs.
 

@@ -9,11 +9,19 @@
 
 # Submit from the repository after mkdir -p runs; SLURM opens the log first.
 # ~/.bashrc selects the architecture-specific UV/Python environment.
+printf '%(%Y-%m-%d %H:%M:%S)T | INFO    | Startup Slurm batch entry\n' -1 >&2
+startup_shell_seconds=$SECONDS
 source ~/.bashrc
 set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:?Submit this script from the tiny-llm repository}"
 export TOKENIZERS_PARALLELISM=false
+printf '%(%Y-%m-%d %H:%M:%S)T | INFO    | Startup shell setup: %ds\n' \
+    -1 "$((SECONDS - startup_shell_seconds))" >&2
+startup_sync_seconds=$SECONDS
 uv sync --locked
+printf '%(%Y-%m-%d %H:%M:%S)T | INFO    | Startup dependency sync: %ds\n' \
+    -1 "$((SECONDS - startup_sync_seconds))" >&2
+printf '%(%Y-%m-%d %H:%M:%S)T | INFO    | Startup launching srun\n' -1 >&2
 # Analysis owns a disposable cache per job. Resolve node-local paths here,
 # before Python/Triton import, rather than on the submission/login node.
 if [[ "${1:-}" == "analyze" ]]; then

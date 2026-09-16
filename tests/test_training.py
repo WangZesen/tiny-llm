@@ -14,6 +14,43 @@ from tiny_llm.runtime import rng_state, setup_runtime
 from tiny_llm.train import evaluate, train
 
 
+def test_training_and_resume_skip_unused_shard_checksums(tiny_config: Config, cache_dir: Path):
+    tiny_config.training.checkpoint_policy = "interval"
+    tiny_config.runtime.deterministic = True
+    cache = TokenCache(cache_dir)
+    cache.verify()
+    reference_config = tiny_config.model_copy(deep=True)
+    reference_config.runtime.output_dir = cache_dir.parent / "verified"
+    reference = train(reference_config)
+    reference_final = torch.load(
+        reference_config.runtime.output_dir / "final.pt", weights_only=False
+    )
+    # The fixture trains on 64 targets; this last shard is outside its shuffle groups.
+    unused = cache.paths["train"][-1]
+    original = unused.read_bytes()
+    unused.write_bytes(bytes([original[0] ^ 1]) + original[1:])
+    with pytest.raises(ValueError, match="checksum mismatch"):
+        cache.verify()
+
+    complete = train(tiny_config)
+    assert complete["status"] == "complete"
+    checkpoint = tiny_config.runtime.output_dir / "epoch-001.pt"
+    final = torch.load(tiny_config.runtime.output_dir / "final.pt", weights_only=False)
+    tiny_config.runtime.output_dir = cache_dir.parent / "resumed"
+    resumed = train(tiny_config, checkpoint)
+    assert resumed["status"] == "complete"
+    for key in ("loss", "tokens", "perplexity"):
+        assert (
+            resumed["final_validation"][key]
+            == complete["final_validation"][key]
+            == reference["final_validation"][key]
+        )
+    resumed_final = torch.load(tiny_config.runtime.output_dir / "final.pt", weights_only=False)
+    for name, value in final["model"].items():
+        assert torch.equal(value, resumed_final["model"][name])
+        assert torch.equal(value, reference_final["model"][name])
+
+
 def test_accumulation_matches_full(tiny_config: Config):
     torch.manual_seed(42)
     full = Llama(tiny_config.model, "reference").double()

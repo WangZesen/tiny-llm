@@ -21,6 +21,14 @@ goes to `runs/slurm-<job-id>.log`. The launcher sources `~/.bashrc` to select th
 compute node's architecture-specific UV environment, synchronizes locked
 dependencies, and runs the command with `srun`.
 
+Startup logs timestamp batch entry, shell setup, dependency synchronization, and
+the `srun` launch. Training then reports Python entry, CLI import time, runtime
+initialization, cache checks, model/optimizer setup, checkpoint/loader setup,
+metadata collection, validation-subset loading, and the first update (including
+compilation). Python stage durations use a monotonic clock. The stage totals start
+at training initialization; compare earlier timestamps to account for imports and
+launcher overhead. Existing throughput metrics retain their timing boundaries.
+
 Place resource overrides before the script path. For example, request six hours
 for a longer training run:
 
