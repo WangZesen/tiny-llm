@@ -302,12 +302,17 @@ export default function CurrentExplorer({ data }: { data: Publication }) {
         const recorded = curves[id];
         const g = lookup.get(id);
         if (!recorded || !g) return [];
+        // Curve payloads are fetched from a separately cached URL, so a visitor can hold an
+        // older one than the code asking for a series it predates. Drop those runs instead
+        // of failing the whole explorer; the cache entry expires within minutes.
+        const runs = recorded.runs.filter((r) => r[series]);
+        if (!runs.length) return [];
         const color = palette[i % palette.length];
         // Redundant with colour, because eight hues cannot separate for every reader.
         const dash = g.schedule === 'wsd' ? 'dash' : 'solid';
         const name = curveLabel(g);
         if (state.seeds)
-          return recorded.runs.map((r, j): Data => ({
+          return runs.map((r, j): Data => ({
             type: 'scatter',
             mode: 'lines',
             x: r[series].map((pt) => pt[0]),
@@ -319,7 +324,7 @@ export default function CurrentExplorer({ data }: { data: Publication }) {
             name: curveIds.length === 1 ? 'Seed ' + r.seed : name,
             hovertemplate: `%{x:,} tokens<br>${quantity} %{y:${format}}<extra>%{fullData.name}</extra>`,
           }));
-        const points = aggregate(recorded.runs, series);
+        const points = aggregate(runs, series);
         const x = points.map((pt) => pt.tokens);
         // The band must sit immediately after its lower bound for fill: 'tonexty'.
         return [
@@ -379,7 +384,7 @@ export default function CurrentExplorer({ data }: { data: Publication }) {
       const plotted = curveIds
         .map((id) => curves[id])
         .filter(Boolean)
-        .map((recorded) => aggregate(recorded.runs, series));
+        .map((recorded) => aggregate(recorded.runs.filter((r) => r[series]), series));
       const end = Math.max(0, ...plotted.map((points) => points.at(-1)?.tokens ?? 0));
       const from = end / 2;
       const values = plotted

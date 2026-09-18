@@ -200,6 +200,33 @@ test('comparison survives scope changes and round-trips through the URL', async 
   expect(errors).toEqual([]);
 });
 
+// A visitor can hold a cached curve payload older than the code that reads it, which must
+// cost the gradient-norm figure only, never the rest of the explorer.
+test('curves cached without a gradient-norm series still render the loss comparison', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.route('**/curves/*.json', async (route) => {
+    const response = await route.fetch();
+    const curve = await response.json();
+    for (const run of curve.runs) delete run.gradientNorm;
+    await route.fulfill({ response, json: curve });
+  });
+  await page.goto('results/explorer/');
+  await page.getByRole('checkbox', { name: 'Compare current rank 1', exact: true }).check();
+  await expect(
+    page
+      .getByRole('img', { name: 'Current validation trajectories', exact: true })
+      .locator('.main-svg')
+      .first(),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('img', { name: 'Current gradient-norm trajectories', exact: true }),
+  ).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
 test('GH200 measurements expose all horizons, dates and per-run downloads', async ({ page }) => {
   await page.goto('performance/training/');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Training on one GH200');
