@@ -167,7 +167,7 @@ def test_offline_train_and_resume(
         for line in (complete.runtime.output_dir / "metrics.jsonl").read_text().splitlines()
     ]
     assert [row["lr"] / tiny_config.optimizer.lr for row in rows if row["event"] == "train"] == (
-        pytest.approx([1 / 3, 2 / 3, 1, 0 if lr_schedule == "wsd" else 0.1])
+        pytest.approx([1 / 3, 2 / 3, 1, 0])
     )
     tiny_config.data.prefetch = False
     resumed = train(tiny_config, complete.runtime.output_dir / "epoch-001.pt")

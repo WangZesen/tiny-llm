@@ -205,7 +205,7 @@ update. The configured warmup length is never capped to the run length.
 
 Cosine decays immediately after warmup, reaching
 `optimizer.lr * lr_schedule.min_lr_ratio` at the end if the run extends beyond
-warmup. The minimum ratio defaults to `0.1` and must be in `[0, 1]`.
+warmup. The minimum ratio defaults to `0` and must be in `[0, 1]`.
 
 WSD holds the base learning rate after warmup, then decays over the final
 `lr_schedule.decay_fraction` of the budget (default `0.1`). For consumed tokens

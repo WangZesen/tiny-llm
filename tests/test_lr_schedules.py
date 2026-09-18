@@ -28,6 +28,7 @@ def test_schedule_config(name, cls, tmp_path: Path):
 
 def test_default_schedule():
     assert Config().lr_schedule == CosineScheduleConfig()
+    assert CosineScheduleConfig().min_lr_ratio == 0
     assert WSDScheduleConfig().decay_fraction == 0.1
     assert load_config() == load_config([]) == Config()
 
@@ -161,10 +162,21 @@ def test_recipes_are_scheduler_independent(recipe: Path):
 
 
 @pytest.mark.parametrize(
-    "step,ratio", [(0, 0), (25, 0.5), (50, 1), (525, 0.55), (1000, 0.1), (1100, 0.1)]
+    "min_lr_ratio,step,ratio",
+    [
+        (0, 0, 0),
+        (0, 25, 0.5),
+        (0, 50, 1),
+        (0, 525, 0.5),
+        (0, 1000, 0),
+        (0, 1100, 0),
+        (0.1, 525, 0.55),
+        (0.1, 1000, 0.1),
+        (0.1, 1100, 0.1),
+    ],
 )
-def test_cosine_values(tiny_config: Config, step, ratio):
-    tiny_config.lr_schedule = CosineScheduleConfig(warmup_steps=50)
+def test_cosine_values(tiny_config: Config, min_lr_ratio, step, ratio):
+    tiny_config.lr_schedule = CosineScheduleConfig(warmup_steps=50, min_lr_ratio=min_lr_ratio)
     batch = tiny_config.training.batch_tokens
     assert learning_rate(tiny_config, step * batch, 1000 * batch) == pytest.approx(
         tiny_config.optimizer.lr * ratio
@@ -226,10 +238,8 @@ def test_run_finishes_during_warmup(tiny_config: Config, cls, total_steps):
     assert learning_rate(tiny_config, total_steps * batch, total_steps * batch) == pytest.approx(
         tiny_config.optimizer.lr * total_steps / 312
     )
-    terminal = 0.1 if cls is CosineScheduleConfig else 0
-    assert learning_rate(tiny_config, 313 * batch, total_steps * batch) == pytest.approx(
-        tiny_config.optimizer.lr * terminal
-    )
+    # Both schedules bottom out at zero once the budget is exhausted.
+    assert learning_rate(tiny_config, 313 * batch, total_steps * batch) == 0
 
 
 def test_schedule_identity(tiny_config: Config, cache_dir: Path):

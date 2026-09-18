@@ -53,6 +53,9 @@ def test_realized_schedule(tiny_config: Config, start_frac, warmup, p):
     config = adaptive_config(tiny_config, start_frac, p)
     assert config.decentralized is not None and config.decentralized.adaptive_consensus is not None
     config.lr_schedule.warmup_steps = warmup
+    assert config.lr_schedule.name == "cosine"
+    # A positive floor keeps every active window usable, including the final step alone.
+    config.lr_schedule.min_lr_ratio = 0.1
     before = torch.get_rng_state()
     schedule = adaptive_consensus_schedule(
         config, training_boundaries(config, config.model.parameter_count)
