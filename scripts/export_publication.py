@@ -774,8 +774,12 @@ def collect(root):
                 "Continuation crosses parent decay",
             )
         curve = {"seed": r["seed"], "final": ev["loss"]}
-        for kind, event in [("train", "train"), ("validation", "validation")]:
-            local = [[e["tokens"], e["loss"]] for e in events if e["event"] == event]
+        for kind, event, field in [
+            ("train", "train", "loss"),
+            ("validation", "validation", "loss"),
+            ("gradientNorm", "train", "grad_norm"),
+        ]:
+            local = [[e["tokens"], e[field]] for e in events if e["event"] == event]
             points = stitch(parent[kind] if parent else [], local, cursor)
             require(points[-1][0] == result["tokens"], "Incomplete curve endpoint")
             curve[kind] = points

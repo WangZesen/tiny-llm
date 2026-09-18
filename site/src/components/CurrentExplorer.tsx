@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Data } from 'plotly.js';
 import Plot from './Plot';
 import {
@@ -39,6 +39,7 @@ type State = {
   seeds: boolean;
   focus: boolean;
   yScale: 'linear' | 'log';
+  gradScale: 'linear' | 'log';
 };
 const defaults: State = {
   schedule: 'cosine',
@@ -53,6 +54,7 @@ const defaults: State = {
   seeds: false,
   focus: false,
   yScale: 'linear',
+  gradScale: 'linear',
 };
 const horizons = ['20', '40', '80', '120', '160'];
 const fmt = (v: number) => v.toFixed(6);
@@ -125,6 +127,7 @@ export default function CurrentExplorer({ data }: { data: Publication }) {
       next.seeds = p.get('seeds') === '1';
       next.focus = p.get('focus') === '1';
       next.yScale = p.get('yScale') === 'log' ? 'log' : 'linear';
+      next.gradScale = p.get('gradScale') === 'log' ? 'log' : 'linear';
       setState(next);
       setReady(true);
     };
@@ -146,6 +149,7 @@ export default function CurrentExplorer({ data }: { data: Publication }) {
     if (state.seeds) params.set('seeds', '1');
     if (state.focus) params.set('focus', '1');
     if (state.yScale === 'log') params.set('yScale', 'log');
+    if (state.gradScale === 'log') params.set('gradScale', 'log');
     // A comma is a legal sub-delimiter and keeps eight pinned ids readable in the bar.
     const query = params.toString().replace(/%2C/g, ',');
     history.replaceState(null, '', location.pathname + '?' + query);
@@ -290,8 +294,10 @@ export default function CurrentExplorer({ data }: { data: Publication }) {
     [filtered],
   );
   const palette = seriesColors[theme === 'dark' ? 'dark' : 'light'];
-  const curveTraces = useMemo<Data[]>(
-    () =>
+  /** Loss and gradient norm share one curve identity, so both figures are built the same way
+   *  and a colour, dash or marker means the same configuration in each. */
+  const buildTraces = useCallback(
+    (series: 'train' | 'validation' | 'gradientNorm', quantity: string, format: string): Data[] =>
       curveIds.flatMap((id, i) => {
         const recorded = curves[id];
         const g = lookup.get(id);
@@ -304,16 +310,16 @@ export default function CurrentExplorer({ data }: { data: Publication }) {
           return recorded.runs.map((r, j): Data => ({
             type: 'scatter',
             mode: 'lines',
-            x: r[state.curve].map((pt) => pt[0]),
-            y: r[state.curve].map((pt) => pt[1]),
+            x: r[series].map((pt) => pt[0]),
+            y: r[series].map((pt) => pt[1]),
             line: { color, width: 1, dash: (['solid', 'dot', 'dashdot'] as const)[j] },
             opacity: 0.7,
             legendgroup: id,
             showlegend: curveIds.length === 1 || j === 0,
             name: curveIds.length === 1 ? 'Seed ' + r.seed : name,
-            hovertemplate: '%{x:,} tokens<br>Loss %{y:.6f}<extra>%{fullData.name}</extra>',
+            hovertemplate: `%{x:,} tokens<br>${quantity} %{y:${format}}<extra>%{fullData.name}</extra>`,
           }));
-        const points = aggregate(recorded.runs, state.curve);
+        const points = aggregate(recorded.runs, series);
         const x = points.map((pt) => pt.tokens);
         // The band must sit immediately after its lower bound for fill: 'tonexty'.
         return [
@@ -354,29 +360,41 @@ export default function CurrentExplorer({ data }: { data: Publication }) {
             },
             line: { color, width: 2, dash },
             customdata: points.map((pt) => pt.n),
-            hovertemplate:
-              '%{x:,} tokens<br>Loss %{y:.6f}<br>%{customdata} seeds<extra>%{fullData.name}</extra>',
+            hovertemplate: `%{x:,} tokens<br>${quantity} %{y:${format}}<br>%{customdata} seeds<extra>%{fullData.name}</extra>`,
           },
         ] as Data[];
       }),
-    [curveIds, curves, state.curve, state.seeds, lookup, palette],
+    [curveIds, curves, state.seeds, lookup, palette],
   );
-  const focusRange = useMemo(() => {
-    const plotted = curveIds
-      .map((id) => curves[id])
-      .filter(Boolean)
-      .map((recorded) => aggregate(recorded.runs, state.curve));
-    const end = Math.max(0, ...plotted.map((points) => points.at(-1)?.tokens ?? 0));
-    const from = end / 2;
-    const values = plotted
-      .flatMap((points) => points.filter((pt) => pt.tokens >= from))
-      .flatMap((pt) => [pt.mean - pt.sd, pt.mean + pt.sd]);
-    if (!values.length) return null;
-    const low = Math.min(...values);
-    const high = Math.max(...values);
-    const pad = (high - low || 0.01) * 0.15;
-    return { x: [from, end * 1.01], y: [low - pad, high + pad] };
-  }, [curveIds, curves, state.curve]);
+  const curveTraces = useMemo(
+    () => buildTraces(state.curve, 'Loss', '.6f'),
+    [buildTraces, state.curve],
+  );
+  const gradientTraces = useMemo(
+    () => buildTraces('gradientNorm', 'Gradient norm', '.4f'),
+    [buildTraces],
+  );
+  const rangeFor = useCallback(
+    (series: 'train' | 'validation' | 'gradientNorm') => {
+      const plotted = curveIds
+        .map((id) => curves[id])
+        .filter(Boolean)
+        .map((recorded) => aggregate(recorded.runs, series));
+      const end = Math.max(0, ...plotted.map((points) => points.at(-1)?.tokens ?? 0));
+      const from = end / 2;
+      const values = plotted
+        .flatMap((points) => points.filter((pt) => pt.tokens >= from))
+        .flatMap((pt) => [pt.mean - pt.sd, pt.mean + pt.sd]);
+      if (!values.length) return null;
+      const low = Math.min(...values);
+      const high = Math.max(...values);
+      const pad = (high - low || 0.01) * 0.15;
+      return { x: [from, end * 1.01], y: [low - pad, high + pad] };
+    },
+    [curveIds, curves],
+  );
+  const focusRange = useMemo(() => rangeFor(state.curve), [rangeFor, state.curve]);
+  const gradientRange = useMemo(() => rangeFor('gradientNorm'), [rangeFor]);
   const curveLayout = useMemo(
     () => ({
       height: 520 + 18 * Math.max(0, curveIds.length - 1),
@@ -397,6 +415,23 @@ export default function CurrentExplorer({ data }: { data: Publication }) {
       },
     }),
     [curveIds.length, state.focus, focusRange, state.yScale],
+  );
+  const gradientLayout = useMemo(
+    () => ({
+      ...curveLayout,
+      xaxis: {
+        ...curveLayout.xaxis,
+        ...(state.focus && gradientRange ? { range: gradientRange.x } : {}),
+      },
+      yaxis: {
+        title: { text: 'Gradient norm' },
+        type: state.gradScale,
+        ...(state.focus && gradientRange && state.gradScale === 'linear'
+          ? { range: gradientRange.y }
+          : {}),
+      },
+    }),
+    [curveLayout, state.focus, gradientRange, state.gradScale],
   );
   const missing = curveIds.filter((id) => failed.includes(id));
   function inspect(id: string) {
@@ -790,6 +825,38 @@ export default function CurrentExplorer({ data }: { data: Publication }) {
                 Loading recorded curves…
               </p>
             )
+          )}
+          {gradientTraces.length > 0 && (
+            <>
+              <h3 className="plot-heading">Gradient norms</h3>
+              <div className="curve-controls">
+                <label>
+                  Gradient-norm y-axis scale
+                  <select
+                    aria-label="Gradient-norm y-axis scale"
+                    value={state.gradScale}
+                    onChange={(e) =>
+                      setState((s) => ({ ...s, gradScale: e.target.value as State['gradScale'] }))
+                    }
+                  >
+                    <option value="linear">Linear</option>
+                    <option value="log">Log</option>
+                  </select>
+                </label>
+              </div>
+              <p className="small">
+                Gradient norm before clipping, recorded at the same training steps as the loss
+                above, so the curve identities match. Synchronous runs record the model&rsquo;s total
+                norm; decentralized runs record the largest of their per-worker norms. The seed and
+                focus controls apply here too; the loss view does not, because the norm is logged
+                only on training steps.
+              </p>
+              <Plot
+                data={gradientTraces}
+                label="Current gradient-norm trajectories"
+                layout={gradientLayout}
+              />
+            </>
           )}
         </section>
       )}

@@ -79,6 +79,13 @@ test('current explorer filters, restores URLs, downloads logs and exposes missin
       .locator('.main-svg')
       .first(),
   ).toBeVisible();
+  await page.getByLabel('Gradient-norm y-axis scale', { exact: true }).selectOption('log');
+  await expect(
+    page
+      .getByRole('img', { name: 'Current gradient-norm trajectories', exact: true })
+      .locator('.main-svg')
+      .first(),
+  ).toBeVisible();
   const pending = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Download filtered CSV', exact: true }).click();
   const download = await pending;
@@ -86,6 +93,7 @@ test('current explorer filters, restores URLs, downloads logs and exposes missin
   await page.reload();
   await expect(page.getByLabel('Loss view', { exact: true })).toHaveValue('train');
   await expect(page.getByLabel('Show individual seeds')).toBeChecked();
+  await expect(page.getByLabel('Gradient-norm y-axis scale', { exact: true })).toHaveValue('log');
   const logs = page
     .getByRole('table', { name: 'Current seed results' })
     .getByRole('link', { name: 'Metrics log' });

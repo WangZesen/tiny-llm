@@ -99,6 +99,7 @@ export interface RecordedCurve {
     final: number;
     train: [number, number][];
     validation: [number, number][];
+    gradientNorm: [number, number][];
     sources: {
       path: string;
       container: string;

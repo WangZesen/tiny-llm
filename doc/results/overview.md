@@ -85,6 +85,7 @@ campaign stage and [mirrored on Hugging Face](https://huggingface.co/datasets/ze
 [Checksums](../data/current-training/checksums.json)
 
 The explorer overlays up to eight configurations at once, across schedules, worker
-counts, and horizons. Every seed entry links to the container holding its metrics, final
-result, and resolved configuration. The [maintenance guide](../guides/website.md) describes importing
+counts, and horizons, as loss trajectories and, in a second figure, the pre-clipping
+gradient norms logged at the same training steps. Every seed entry links to the container
+holding its metrics, final result, and resolved configuration. The [maintenance guide](../guides/website.md) describes importing
 new evidence and regenerating the publication from the retained files.
