@@ -38,6 +38,7 @@ type State = {
   curve: 'train' | 'validation';
   seeds: boolean;
   focus: boolean;
+  yScale: 'linear' | 'log';
 };
 const defaults: State = {
   schedule: 'cosine',
@@ -51,6 +52,7 @@ const defaults: State = {
   curve: 'validation',
   seeds: false,
   focus: false,
+  yScale: 'linear',
 };
 const horizons = ['20', '40', '80', '120', '160'];
 const fmt = (v: number) => v.toFixed(6);
@@ -122,6 +124,7 @@ export default function CurrentExplorer({ data }: { data: Publication }) {
       next.curve = p.get('curve') === 'train' ? 'train' : 'validation';
       next.seeds = p.get('seeds') === '1';
       next.focus = p.get('focus') === '1';
+      next.yScale = p.get('yScale') === 'log' ? 'log' : 'linear';
       setState(next);
       setReady(true);
     };
@@ -142,6 +145,7 @@ export default function CurrentExplorer({ data }: { data: Publication }) {
     if (state.curve === 'train') params.set('curve', 'train');
     if (state.seeds) params.set('seeds', '1');
     if (state.focus) params.set('focus', '1');
+    if (state.yScale === 'log') params.set('yScale', 'log');
     // A comma is a legal sub-delimiter and keeps eight pinned ids readable in the bar.
     const query = params.toString().replace(/%2C/g, ',');
     history.replaceState(null, '', location.pathname + '?' + query);
@@ -375,7 +379,7 @@ export default function CurrentExplorer({ data }: { data: Publication }) {
   }, [curveIds, curves, state.curve]);
   const curveLayout = useMemo(
     () => ({
-      height: 360 + 18 * Math.max(0, curveIds.length - 1),
+      height: 520 + 18 * Math.max(0, curveIds.length - 1),
       margin: { l: 55, r: 15, t: 15, b: 65 + 16 * Math.ceil(curveIds.length / 2) },
       legend: { orientation: 'h' as const, y: -0.2 - 0.035 * curveIds.length, font: { size: 9 } },
       // Pinned horizons differ eightfold, so abbreviate rather than print every digit.
@@ -386,10 +390,13 @@ export default function CurrentExplorer({ data }: { data: Publication }) {
       },
       yaxis: {
         title: { text: 'Loss (nats)' },
-        ...(state.focus && focusRange ? { range: focusRange.y } : {}),
+        type: state.yScale,
+        // Plotly log-axis ranges are expressed in log10 space; the focus range is computed
+        // linearly, so it only applies cleanly to the linear axis.
+        ...(state.focus && focusRange && state.yScale === 'linear' ? { range: focusRange.y } : {}),
       },
     }),
-    [curveIds.length, state.focus, focusRange],
+    [curveIds.length, state.focus, focusRange, state.yScale],
   );
   const missing = curveIds.filter((id) => failed.includes(id));
   function inspect(id: string) {
@@ -737,6 +744,19 @@ export default function CurrentExplorer({ data }: { data: Publication }) {
                 onChange={(e) => setState((s) => ({ ...s, focus: e.target.checked }))}
               />{' '}
               Focus on the final losses
+            </label>
+            <label>
+              Y-axis scale
+              <select
+                aria-label="Y-axis scale"
+                value={state.yScale}
+                onChange={(e) =>
+                  setState((s) => ({ ...s, yScale: e.target.value as State['yScale'] }))
+                }
+              >
+                <option value="linear">Linear</option>
+                <option value="log">Log</option>
+              </select>
             </label>
           </div>
           <p className="small">
