@@ -1,4 +1,13 @@
-import { readFileSync, writeFileSync, mkdirSync, cpSync, existsSync } from 'node:fs';
+import {
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  cpSync,
+  existsSync,
+  readdirSync,
+  rmSync,
+} from 'node:fs';
+import { gunzipSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import assert from 'node:assert/strict';
@@ -6,6 +15,7 @@ import { parse } from 'yaml';
 import type { RegistryEntry, Study, Curves, Configuration } from '../src/lib/types.ts';
 import { configurationId, mean, sd, validatePoints } from '../src/lib/statistics.ts';
 import { loadWsd } from './wsd.ts';
+import { loadPublication } from './publication.ts';
 
 export const root = fileURLToPath(new URL('../../', import.meta.url));
 export const dataRoot = path.join(root, 'doc/data');
@@ -182,9 +192,25 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   mkdirSync(generated, { recursive: true });
   writeFileSync(path.join(generated, 'studies.json'), JSON.stringify(studies));
   writeFileSync(path.join(generated, 'wsd.json'), JSON.stringify(loadWsd()));
+  writeFileSync(path.join(generated, 'current.json'), JSON.stringify(loadPublication()));
   const assets = path.join(root, 'site/public/assets');
   mkdirSync(assets, { recursive: true });
   cpSync(dataRoot, path.join(assets, 'data'), { recursive: true });
+  // Curves are committed one campaign stage per container. The explorer fetches a single
+  // configuration at a time, so serve them exploded and drop the containers from the build.
+  const curveDir = path.join(assets, 'data/current-training/curves');
+  let exploded = 0;
+  for (const container of readdirSync(curveDir).filter((f) => f.endsWith('.jsonl.gz'))) {
+    const body = gunzipSync(readFileSync(path.join(curveDir, container)))
+      .toString()
+      .trimEnd();
+    for (const line of body.split('\n')) {
+      writeFileSync(path.join(curveDir, JSON.parse(line).configuration + '.json'), line + '\n');
+      exploded += 1;
+    }
+    rmSync(path.join(curveDir, container));
+  }
+  assert.equal(exploded, 594);
   cpSync(
     path.join(root, 'doc/adaptive-consensus-investigation'),
     path.join(assets, 'adaptive-consensus-investigation'),

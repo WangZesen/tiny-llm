@@ -19,10 +19,16 @@ const reports = (await getCollection('articles')).filter((p) => p.data.archive);
     </p>
     <p>
       For maintained conclusions, start with the{' '}
-      <a href={url('results/overview/')}>results overview</a>. The current explorer excludes
-      superseded studies and counts each experiment once.
+      <a href={url('results/overview/')}>results overview</a> and
+      <a href={url('results/explorer/')}>current explorer</a>.
     </p>
     <ul class="archive-list">
+      <li>
+        <a href={url('explorer/')}>Historical cosine explorer ↗</a>
+      </li>
+      <li>
+        <a href={url('explorer/wsd/')}>Original WSD explorer ↗</a>
+      </li>
       {reports.map((p) => (
         <li>
           <a href={url(p.id + '/')}>{p.data.title} ↗</a>

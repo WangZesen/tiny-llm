@@ -1,4 +1,5 @@
 ---
+archive: true
 title: Clipping & worker-count comparisons
 description: What changes when gradients are unclipped or the global batch is split among more local models.
 ---

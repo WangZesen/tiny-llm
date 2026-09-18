@@ -1,0 +1,3 @@
+# Retained evidence and recorded curves are compressed containers, not text.
+*.jsonl.gz binary -diff
+*.json.gz binary -diff

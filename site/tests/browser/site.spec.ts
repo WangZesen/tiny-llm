@@ -3,7 +3,7 @@ test('home, math, theme, archive and local search', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('./');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Small models');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('How small models learn');
   await page.getByRole('button', { name: 'Switch to dark theme' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.goto('methods/algorithms/');
@@ -89,7 +89,7 @@ test('articles and summary downloads work without JavaScript', async ({ browser 
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage();
   await page.goto('http://127.0.0.1:4321/tiny-llm/');
-  await expect(page.getByRole('table', { name: 'Best tested recipes' })).toBeVisible();
+  await expect(page.getByRole('table', { name: 'Current winning configurations' })).toBeVisible();
   await page.goto('http://127.0.0.1:4321/tiny-llm/methods/algorithms/');
   await expect(page.locator('.katex').first()).toBeVisible();
   await context.close();

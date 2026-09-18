@@ -1,4 +1,5 @@
 ---
+archive: true
 title: WSD tuning across training horizons
 description: Two completed campaigns compare synchronous and packed-8 AWC training from 20 to 160 global tokens per parameter.
 ---

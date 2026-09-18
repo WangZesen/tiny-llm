@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Data, Layout, PlotMouseEvent } from 'plotly.js';
+import { useTheme } from '../lib/theme';
 
 export default function Plot({
   data,
@@ -14,15 +15,9 @@ export default function Plot({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [error, setError] = useState(false);
-  const [theme, setTheme] = useState('light');
+  const theme = useTheme();
   const handler = useRef(onPoint);
   handler.current = onPoint;
-  useEffect(() => {
-    const update = () => setTheme(document.documentElement.dataset.theme ?? 'light');
-    update();
-    window.addEventListener('themechange', update);
-    return () => window.removeEventListener('themechange', update);
-  }, []);
   useEffect(() => {
     let cancelled = false;
     const node = ref.current;
@@ -33,8 +28,8 @@ export default function Plot({
       .then(async ({ default: Plotly }) => {
         if (cancelled) return;
         const dark = theme === 'dark';
-        const ink = dark ? '#dce8dc' : '#34453c';
-        const grid = dark ? '#34483b' : '#e5eae1';
+        const ink = dark ? '#eae1d3' : '#37312b';
+        const grid = dark ? '#494037' : '#e1d8cb';
         await Plotly.react(
           node,
           data,

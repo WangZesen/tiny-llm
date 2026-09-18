@@ -1,114 +1,88 @@
 # tiny-llm
 
-Train small Llama-style language models from scratch on English C4, inspect
-decentralized training, and measure gradient-noise alignment with the loss Hessian.
-Presets cover 20M, 50M, and 90M parameters, plus packed local models on one GPU.
+Small language models, measured carefully. Compare learning-rate schedules and
+decentralized training, reproduce the experiments, and inspect gradient noise
+and the loss Hessian.
 
-**[Research website and interactive results](https://wangzesen.github.io/tiny-llm/)**
-· [Results](doc/results/overview.md) · [Training guide](doc/guides/training.md)
+**[Research website](https://wangzesen.github.io/tiny-llm/)** ·
+[Interactive results](https://wangzesen.github.io/tiny-llm/results/explorer/) ·
+[Experimental protocol](doc/methods/protocol.md)
 
-## Quick start
+## Latest tuning results
 
-Training requires Python 3.12+, UV, and an NVIDIA GPU with BF16 support. The locked
-PyTorch build uses CUDA 13 and needs a compatible driver. Run from the repository root:
+Cosine-to-zero and warmup-stable-decay (WSD), with 20.4M-parameter models on C4.
+The shared horizons are 20, 40, and 80 global tokens per parameter. Results cover
+1,188 independent cosine runs and 594 WSD seed/horizon results; WSD continuations
+share earlier training history.
+
+Synchronous training has the lowest selected mean loss at each shared horizon.
+The gap between synchronous and decentralized cosine training narrows with the
+training budget. Cosine has lower selected means than WSD at the shared horizons
+for both measured methods. These are separately tuned recipes with different
+search grids and training histories; the comparison does not isolate schedule alone.
+
+<!-- results:start -->
+
+| Schedule | Training mode | Tokens/parameter | LR | β₁ | β₂ | Final loss ± sample SD |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Cosine-to-zero | Synchronous | 20 | 0.01 | 0.9 | 0.99 | 3.549818 ± 0.003284 |
+| Cosine-to-zero | Four workers | 20 | 0.01 | 0.95 | 0.99 | 3.570302 ± 0.004893 |
+| Cosine-to-zero | Eight workers | 20 | 0.014 | 0.95 | 0.99 | 3.585589 ± 0.003106 |
+| WSD | Synchronous | 20 | 0.004 | 0.95 | 0.98 | 3.556699 ± 0.002045 |
+| WSD | Eight workers | 20 | 0.006 | 0.95 | 0.999 | 3.593128 ± 0.004363 |
+| Cosine-to-zero | Synchronous | 40 | 0.01 | 0.9 | 0.98 | 3.429879 ± 0.003875 |
+| Cosine-to-zero | Four workers | 40 | 0.01 | 0.95 | 0.99 | 3.441328 ± 0.001791 |
+| Cosine-to-zero | Eight workers | 40 | 0.012 | 0.95 | 0.999 | 3.447451 ± 0.003544 |
+| WSD | Synchronous | 40 | 0.004 | 0.95 | 0.98 | 3.452800 ± 0.003136 |
+| WSD | Eight workers | 40 | 0.006 | 0.95 | 0.999 | 3.476282 ± 0.002687 |
+| Cosine-to-zero | Synchronous | 80 | 0.01 | 0.9 | 0.99 | 3.347422 ± 0.003371 |
+| Cosine-to-zero | Four workers | 80 | 0.01 | 0.974 | 0.999 | 3.351158 ± 0.004694 |
+| Cosine-to-zero | Eight workers | 80 | 0.012 | 0.974 | 0.999 | 3.355351 ± 0.001988 |
+| WSD | Synchronous | 80 | 0.003 | 0.95 | 0.999 | 3.374770 ± 0.003080 |
+| WSD | Eight workers | 80 | 0.003 | 0.95 | 0.999 | 3.395320 ± 0.004652 |
+
+<!-- results:end -->
+
+Values are mean final full-validation cross-entropy ± sample SD over seeds 42–44.
+Lower is better. Four-worker WSD has not been measured. WSD results at 120 and
+160 tokens per parameter remain available in the
+[results explorer](https://wangzesen.github.io/tiny-llm/results/explorer/?schedule=wsd&method=sync&horizon=160).
+
+[Results and figures](doc/results/overview.md) ·
+[Protocol and interpretation](doc/methods/protocol.md) ·
+[Retained logs and publication data](doc/data/current-training/) ·
+[Logs on Hugging Face](https://huggingface.co/datasets/zesen-kth/tiny-llm)
+
+## Usage
+
+Use Python 3.12+, UV, and an NVIDIA GPU with BF16 support. The locked PyTorch
+build uses CUDA 13 and needs a compatible driver. Run from the repository root:
 
 ```bash
 uv sync --locked
 uv run tiny-llm prepare --config configs/90m.yaml
-uv run tiny-llm train --config configs/20m.yaml
+uv run tiny-llm train --config configs/20m.yaml --config configs/cosine.yaml \
+  --set lr_schedule.min_lr_ratio=0 --set optimizer.lr=0.01 \
+  --set optimizer.beta2=0.99 --set runtime.output_dir=runs/sync-cosine
 ```
 
-Preparation downloads and caches C4 once, using 8 tokenizer processes by default;
-set `--set data.prepare_workers=1` for serial preparation. The training document
-shuffle buffer defaults to 100,000 documents; its token coverage depends on document
-lengths. Smaller models reuse prefixes of the same cache. Training visits shard
-groups in file order and shuffles within each group. Each shard holds 33,554,432
-tokens. `data.shuffle_group_size` defaults to 2 shards (about 128 MiB); it replaces
-`data.buffer_size_mib`. Keeping the same seed and data settings preserves earlier
-samples when increasing the training budget. Preparation includes the whole final
-group and lookahead.
+The example uses the selected synchronous cosine recipe at 20 tokens per parameter.
+The training presets themselves retain their existing defaults.
 
-Existing caches require matching preprocessing settings. To use the new shuffle
-default with an older cache present, set `--set data.cache_dir=data/c4-large` on
-both preparation and training; completed caches are never rewritten.
+1. [Prepare data](doc/guides/data.md): cache creation, reuse, budgets, and analysis capacity.
+2. [Train locally](doc/guides/training.md): sync and packed workers, schedules, checkpoints, and resume.
+3. [Submit Slurm jobs](doc/guides/slurm.md): resource requests, monitoring, and analysis jobs.
+4. [Run Hessian and gradient-noise analysis](doc/guides/analysis.md): seen/unseen data, numerical settings, and figures.
 
-To run the tuned four-worker AWC recipe:
+The published cosine sweeps saved no weights or checkpoints. To run checkpoint
+analysis, retain checkpoints when training a new run.
 
-```bash
-uv run tiny-llm train --config configs/packed4-20m-awc.yaml
-```
+## Single-GH200 performance
 
-The default checkpoint policy saves final training state only. Use
-`--set training.checkpoint_policy=interval` when you need epoch checkpoints for analysis.
-Model recipes omit scheduler settings and default to cosine. Add
-`--config configs/wsd.yaml` after the recipe's `--config` to use warmup-stable-decay;
-`configs/cosine.yaml` selects cosine explicitly. Both schedules default to
-312 warmup updates; override with `--set lr_schedule.warmup_steps=500`.
-Repeated config files merge in order, followed by `--set` overrides.
-See the [training and evaluation guide](doc/guides/training.md) for smoke runs,
-resume behavior, alternate recipes, clipping, and checkpoint retention.
+[Current throughput and memory measurements](doc/performance/training.md) come
+from the same 1,188 cosine runs. Steady training throughput, elapsed training
+throughput, evaluation time, session duration, and peak memory have distinct
+measurement boundaries. All packed workers execute on one GH200.
 
-## Documentation
-
-- Results: [overview](doc/results/overview.md), [optimizer tuning](doc/results/optimizer-tuning.md), [clipping and worker count](doc/results/ablations.md).
-- Methods: [protocol](doc/methods/protocol.md), [equations](doc/methods/algorithms.md), [implementation](doc/methods/implementation.md), [analysis](doc/methods/analysis.md), [recipe evidence](doc/methods/recipe.md).
-- Guides: [training/evaluation](doc/guides/training.md), [analysis](doc/guides/analysis.md), [Slurm](doc/guides/slurm.md), [benchmarking](doc/guides/benchmarking.md).
-- Performance: [training](doc/performance/training.md), [checkpoint analysis](doc/performance/checkpoint-analysis.md).
-- [Adaptive-consensus presentation and supplement](doc/methods/adaptive-consensus.md).
-- [Historical reports](doc/archive/) and [experimental data](doc/data/).
-
-## Development
-
-```bash
-uv run pyright
-scripts/test-cpu.sh
-uv run ruff check .
-uv run ruff format --check .
-```
-
-Type checks cover `src`, `tests`, and `scripts`. Ruff leaves archived research
-sources under `doc/archive`, `doc/data`, and `doc/adaptive-consensus-investigation`
-unchanged.
-
-The default CPU suite targets less than 60 seconds. It uses one PyTorch CPU thread
-and fixed machine metadata; benchmark tests cover actual profiling. Numerical,
-resume, corruption, and orchestration checks remain in the default run. Third-party
-pytest plugins require explicit loading with `-p`.
-
-The CPU launcher copies locked dependencies into a reusable node-local environment
-and compiles their Python bytecode. This avoids slow dependency imports from shared
-filesystems, including PyTorch's first-optimizer initialization. The first invocation
-installs dependencies; later invocations reuse them and sync any lockfile changes.
-Each checkout gets its own environment under `SLURM_TMPDIR`, `TMPDIR`, or `/tmp`,
-in that order. Set `TINY_LLM_TEST_ROOT` to choose another local directory.
-
-Additional arguments pass through to pytest, for example:
-
-```bash
-scripts/test-cpu.sh tests/test_adaptive_consensus.py -k weighted_mixing
-```
-
-CPU compilation and figure rendering are optional:
-
-```bash
-scripts/test-cpu.sh --run-slow -m slow
-```
-
-The multiprocessing cache comparison is skipped before loading its tokenizer
-fixture; run it separately when changing preparation or worker code:
-
-```bash
-scripts/test-cpu.sh --run-integration -m integration
-```
-
-GPU tests require a CUDA allocation. The website uses an independent Node 24+
-environment and builds entirely from committed Markdown and data:
-
-```bash
-npm --prefix site ci
-npm --prefix site run build
-npm --prefix site run dev
-```
-
-See the [website maintenance guide](doc/guides/website.md) for data refresh,
-browser checks, and GitHub Pages publication.
+[Historical archive](https://wangzesen.github.io/tiny-llm/archive/) ·
+[Development and publication maintenance](doc/guides/website.md)

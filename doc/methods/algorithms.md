@@ -1,4 +1,5 @@
 ---
+archive: true
 title: Algorithms and estimators
 description: Parameter mixing, local AdamW moments, and curvature diagnostics in mathematical notation.
 ---

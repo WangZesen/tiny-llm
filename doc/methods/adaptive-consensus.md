@@ -1,4 +1,5 @@
 ---
+archive: true
 title: Adaptive-consensus investigation
 description: A preserved presentation and technical supplement on diagnostics and training dynamics.
 ---

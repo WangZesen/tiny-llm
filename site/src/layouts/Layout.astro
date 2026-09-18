@@ -11,19 +11,19 @@ interface Props {
   description?: string;
   wide?: boolean;
   archive?: boolean;
+  searchable?: boolean;
 }
 const {
   title,
-  description = 'Small language models. Inspectable training. Reproducible experiments.',
+  description = 'Current measurements in language-model training. Schedules, workers, and reproducible experiments.',
   wide = false,
   archive = false,
+  searchable = true,
 } = Astro.props;
 const current = Astro.url.pathname;
 const navigation = [
   ['Results', 'results/overview/'],
-  ['Explorer', 'explorer/'],
-  ['Methods', 'methods/protocol/'],
-  ['Guides', 'guides/training/'],
+  ['Usage', 'guides/overview/'],
   ['Performance', 'performance/training/'],
 ];
 ---
@@ -34,7 +34,7 @@ const navigation = [
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#f8f9f6" />
+    <meta name="theme-color" content="#faf6ee" />
     <title>{title === 'tiny-llm' ? title : `${title} — tiny-llm`}</title>
     <link rel="icon" type="image/svg+xml" href={url('favicon.svg')} />
     <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
@@ -44,7 +44,7 @@ const navigation = [
       } catch {}
     </script>
   </head>
-  <body data-pagefind-ignore={archive ? 'all' : undefined}>
+  <body data-pagefind-ignore={archive || !searchable ? 'all' : undefined}>
     <a class="skip" href="#main">
       Skip to content
     </a>
@@ -85,7 +85,7 @@ const navigation = [
         <a class="wordmark" href={url()}>
           tiny-llm
         </a>
-        <p>Small models. Open measurements.</p>
+        <p>Small models. Measured carefully.</p>
       </div>
       <div>
         <a href={url('archive/')}>Historical archive</a>

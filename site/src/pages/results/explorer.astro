@@ -1,0 +1,45 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import CurrentExplorer from '../../components/CurrentExplorer';
+import WinnerTable from '../../components/WinnerTable.astro';
+import raw from '../../generated/current.json';
+import { publicationAsset, type Publication } from '../../lib/current';
+import { url } from '../../lib/links';
+const data = raw as Publication;
+---
+
+<Layout title="Explore the current experiments" wide>
+  <header class="publication-heading" data-pagefind-body>
+    <p class="eyebrow">Training studies · {data.snapshotDate}</p>
+    <h1>
+      Every result.
+      <br />
+      <em>A closer look.</em>
+    </h1>
+    <p class="lead">
+      Compare schedules, worker counts, and training budgets. Inspect all measured hyperparameters,
+      individual seeds, and the logs behind each trajectory.
+    </p>
+    <p>
+      <a href={url('results/overview/')}>Read the findings ↗</a> ·{' '}
+      <a href={url('methods/protocol/')}>Experimental protocol</a>
+    </p>
+  </header>
+  <CurrentExplorer data={data} client:load />
+  <details class="publication-section">
+    <summary>All winners and source downloads</summary>
+    <WinnerTable data={data} shared={false} />
+    <p>
+      <a href={publicationAsset('runs.csv')}>All seed results CSV</a> ·{' '}
+      <a href={publicationAsset('dataset.json')}>Publication JSON</a> ·{' '}
+      <a href={publicationAsset('matched.csv')}>Matched comparisons CSV</a> ·{' '}
+      <a href={publicationAsset('sources.json')}>Source map</a>
+    </p>
+  </details>
+  <noscript>
+    <p class="note">
+      Enable JavaScript for filters and interactive charts. The winner table above, research
+      articles, and downloads remain available.
+    </p>
+  </noscript>
+</Layout>

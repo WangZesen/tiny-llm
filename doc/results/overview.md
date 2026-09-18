@@ -1,54 +1,90 @@
 ---
-title: Results overview
-description: WSD horizon campaigns and earlier cosine studies, with separate evidence and practical recipes.
+title: Schedules, workers, and training budgets
+description: Current hyperparameter tuning for 20.4M-parameter language models on C4.
 ---
 
-## WSD horizon campaigns
+## Cosine-to-zero versus WSD
 
-The [synchronous and packed-8 AWC WSD campaigns](wsd-horizon-tuning.md) add **594 seed/horizon results across 198 configuration/horizon comparisons**, at 20, 40, 80, 120, and 160 global tokens per parameter. They reuse pre-decay checkpoints, so continued results are not independent training runs. The [WSD explorer](/tiny-llm/explorer/wsd/) provides rankings, individual seeds, matched comparisons, and reconstructed trajectories.
+At 20, 40, and 80 global tokens per parameter, the selected cosine recipes have
+lower mean final loss than the selected WSD recipes for both synchronous and
+eight-worker training. Each point is the best complete three-seed configuration
+within its schedule, training mode, and horizon.
 
-Synchronous training has lower selected mean full-validation loss at every horizon. The AWC-minus-synchronous gap narrows from **0.036429** to **0.015171** nats/token. AWC selects beta1 0.95 and beta2 0.999 throughout, with LR 0.006 at horizons 20–40 and 0.003 at 80–160. Later winners are conditional on LR pruning; the horizon-80 AWC decision over LR 0.004 is only 0.000015 nats.
+![Selected cosine and WSD results for synchronous and eight-worker training](../data/current-training/schedule-comparison.png)
 
-These campaigns use a different schedule, search grid, and token-allocation implementation from the earlier studies below. Their differences do not isolate the effect of WSD versus cosine scheduling. Committed training presets retain their existing settings.
+[Figure PDF](../data/current-training/schedule-comparison.pdf) ·
+[Interactive results](/tiny-llm/results/explorer/) ·
+[All configurations CSV](../data/current-training/configurations.csv)
 
-## Earlier cosine studies
+Cosine and WSD use different search grids and frozen trainer versions. Cosine
+starts each horizon afresh; WSD continues from pre-decay checkpoints and prunes
+learning rates between horizons. These comparisons describe the measured tuning
+outcomes, rather than isolating schedule as the only changed variable.
 
-The synchronous 20M recipe achieves the lowest mean final full-validation loss among the five earlier cosine studies. Four-worker AWC and ATC finish very close to one another after separate tuning. Eight-worker AWC is slightly higher, and removing gradient clipping produces a substantially worse best tested result. These statements describe the measured grids; they do not establish universal rankings of the algorithms.
+## Synchronous and decentralized training
 
-## Best tested cosine recipes
+Synchronous training has the lowest selected mean loss at each shared horizon.
+The four- and eight-worker cosine results approach it as the training budget grows.
+All modes use the same global token budget; workers divide that budget, and
+decentralized evaluation uses their averaged parameters.
 
-All results below use runtime seeds 42, 43, and 44. Loss is token-weighted cross-entropy in nats on the complete cached C4 validation split. The ± values are sample standard deviations across seeds, not confidence intervals.
+![Synchronous, four-worker and eight-worker cosine results across training budgets](../data/current-training/worker-comparison.png)
 
-| Method                       |     LR | Beta 1 | Beta 2 | Mean loss ± sample SD |
-| ---------------------------- | -----: | -----: | -----: | --------------------: |
-| Synchronous                  | 0.0056 |    0.9 |   0.98 |   3.558689 ± 0.004887 |
-| Four-worker AWC              |  0.008 |   0.95 |   0.99 |   3.595559 ± 0.005025 |
-| Four-worker ATC              | 0.0056 |    0.9 |   0.99 |   3.595506 ± 0.003221 |
-| Eight-worker AWC             | 0.0056 |   0.95 |  0.999 |   3.609816 ± 0.005523 |
-| Four-worker AWC, no clipping | 0.0056 |    0.9 |   0.98 |   3.668404 ± 0.046502 |
+[Figure PDF](../data/current-training/worker-comparison.pdf)
 
-The synchronous, AWC-4, ATC-4, and AWC-8 winners are available as [committed configuration files](../../configs/20m.yaml), with [AWC-4](../../configs/packed4-20m-awc.yaml), [ATC-4](../../configs/packed4-20m-atc.yaml), and [AWC-8](../../configs/packed8-20m-awc.yaml) presets. The unclipped result is an ablation and does not replace a recommended preset.
+<!-- results:start -->
 
-## What is being compared
+| Schedule | Training mode | Tokens/parameter | LR | β₁ | β₂ | Final loss ± sample SD |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Cosine-to-zero | Synchronous | 20 | 0.01 | 0.9 | 0.99 | 3.549818 ± 0.003284 |
+| Cosine-to-zero | Four workers | 20 | 0.01 | 0.95 | 0.99 | 3.570302 ± 0.004893 |
+| Cosine-to-zero | Eight workers | 20 | 0.014 | 0.95 | 0.99 | 3.585589 ± 0.003106 |
+| WSD | Synchronous | 20 | 0.004 | 0.95 | 0.98 | 3.556699 ± 0.002045 |
+| WSD | Eight workers | 20 | 0.006 | 0.95 | 0.999 | 3.593128 ± 0.004363 |
+| Cosine-to-zero | Synchronous | 40 | 0.01 | 0.9 | 0.98 | 3.429879 ± 0.003875 |
+| Cosine-to-zero | Four workers | 40 | 0.01 | 0.95 | 0.99 | 3.441328 ± 0.001791 |
+| Cosine-to-zero | Eight workers | 40 | 0.012 | 0.95 | 0.999 | 3.447451 ± 0.003544 |
+| WSD | Synchronous | 40 | 0.004 | 0.95 | 0.98 | 3.452800 ± 0.003136 |
+| WSD | Eight workers | 40 | 0.006 | 0.95 | 0.999 | 3.476282 ± 0.002687 |
+| Cosine-to-zero | Synchronous | 80 | 0.01 | 0.9 | 0.99 | 3.347422 ± 0.003371 |
+| Cosine-to-zero | Four workers | 80 | 0.01 | 0.974 | 0.999 | 3.351158 ± 0.004694 |
+| Cosine-to-zero | Eight workers | 80 | 0.012 | 0.974 | 0.999 | 3.355351 ± 0.001988 |
+| WSD | Synchronous | 80 | 0.003 | 0.95 | 0.999 | 3.374770 ± 0.003080 |
+| WSD | Eight workers | 80 | 0.003 | 0.95 | 0.999 | 3.395320 ± 0.004652 |
 
-Each local model has 20,403,520 unique trainable parameters, including the tied embedding once. The global batch contains 131,072 prediction targets. Packed training divides that batch among four or eight local models and maintains independent optimizer moments. Final evaluation uses their averaged parameters.
+<!-- results:end -->
 
-The global training budget is approximately 408 million targets in each earlier cosine study. Packed workers each process only their allocated share of that budget. This differs from training four independent models for the full synchronous budget. All packed workers are simulated on one GPU; the measurements do not include physical inter-node communication costs.
+Means and sample SDs use seeds 42, 43, and 44. SD describes seed variation and is
+not a confidence interval. Validation is used for tuning; these are not independent
+test estimates. Four-worker WSD is unavailable.
 
-The comparison therefore changes more than parallel execution. It changes local batches, optimizer states, and the relationship between trained and evaluated parameters. The [shared protocol](../methods/protocol.md) records exact budgets and evaluation conventions.
+## Longer WSD horizons and matched comparisons
 
-## Reading the differences
+WSD also measures 120 and 160 tokens per parameter. Open the
+[long-horizon results](/tiny-llm/results/explorer/?schedule=wsd&method=sync&horizon=160)
+to inspect them. Cosine has no corresponding measurements at those horizons.
 
-The selected four-worker AWC mean exceeds the selected ATC mean by only 0.000053 nats, far below the observed seed variation. Those recipes use different learning rates and beta1 values. Their proximity cannot establish equivalence or isolate the effect of mixing order. The [optimizer article](optimizer-tuning.md) discusses matched settings as well as tuned winners.
+The explorer separates selected winners from comparisons matching horizon, LR,
+both AdamW betas, and seeds. A paired SD measures variation in per-seed differences.
+Matching hyperparameters does not remove the other protocol differences.
 
-The synchronous winner is 0.036870 nats below the AWC-4 winner. That is a useful comparison of the tested systems, but it is not a controlled test of one optimizer operation. Similarly, the eight-worker result must be interpreted with its own search bounds and per-worker token allocation.
+[Matched comparisons CSV](../data/current-training/matched.csv) ·
+[All winners JSON](../data/current-training/winners.json)
 
-Clipping has more consistent directional evidence: removing it increases mean loss in 27 of 28 published matched configurations. The [ablation article](ablations.md) retains the pairing and explains the limits of that result.
+## Protocol and retained evidence
 
-## Inspecting the evidence
+The [experiment protocol](../methods/protocol.md) explains model and data identity,
+budgets, schedules, optimization, evaluation, continuation, and selection.
+The publication retains metrics logs and supporting records for every result, including
+the continuation parents used to reconstruct WSD curves, grouped into one container per
+campaign stage and [mirrored on Hugging Face](https://huggingface.co/datasets/zesen-kth/tiny-llm).
 
-The website's [earlier cosine explorer](/tiny-llm/explorer/) includes all 753 historical cosine runs across 251 configurations. The separate beta2=0.99 report is a view of the AWC-4 dataset and is not counted again. Full rankings and individual seed losses are available as tables and downloads.
+[Per-run records CSV](../data/current-training/runs.csv) ·
+[Publication JSON](../data/current-training/dataset.json) ·
+[Retained source map](../data/current-training/sources.json) ·
+[Checksums](../data/current-training/checksums.json)
 
-Recorded trajectories are available for 726 runs. The 27 missing logs belong to an earlier AWC beta sweep; their final losses remain available. Trajectory views distinguish logged training-window loss from epoch subset-validation loss. The final full-validation metric remains the selection criterion throughout.
-
-Use the [training guide](../guides/training.md) to reproduce a selected recipe. Earlier 32K-token studies and the original 50M/90M selection evidence remain in the [historical campaign](../archive/campaign_results.md). Validation was used for tuning, and no independent test estimate is reported.
+The explorer overlays up to eight configurations at once, across schedules, worker
+counts, and horizons. Every seed entry links to the container holding its metrics, final
+result, and resolved configuration. The [maintenance guide](../guides/website.md) describes importing
+new evidence and regenerating the publication from the retained files.

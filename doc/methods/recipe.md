@@ -1,4 +1,5 @@
 ---
+archive: true
 title: "Training recipe and evidence"
 ---
 

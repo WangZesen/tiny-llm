@@ -11,7 +11,8 @@
     "preview": "astro preview --host 127.0.0.1",
     "check": "astro check && tsc --noEmit",
     "data:check": "tsx tools/data.ts",
-    "data:refresh": "tsx tools/export-curves.ts",
+    "data:refresh": "cd .. && uv run python scripts/export_publication.py",
+    "data:refresh:archive": "tsx tools/export-curves.ts",
     "test": "tsx --test tests/*.test.ts",
     "test:browser": "playwright test"
   },

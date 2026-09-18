@@ -1,4 +1,5 @@
 ---
+archive: true
 title: Checkpoint-analysis performance
 description: Historical GH200 measurements behind the retained Hessian-vector-product execution settings.
 ---

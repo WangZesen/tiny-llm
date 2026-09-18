@@ -1,0 +1,54 @@
+---
+import type { Publication } from '../lib/current';
+import { methods, schedules, winners } from '../lib/current';
+import { url } from '../lib/links';
+interface Props {
+  data: Publication;
+  shared?: boolean;
+}
+const { data, shared = true } = Astro.props;
+---
+
+<div class="table-wrap">
+  <table aria-label="Current winning configurations">
+    <thead>
+      <tr>
+        <th>Schedule</th>
+        <th>Training mode</th>
+        <th>Tokens/parameter</th>
+        <th>LR</th>
+        <th>β₁</th>
+        <th>β₂</th>
+        <th>Final loss ± sample SD</th>
+      </tr>
+    </thead>
+    <tbody>
+      {winners(data, shared).map((g) => (
+        <tr>
+          <td>{schedules[g.schedule]}</td>
+          <td>{methods[g.method]}</td>
+          <td>{g.horizon}</td>
+          <td>{g.lr}</td>
+          <td>{g.beta1}</td>
+          <td>{g.beta2}</td>
+          <td>
+            <a
+              href={url(
+                'results/explorer/?schedule=' +
+                  g.schedule +
+                  '&method=' +
+                  g.method +
+                  '&horizon=' +
+                  g.horizon +
+                  '&selected=' +
+                  g.id,
+              )}
+            >
+              {g.mean.toFixed(6)} ± {g.sd.toFixed(6)}
+            </a>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>

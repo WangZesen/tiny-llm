@@ -9,11 +9,27 @@ before the launcher starts:
 
 ```bash
 mkdir -p runs
+sbatch scripts/slurm.sh prepare --config configs/90m.yaml
 sbatch scripts/slurm.sh train --config configs/20m.yaml
 sbatch scripts/slurm.sh train --config configs/packed4-20m-awc.yaml
 sbatch scripts/slurm.sh evaluate --config runs/20m/resolved.yaml \
   --checkpoint runs/20m/final.pt --full
 ```
+
+Wait for preparation to complete before submitting training with that cache.
+To request a GH200 explicitly and use the selected synchronous cosine recipe:
+
+```bash
+sbatch --gpus=nvidia_gh200_120gb:1 scripts/slurm.sh train \
+  --config configs/20m.yaml --config configs/cosine.yaml \
+  --set lr_schedule.min_lr_ratio=0 --set optimizer.lr=0.01 \
+  --set optimizer.beta1=0.9 --set optimizer.beta2=0.99 \
+  --set runtime.output_dir=runs/sync-cosine
+```
+
+Use the [local training guide](training.md#published-configurations) for packed
+worker recipes, WSD, other horizons, and checkpoint policies. Override the
+account and partition with Slurm options before the script path when needed.
 
 The launcher defaults to account `naiss2026-3-205-gpu`, partition `gpu`, one GPU,
 one task, and **two hours**. Slurm allocates CPUs automatically. Combined output

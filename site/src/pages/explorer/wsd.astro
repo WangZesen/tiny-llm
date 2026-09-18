@@ -8,7 +8,11 @@ const measurements = data as WsdData;
 const download = (name: string) => url('assets/data/wsd-horizon-tuning/' + name);
 ---
 
-<Layout title="WSD horizon explorer" wide>
+<Layout title="Original WSD explorer" wide archive>
+  <p class="archive-notice">
+    Archived explorer.{' '}
+    <a href={url('results/explorer/?schedule=wsd')}>Explore all current schedule comparisons →</a>
+  </p>
   <div class="explorer-intro" data-pagefind-body>
     <div>
       <p class="eyebrow">594 seed/horizon results · 198 configuration/horizon comparisons</p>

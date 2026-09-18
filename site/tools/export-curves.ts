@@ -11,7 +11,7 @@ const args = process.argv.slice(2);
 const offset = args.indexOf('--runs-root');
 assert.ok(
   args.length === 0 || (offset === 0 && args.length === 2),
-  'Usage: npm run data:refresh -- [--runs-root /path/to/runs]',
+  'Usage: npm run data:refresh:archive -- [--runs-root /path/to/runs]',
 );
 const runsRoot = offset < 0 ? path.join(root, 'runs') : path.resolve(args[offset + 1]);
 const sha = (s: Buffer) => createHash('sha256').update(s).digest('hex');

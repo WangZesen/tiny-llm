@@ -4,6 +4,12 @@ title: "Running checkpoint analysis"
 
 ## Analysis
 
+The current cosine tuning runs retained metrics and results but saved no
+checkpoints. Their migrated logs cannot supply Hessian-vector products.
+Train a new run with the default final checkpoint, or retain epoch checkpoints
+as described below. Start with [data preparation](data.md#capacity-for-unseen-analysis)
+and [local training](training.md).
+
 Unseen analysis starts after the entire final training shuffle group, including
 candidate sequences beyond the nominal training budget. Prepare enough additional
 training data to cover an unseen epoch and its full final shuffle group; set

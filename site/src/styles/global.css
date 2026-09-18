@@ -1,27 +1,27 @@
 :root {
   font-family: 'DM Sans', system-ui, sans-serif;
-  color: #22332f;
-  background: #f8f9f6;
+  color: #302c27;
+  background: #faf6ee;
   font-synthesis: none;
-  --bg: #f8f9f6;
-  --surface: #fff;
-  --ink: #22332f;
-  --muted: #68766f;
-  --line: #dfe5dc;
-  --accent: #245e4b;
-  --soft: #edf1e8;
-  --highlight: #d9edaa;
+  --bg: #faf6ee;
+  --surface: #fffdf8;
+  --ink: #302c27;
+  --muted: #70665b;
+  --line: #ddd3c4;
+  --accent: #9a452e;
+  --soft: #f0e8db;
+  --highlight: #e3bc92;
   color-scheme: light;
 }
 :root[data-theme='dark'] {
-  --bg: #141e1b;
-  --surface: #1c2924;
-  --ink: #e5ece4;
-  --muted: #a6b6ab;
-  --line: #34483b;
-  --accent: #b7da98;
-  --soft: #23362a;
-  --highlight: #354f2c;
+  --bg: #201d19;
+  --surface: #29241f;
+  --ink: #eee4d5;
+  --muted: #bcae9a;
+  --line: #4b4035;
+  --accent: #edb28c;
+  --soft: #342d25;
+  --highlight: #9c593a;
   color: var(--ink);
   background: var(--bg);
   color-scheme: dark;
@@ -55,7 +55,7 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 select:focus-visible {
-  outline: 3px solid #8caa57;
+  outline: 3px solid #b46b3f;
   outline-offset: 4px;
 }
 button {
@@ -917,6 +917,365 @@ summary {
 .wsd-explorer section {
   margin-block: 2.5rem;
   min-width: 0;
+}
+
+/* The current publication uses open editorial sections rather than dashboard cards. */
+.figure-narrow {
+  display: none;
+}
+@media (max-width: 600px) {
+  .publication-figure .figure-wide {
+    display: none;
+  }
+  .figure-narrow {
+    display: block;
+  }
+  .figure-narrow img + img {
+    margin-top: 20px;
+  }
+}
+.publication-heading {
+  padding: 5px 0 42px;
+  border-bottom: 2px solid var(--ink);
+}
+.publication-heading h1 {
+  max-width: 1100px;
+  font-size: clamp(2.7rem, 5.4vw, 5.2rem);
+  line-height: 1.08;
+}
+.publication-heading h1 em {
+  color: var(--accent);
+  font-weight: 400;
+}
+.publication-deck {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 70px;
+  margin-top: 35px;
+}
+.publication-deck .lead {
+  font-size: 1.12rem;
+}
+.publication-finding {
+  border-left: 1px solid var(--line);
+  padding-left: 32px;
+}
+.publication-finding .eyebrow {
+  display: block;
+  margin-bottom: 10px;
+}
+.publication-finding p {
+  margin-bottom: 12px;
+}
+.publication-byline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 26px;
+  margin-top: 26px;
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+.publication-section {
+  padding: 48px 0;
+  border-bottom: 1px solid var(--line);
+  min-width: 0;
+}
+.publication-section-title {
+  margin-bottom: 20px;
+}
+.publication-section h2 {
+  font-size: clamp(2rem, 3.4vw, 3rem);
+  margin-bottom: 18px;
+}
+.section-number {
+  display: block;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  font-size: 0.7rem;
+  margin-bottom: 18px;
+}
+.section-intro {
+  max-width: 790px;
+  font-size: 1.04rem;
+}
+.publication-figure {
+  margin: 30px 0;
+  background: #faf6ee;
+  border: 1px solid var(--line);
+  padding: 22px;
+}
+.publication-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.publication-figure figcaption {
+  color: #665b4d;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  margin-top: 16px;
+}
+.publication-figure a {
+  color: #914129;
+}
+.comparison-note {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 35px;
+  align-items: start;
+}
+.comparison-note p {
+  font-size: 0.92rem;
+}
+.protocol-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 75px;
+}
+.protocol-facts {
+  margin: 0;
+}
+.protocol-facts > div {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.protocol-facts dt {
+  color: var(--muted);
+  font-size: 0.76rem;
+  margin-bottom: 5px;
+}
+.protocol-facts dd {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.usage-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 25px 0;
+  gap: 0 40px;
+}
+.usage-link {
+  display: flex;
+  gap: 24px;
+  padding: 25px 0;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  text-decoration: none;
+}
+.usage-link > span {
+  color: var(--accent);
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 1.7rem;
+}
+.usage-link h3 {
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 1.6rem;
+  font-weight: 400;
+}
+.usage-link p {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0;
+}
+.usage-link:hover h3 {
+  color: var(--accent);
+}
+.performance-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+  margin: 35px 0;
+}
+.performance-summary > div {
+  padding-top: 20px;
+  border-top: 2px solid var(--line);
+}
+.performance-summary strong {
+  font-family: 'Newsreader', Georgia, serif;
+  font-weight: 400;
+  font-size: 3.4rem;
+}
+.performance-summary strong small {
+  display: block;
+  font:
+    0.8rem 'DM Sans',
+    sans-serif;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.performance-summary p {
+  color: var(--muted);
+  margin-top: 20px;
+  font-size: 0.78rem;
+}
+.publication-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 24px 0;
+}
+.publication-filters label,
+.curve-controls label {
+  font-size: 0.83rem;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.publication-filters select,
+.curve-controls select {
+  width: 100%;
+  padding: 11px 12px;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 3px;
+}
+.curve-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 30px;
+  margin: 28px 0 14px;
+}
+.curve-controls label:has(input) {
+  flex-direction: row;
+  align-items: center;
+  min-height: 44px;
+}
+.curve-controls input {
+  width: auto;
+}
+.current-explorer .ranking-scroll {
+  max-height: 550px;
+}
+.current-explorer .comparison-tray {
+  gap: 8px;
+  padding: 14px 0;
+}
+.current-explorer .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 6px 6px 6px 10px;
+  min-height: 36px;
+  background: var(--surface);
+}
+.current-explorer .chip .dot {
+  flex: none;
+  margin-right: 0;
+}
+.current-explorer .chip-label {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The inspected curve is on the plot but not yet pinned. */
+.current-explorer .chip.inspecting {
+  border-style: dashed;
+  border-color: var(--accent);
+}
+.current-explorer .chip-remove {
+  border: 0;
+  background: none;
+  line-height: 1;
+  border-radius: 50%;
+  min-width: 28px;
+  min-height: 28px;
+  color: var(--muted);
+}
+.current-explorer td .dot {
+  margin-left: 8px;
+}
+.current-explorer tr.selected {
+  background: var(--soft);
+  box-shadow: inset 3px 0 var(--accent);
+}
+.current-explorer .plot-heading {
+  margin-top: 35px;
+}
+.current-explorer .coverage {
+  margin-bottom: 22px;
+}
+.download-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0;
+  font-size: 0.82rem;
+}
+.archive-notice {
+  border-left: 3px solid var(--accent);
+  background: var(--soft);
+  padding: 14px 18px;
+  font-size: 0.9rem;
+}
+.publication-section .table-wrap {
+  max-width: 100%;
+}
+.publication-section th,
+.publication-section td {
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 900px) {
+  .publication-deck,
+  .comparison-note,
+  .protocol-section {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+  .publication-finding {
+    padding-left: 20px;
+  }
+}
+@media (max-width: 600px) {
+  .publication-heading {
+    padding-bottom: 26px;
+  }
+  .publication-heading h1 {
+    font-size: 2.65rem;
+  }
+  .publication-section {
+    padding: 32px 0;
+  }
+  .publication-figure {
+    padding: 8px;
+    margin-inline: 0;
+  }
+  .publication-figure figcaption {
+    padding: 5px;
+    font-size: 0.73rem;
+  }
+  .usage-grid,
+  .performance-summary {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .performance-summary > div {
+    padding: 20px 0;
+  }
+  .performance-summary p {
+    margin-bottom: 0;
+  }
+  .publication-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .current-explorer .section-heading {
+    align-items: start;
+  }
+  .current-explorer .section-heading button {
+    flex-shrink: 0;
+  }
 }
 .wsd-charts {
   display: grid;

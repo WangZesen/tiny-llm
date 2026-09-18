@@ -1,4 +1,5 @@
 ---
+archive: true
 title: "Benchmarking, profiling, and sweeps"
 ---
 

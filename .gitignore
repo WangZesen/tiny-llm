@@ -13,6 +13,8 @@ wheels/
 # Training artifacts and local tools
 /data/
 /runs/
+/doc/data/.publication-*/
+/doc/data/.current-training-previous/
 .pytest_cache/
 .ruff_cache/
 *.log

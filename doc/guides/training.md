@@ -4,6 +4,9 @@ title: "Training and evaluation"
 
 ## Setup
 
+Start with the [data-preparation guide](data.md) to create a cache with enough
+capacity for your training and analysis budget.
+
 Use Python 3.12+, UV, and an NVIDIA GPU with BF16 support for training.
 The locked PyTorch build uses CUDA 13 and requires a compatible driver.
 Run commands from the repository root.
@@ -12,6 +15,55 @@ Run commands from the repository root.
 uv sync --locked
 ```
 
+
+## Published configurations
+
+The presets retain their earlier optimizer defaults. Apply the current
+[winning hyperparameters](../results/overview.md) explicitly. These commands
+reproduce the selected cosine-to-zero configurations at 20 tokens per parameter:
+
+```bash
+# Synchronous
+uv run tiny-llm train --config configs/20m.yaml --config configs/cosine.yaml \
+  --set lr_schedule.min_lr_ratio=0 --set optimizer.lr=0.01 \
+  --set optimizer.beta1=0.9 --set optimizer.beta2=0.99 \
+  --set runtime.output_dir=runs/sync-cosine
+# Four workers
+uv run tiny-llm train --config configs/20m.yaml --config configs/packed4-20m-awc.yaml \
+  --config configs/cosine.yaml --set lr_schedule.min_lr_ratio=0 \
+  --set optimizer.lr=0.01 --set optimizer.beta1=0.95 --set optimizer.beta2=0.99 \
+  --set runtime.output_dir=runs/awc4-cosine
+# Eight workers
+uv run tiny-llm train --config configs/20m.yaml --config configs/packed8-20m-awc.yaml \
+  --config configs/cosine.yaml --set lr_schedule.min_lr_ratio=0 \
+  --set optimizer.lr=0.014 --set optimizer.beta1=0.95 --set optimizer.beta2=0.99 \
+  --set runtime.output_dir=runs/awc8-cosine
+```
+
+For the selected synchronous WSD configuration at 20 tokens per parameter:
+
+```bash
+uv run tiny-llm train --config configs/20m.yaml --config configs/wsd.yaml \
+  --set optimizer.lr=0.004 --set optimizer.beta1=0.95 --set optimizer.beta2=0.98 \
+  --set runtime.output_dir=runs/sync-wsd
+```
+
+For eight-worker WSD, add the packed-eight recipe before `configs/wsd.yaml`
+and use LR 0.006, beta1 0.95, beta2 0.999. There is no measured four-worker WSD
+winner. Both schedules default to 312 warmup updates.
+
+For longer cosine runs, set `training.tokens_per_parameters=40` or `80` and
+use that horizon's LR and betas from the results table. Repeat runtime seeds
+42–44 in separate output directories. A fresh longer WSD command is a useful
+training recipe, but reproducing the published continued trajectories requires
+the campaign-specific pre-decay checkpoint adaptation documented in the
+[protocol](../methods/protocol.md#wsd-continuation).
+
+The publication's cosine sweeps used `training.checkpoint_policy=none`. These
+usage examples keep the default final checkpoint so the resulting model can
+be inspected. For analysis at several epochs, use
+`--set training.checkpoint_policy=interval --set training.checkpoint_epochs=5`.
+Saved checkpoints add time and storage beyond the published sweep settings.
 
 ## Training
 

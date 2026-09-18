@@ -7,7 +7,10 @@ import { url } from '../lib/links';
 const studies = data as Study[];
 ---
 
-<Layout title="Results explorer" wide>
+<Layout title="Historical cosine explorer" wide archive>
+  <p class="archive-notice">
+    Archived explorer. <a href={url('results/explorer/')}>Explore the current experiments →</a>
+  </p>
   <div class="explorer-intro">
     <div>
       <p class="eyebrow">Earlier cosine studies · 753 runs · 251 configurations</p>
@@ -17,11 +20,11 @@ const studies = data as Study[];
         ranking uses final full-validation loss.
       </p>
     </div>
-    <a href={url('methods/protocol/')}>Protocol & interpretation ↗</a>
+    <a href={url('archive/protocol/')}>Protocol & interpretation ↗</a>
   </div>
   <p>
-    <a href={url('explorer/wsd/')}>Explore the new WSD horizon campaigns →</a> · These earlier
-    studies use cosine decay and a single 20-token-per-parameter budget.
+    <a href={url('explorer/wsd/')}>Original WSD explorer →</a> · These earlier studies use cosine
+    decay and a single 20-token-per-parameter budget.
   </p>
   <Explorer studies={studies} client:load />
   <details>

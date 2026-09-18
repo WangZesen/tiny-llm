@@ -1,285 +1,290 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import studies from '../generated/studies.json';
-import wsd from '../generated/wsd.json';
+import WinnerTable from '../components/WinnerTable.astro';
+import raw from '../generated/current.json';
+import { methods, publicationAsset, type Publication } from '../lib/current';
 import { url } from '../lib/links';
-const total = studies.reduce((n, s) => n + s.runs, 0);
-const configurations = studies.reduce((n, s) => n + s.configurations, 0);
-const xpos = (loss: number) => 165 + ((loss - 3.54) / 0.2) * 275;
+const data = raw as Publication;
+const best = (schedule: string, method: string, h: number) =>
+  data.groups.find(
+    (g) => g.schedule === schedule && g.method === method && g.horizon === h && g.rank === 1,
+  )!;
+const performance = data.performance.filter((r) => r.horizon === 80);
+const usage = [
+  [
+    '01',
+    'Prepare data',
+    'Create the C4 cache with room for training and unseen analysis.',
+    'guides/data/',
+  ],
+  [
+    '02',
+    'Train locally',
+    'Choose a schedule, launch sync or packed workers, and retain checkpoints.',
+    'guides/training/',
+  ],
+  [
+    '03',
+    'Submit Slurm jobs',
+    'Request a GPU, launch a run, and monitor its progress.',
+    'guides/slurm/',
+  ],
+  [
+    '04',
+    'Analyze the model',
+    'Measure Hessian and gradient-noise alignment from saved checkpoints.',
+    'guides/analysis/',
+  ],
+];
 ---
 
-<Layout title="tiny-llm" wide>
-  <section class="hero" data-pagefind-body>
-    <div>
-      <p class="eyebrow">A small language model research lab</p>
-      <h1>
-        Small models.
-        <br />
-        <em>Inspectable</em>
-        <br />
-        training.
-      </h1>
+<Layout
+  title="tiny-llm"
+  description="Current experiments in learning-rate schedules and decentralized language-model training."
+  wide
+>
+  <header class="publication-heading home-heading" data-pagefind-body>
+    <p class="eyebrow">tiny-llm / Training studies / {data.snapshotDate}</p>
+    <h1>
+      How small models learn.
+      <br />
+      <em>Across schedules and workers.</em>
+    </h1>
+    <div class="publication-deck">
       <p class="lead">
-        Train Llama-style models from scratch. Explore how optimizer settings, decentralized
-        updates, and gradient clipping shape their learning.
+        The latest hyperparameter tuning for 20.4M-parameter language models on C4. Cosine-to-zero
+        and WSD, synchronous and decentralized training, measured across token budgets.
       </p>
-      <div class="actions">
-        <a class="button" href={url('explorer/wsd/')}>
-          Explore the results <span>↗</span>
-        </a>
-        <a class="button secondary" href={url('guides/training/')}>
-          Start training <span>→</span>
-        </a>
+      <div class="publication-finding">
+        <span class="eyebrow">From the experiments</span>
+        <p>
+          Synchronous training has the lowest selected mean loss at each shared horizon. The
+          decentralized cosine results draw closer as the training budget grows.
+        </p>
+        <a href={url('results/explorer/')}>Explore all results ↗</a>
       </div>
     </div>
-    <div class="hero-visual">
-      <div class="chart-heading">
-        <h3>Earlier cosine-study winners</h3>
-        <span class="tag">20M · 20 tokens/parameter</span>
+    <div class="publication-byline">
+      <span>1,188 cosine runs</span>
+      <span>594 WSD seed/horizon results</span>
+      <span>Three seeds per configuration</span>
+      <span>One GH200 per run</span>
+    </div>
+  </header>
+
+  <section class="publication-section" id="schedules" data-pagefind-body>
+    <div class="publication-section-title">
+      <span class="section-number">01 / Results</span>
+      <h2>Cosine-to-zero meets WSD.</h2>
+    </div>
+    <p class="section-intro">
+      At the shared 20, 40, and 80-token horizons, the selected cosine recipes have lower mean final
+      validation loss for both measured training modes.
+    </p>
+    <figure class="publication-figure">
+      <img
+        class="figure-wide"
+        src={publicationAsset('schedule-comparison.svg')}
+        width="1050"
+        height="420"
+        alt="Selected cosine and WSD losses across 20, 40 and 80 tokens per parameter, for sync and eight workers"
+      />
+      <div class="figure-narrow">
+        <img
+          src={publicationAsset('schedule-comparison-sync.svg')}
+          width="420"
+          height="360"
+          alt="Synchronous training: cosine-to-zero versus WSD at 20, 40 and 80 tokens per parameter"
+        />
+        <img
+          src={publicationAsset('schedule-comparison-awc8.svg')}
+          width="420"
+          height="360"
+          loading="lazy"
+          alt="Eight-worker training: cosine-to-zero versus WSD at 20, 40 and 80 tokens per parameter"
+        />
       </div>
-      <svg viewBox="0 0 480 330" role="img" aria-labelledby="chart-title chart-description">
-        <title id="chart-title">Five separately tuned historical cosine recipes</title>
-        <desc id="chart-description">
-          Mean final full-validation cross-entropy with sample standard deviations across three
-          seeds. Lower loss is better.
-        </desc>
-        {[3.55, 3.6, 3.65, 3.7].map((v) => (
-          <g>
-            <line
-              x1={xpos(v)}
-              y1="26"
-              x2={xpos(v)}
-              y2="276"
-              stroke="var(--line)"
-              stroke-dasharray="3 5"
-            />
-            <text x={xpos(v)} y="300" text-anchor="middle" fill="var(--muted)" font-size="11">
-              {v.toFixed(2)}
-            </text>
-          </g>
-        ))}
-        {studies.map((s, i) => {
-          const y = 48 + i * 49,
-            g = s.groups[0];
-          return (
-            <g>
-              <text x="0" y={y + 4} fill="var(--ink)" font-size="12">
-                {s.title}
-              </text>
-              <line
-                x1={xpos(g.mean - g.sd)}
-                y1={y}
-                x2={xpos(g.mean + g.sd)}
-                y2={y}
-                stroke={s.color}
-                stroke-width="2"
-              />
-              <line
-                x1={xpos(g.mean - g.sd)}
-                y1={y - 5}
-                x2={xpos(g.mean - g.sd)}
-                y2={y + 5}
-                stroke={s.color}
-              />
-              <line
-                x1={xpos(g.mean + g.sd)}
-                y1={y - 5}
-                x2={xpos(g.mean + g.sd)}
-                y2={y + 5}
-                stroke={s.color}
-              />
-              <circle cx={xpos(g.mean)} cy={y} r="5" fill={s.color} />
-              <text
-                x={xpos(g.mean)}
-                y={y - 12}
-                text-anchor="middle"
-                fill="var(--muted)"
-                font-size="10"
-              >
-                {g.mean.toFixed(4)}
-              </text>
-            </g>
-          );
-        })}
-        <text x="302" y="327" text-anchor="middle" font-size="10" fill="var(--muted)">
-          Final full-validation loss (nats) · lower is better
-        </text>
-      </svg>
-      <p class="hero-caption">
-        Three seeds per configuration. Error bars show sample SD.
-        <br />
-        Separately tuned recipes; differences do not isolate one design choice.
+      <figcaption>
+        Separately tuned winners. Error bars show sample SD across three seeds.
+        <a href={publicationAsset('schedule-comparison.pdf')}> Download PDF ↗</a>
+      </figcaption>
+    </figure>
+    <div class="comparison-note">
+      <p>
+        Cosine starts each horizon afresh. WSD continues earlier training and prunes learning rates.
+        Their search grids and trainer versions differ, so these results describe the measured
+        recipes.
       </p>
-    </div>
-  </section>
-  <section class="metrics-strip" aria-label="Experiment scope">
-    <div>
-      <strong>{total}</strong>
-      <span>historical cosine run results</span>
-    </div>
-    <div>
-      <strong>{configurations}</strong>
-      <span>historical cosine configurations</span>
-    </div>
-    <div>
-      <strong>20.4M</strong>
-      <span>unique parameters per model</span>
-    </div>
-    <div>
-      <strong>128K</strong>
-      <span>global batch tokens</span>
-    </div>
-  </section>
-  <section data-pagefind-body>
-    <div class="section-heading">
-      <div>
-        <p class="eyebrow">New · WSD horizon campaigns</p>
-        <h2>More training. Different optimizer choices.</h2>
-      </div>
-      <a href={url('explorer/wsd/')}>Open the WSD explorer ↗</a>
-    </div>
-    <p>
-      594 seed/horizon results across 198 configuration/horizon comparisons, in addition to the 753
-      historical cosine results. Continued horizons share training history. Synchronous training has
-      lower selected mean loss at every measured horizon; the gap to packed-8 AWC narrows with
-      budget.
-    </p>
-    <div class="table-wrap">
-      <table aria-label="WSD homepage winners">
-        <thead>
-          <tr>
-            <th>Tokens/parameter</th>
-            <th>Synchronous mean ± SD</th>
-            <th>Packed-8 AWC mean ± SD</th>
-            <th>AWC − sync</th>
-          </tr>
-        </thead>
-        <tbody>
-          {wsd.campaigns[0].stages.map((s, i) => {
-            const a = wsd.campaigns[1].stages[i].groups[0],
-              b = s.groups[0];
-            return (
-              <tr>
-                <td>{s.horizon}</td>
-                <td>
-                  {b.mean.toFixed(6)} ± {b.sd.toFixed(6)}
-                </td>
-                <td>
-                  {a.mean.toFixed(6)} ± {a.sd.toFixed(6)}
-                </td>
-                <td>{(a.mean - b.mean).toFixed(6)}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-    <p>
-      <a href={url('results/wsd-horizon-tuning/')}>
-        Read the WSD findings and pruning qualifications →
-      </a>{' '}
-      · <a href={url('assets/data/wsd-horizon-tuning/winners.csv')}>Download winners CSV</a>
-    </p>
-  </section>
-  <section>
-    <div class="section-heading">
-      <div>
-        <p class="eyebrow">Read the evidence</p>
-        <h2>Three ways into the results.</h2>
-      </div>
-      <a href={url('methods/protocol/')}>Shared experimental protocol ↗</a>
-    </div>
-    <div class="cards">
-      <a class="card" href={url('results/overview/')}>
-        <span class="number">01 / RESULTS OVERVIEW</span>
-        <h3>
-          From baseline to
-          <br />
-          decentralized training.
-        </h3>
-        <p>
-          Compare the best tested recipes, understand the evaluation, and find a starting
-          configuration.
-        </p>
-        <span class="arrow">Read the findings →</span>
-      </a>
-      <a class="card" href={url('results/optimizer-tuning/')}>
-        <span class="number">02 / OPTIMIZER TUNING</span>
-        <h3>
-          Learning rates.
-          <br />
-          Moments. Mixing order.
-        </h3>
-        <p>Inspect response surfaces and compare AWC with ATC at matched optimizer settings.</p>
-        <span class="arrow">Explore the tradeoffs →</span>
-      </a>
-      <a class="card" href={url('results/ablations/')}>
-        <span class="number">03 / CONTROLLED COMPARISONS</span>
-        <h3>
-          Clipping gradients.
-          <br />
-          Adding workers.
-        </h3>
-        <p>
-          Separate tuned winners from matched comparisons and see where the search leaves open
-          questions.
-        </p>
-        <span class="arrow">Follow the comparisons →</span>
-      </a>
-    </div>
-  </section>
-  <section>
-    <div class="section-heading">
-      <h2>Earlier cosine-study recipes.</h2>
-      <a href={url('explorer/')}>Inspect {configurations} historical configurations ↗</a>
-    </div>
-    <div class="table-wrap">
-      <table aria-label="Best tested recipes">
-        <thead>
-          <tr>
-            <th>Method</th>
-            <th>LR</th>
-            <th>Beta 1</th>
-            <th>Beta 2</th>
-            <th>Full-validation loss ± SD</th>
-            <th>Recipe</th>
-          </tr>
-        </thead>
-        <tbody>
-          {studies.map((s) => (
+      <div class="table-wrap">
+        <table aria-label="Selected schedule differences">
+          <thead>
             <tr>
-              <td>
-                <span class="dot" style={`background:${s.color}`} />
-                {s.title}
-              </td>
-              <td>{s.groups[0].lr}</td>
-              <td>{s.groups[0].beta1}</td>
-              <td>{s.groups[0].beta2}</td>
-              <td>
-                {s.groups[0].mean.toFixed(6)} ± {s.groups[0].sd.toFixed(6)}
-              </td>
-              <td>
-                {s.preset ? (
-                  <a href={url('assets/configs/' + s.preset)}>YAML ↗</a>
-                ) : (
-                  'Ablation only'
-                )}
-              </td>
+              <th>Tokens/parameter</th>
+              <th>WSD − cosine · sync</th>
+              <th>WSD − cosine · eight workers</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {[20, 40, 80].map((h) => (
+              <tr>
+                <td>{h}</td>
+                <td>
+                  +{(best('wsd', 'sync', h).mean - best('cosine', 'sync', h).mean).toFixed(6)}
+                </td>
+                <td>
+                  +{(best('wsd', 'awc8', h).mean - best('cosine', 'awc8', h).mean).toFixed(6)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
-    <p class="small muted" style="margin-top:15px">
-      Validation was used for recipe selection. Rankings do not establish statistical significance
-      or a global optimum.
+    <p class="small muted">
+      Four-worker WSD is unavailable. WSD at 120 and 160 tokens per parameter is available in the{' '}
+      <a href={url('results/explorer/?schedule=wsd&method=sync&horizon=160')}>extended results</a>.
     </p>
   </section>
-  <section class="note">
-    <strong>Built to be inspected.</strong> Results link to per-seed measurements, resolved recipes,
-    and experimental provenance. Read the{' '}
-    <a href={url('methods/algorithms/')}>algorithm definitions</a>, browse{' '}
-    <a href={url('performance/training/')}>performance measurements</a>, or open the{' '}
-    <a href={url('methods/adaptive-consensus/')}>adaptive-consensus investigation</a>.
+
+  <section class="publication-section" id="workers" data-pagefind-body>
+    <div class="publication-section-title">
+      <span class="section-number">02 / Results</span>
+      <h2>One global budget. One, four, or eight workers.</h2>
+    </div>
+    <p class="section-intro">
+      Decentralized workers divide the global token budget. Their parameters are averaged before
+      validation. These cosine experiments compare the best tested recipe for each mode.
+    </p>
+    <figure class="publication-figure">
+      <img
+        class="figure-wide"
+        src={publicationAsset('worker-comparison.svg')}
+        width="900"
+        height="450"
+        loading="lazy"
+        alt="Cosine training winners for synchronous, four-worker and eight-worker modes"
+      />
+      <div class="figure-narrow">
+        <img
+          src={publicationAsset('worker-comparison-mobile.svg')}
+          width="420"
+          height="360"
+          loading="lazy"
+          alt="Cosine training winners for synchronous, four-worker and eight-worker modes"
+        />
+      </div>
+      <figcaption>
+        Final full-validation loss in nats; lower is better. Error bars show sample SD.
+        <a href={publicationAsset('worker-comparison.pdf')}> Download PDF ↗</a>
+      </figcaption>
+    </figure>
+    <h3>Best tested hyperparameters</h3>
+    <WinnerTable data={data} />
+    <p class="small">
+      Three seeds per configuration. SD describes seed variation, not a confidence interval.
+      Validation is used for tuning.{' '}
+      <a href={url('results/explorer/')}>Inspect rankings and matched comparisons ↗</a>
+    </p>
+  </section>
+
+  <section class="publication-section protocol-section" id="protocol" data-pagefind-body>
+    <div>
+      <span class="section-number">03 / Protocol</span>
+      <h2>
+        What stays shared.
+        <br />
+        What changes.
+      </h2>
+      <p>
+        The same model size, token-cache identity, global batches, and validation target are used
+        across the current campaigns. Schedules, search grids, and continuation policies differ.
+      </p>
+      <a href={url('methods/protocol/')}>Read the experimental protocol ↗</a>
+    </div>
+    <dl class="protocol-facts">
+      <div>
+        <dt>Model</dt>
+        <dd>20,403,520 parameters · context 1,024</dd>
+      </div>
+      <div>
+        <dt>Global batch</dt>
+        <dd>131,072 prediction targets</dd>
+      </div>
+      <div>
+        <dt>Warmup</dt>
+        <dd>312 optimizer updates</dd>
+      </div>
+      <div>
+        <dt>Selection</dt>
+        <dd>Mean final full-validation loss · seeds 42–44</dd>
+      </div>
+      <div>
+        <dt>Validation</dt>
+        <dd>197,411,295 prediction targets</dd>
+      </div>
+      <div>
+        <dt>Execution</dt>
+        <dd>All workers packed on one GH200</dd>
+      </div>
+    </dl>
+  </section>
+
+  <section class="publication-section" id="usage" data-pagefind-body>
+    <div class="publication-section-title">
+      <span class="section-number">04 / Usage</span>
+      <h2>From a cache to an experiment.</h2>
+    </div>
+    <div class="usage-grid">
+      {usage.map(([n, title, description, path]) => (
+        <a class="usage-link" href={url(path)}>
+          <span>{n}</span>
+          <div>
+            <h3>{title} ↗</h3>
+            <p>{description}</p>
+          </div>
+        </a>
+      ))}
+    </div>
+    <p class="small muted">
+      The published cosine sweeps saved no checkpoints. Retain weights in a new run when you want to
+      perform Hessian analysis.
+    </p>
+  </section>
+
+  <section class="publication-section" id="performance" data-pagefind-body>
+    <div class="publication-section-title">
+      <span class="section-number">05 / Performance</span>
+      <h2>Measured on a single GH200.</h2>
+    </div>
+    <p class="section-intro">
+      Observed steady training throughput at 80 tokens per parameter, calculated from complete
+      logging windows after warmup. Every completed run contributes.
+    </p>
+    <div class="performance-summary">
+      {performance.map((r) => (
+        <div>
+          <h3>{methods[r.method]}</h3>
+          <strong>
+            {(r.metrics.steady.median / 1e6).toFixed(3)}
+            <small>M tokens/s</small>
+          </strong>
+          <p>
+            IQR {(r.metrics.steady.q1 / 1e6).toFixed(3)}–{(r.metrics.steady.q3 / 1e6).toFixed(3)} ·{' '}
+            {r.n} runs
+            <br />
+            {r.metrics.peakGiB.median.toFixed(2)} GiB median peak allocation
+          </p>
+        </div>
+      ))}
+    </div>
+    <p>
+      <a href={url('performance/training/')}>
+        All horizons, timing boundaries, and memory measurements ↗
+      </a>
+    </p>
+    <p class="small muted">
+      BF16 autocast · FP32 parameters · compiled SDPA · global batch 131,072. These are single-GPU
+      measurements, with all workers sharing the device.
+    </p>
   </section>
 </Layout>

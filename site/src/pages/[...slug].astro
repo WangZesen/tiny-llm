@@ -11,13 +11,32 @@ export async function getStaticPaths() {
 const { article } = Astro.props;
 const { Content, headings } = await render(article);
 const section = article.id.split('/')[0];
-const siblings = (await getCollection('articles')).filter((p) => p.id.startsWith(section + '/'));
+const order = [
+  'guides/overview',
+  'guides/data',
+  'guides/training',
+  'guides/slurm',
+  'guides/analysis',
+];
+const siblings = (await getCollection('articles'))
+  .filter(
+    (p) =>
+      p.id.startsWith(section + '/') &&
+      p.data.archive === article.data.archive &&
+      (p.id !== 'guides/website' || article.id === 'guides/website'),
+  )
+  .sort(
+    (a, b) =>
+      (order.includes(a.id) ? order.indexOf(a.id) : 99) -
+      (order.includes(b.id) ? order.indexOf(b.id) : 99),
+  );
 ---
 
 <Layout
   title={article.data.title}
   description={article.data.description}
   archive={article.data.archive}
+  searchable={article.id !== 'guides/website'}
 >
   <div class="article-grid">
     <aside class="section-nav" aria-label="Section navigation">
@@ -33,6 +52,11 @@ const siblings = (await getCollection('articles')).filter((p) => p.id.startsWith
     <article class="prose" data-pagefind-body={article.data.archive ? undefined : ''}>
       <p class="eyebrow">{article.data.archive ? 'Research archive' : section}</p>
       <h1>{article.data.title}</h1>
+      {article.data.archive && (
+        <p class="archive-notice">
+          Archived reference. <a href={url('results/overview/')}>Read the current results →</a>
+        </p>
+      )}
       {article.data.description && <p class="lead">{article.data.description}</p>}
       <Content />
       <div class="article-end">
