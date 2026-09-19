@@ -1192,6 +1192,15 @@ summary {
   min-height: 28px;
   color: var(--muted);
 }
+.current-explorer .local-run-name {
+  width: 15rem;
+  min-width: 0;
+  padding: 5px;
+  font: inherit;
+}
+.current-explorer .local-run-messages {
+  overflow-wrap: anywhere;
+}
 .current-explorer td .dot {
   margin-left: 8px;
 }

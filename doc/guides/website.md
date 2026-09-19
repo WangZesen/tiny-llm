@@ -91,6 +91,27 @@ article, and performance article. Keep those table markers intact.
 
 ## Authoring and preview
 
+### Compare local training runs
+
+In the [current results explorer](/tiny-llm/results/explorer/), choose **Add local runs**
+and select one or more plain `metrics.jsonl` files. Each file joins the trajectory
+comparison as a single run, with an editable name and matching colors in the loss
+and gradient-norm charts. Dotted lines identify local runs. The comparison holds
+up to eight published configurations and local runs combined.
+
+Files are read in your browser without uploading them. Imports survive filter
+changes but disappear on refresh; comparison links include only published runs.
+To update a growing log, remove its imported run and select the file again.
+
+The charts use global `tokens`, `train.loss`, `validation.loss`, and
+`train.grad_norm`. Full-validation events are separate from subset-validation
+curves. Unfinished logs and missing series are supported, and an incomplete final
+record is skipped with a warning. Repeated token positions use the last logged
+measurement. Each file contributes only its own history; continuation parents
+are not reconstructed. Local runs do not change published rankings or statistics.
+
+### Preview the website
+
 Markdown under `doc/` is authoritative. Articles have a title, optional description,
 and `archive: true` for archived references. Keep relative Markdown links;
 the build translates article, configuration, and data links for the website base.
