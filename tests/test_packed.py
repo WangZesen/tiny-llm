@@ -13,7 +13,7 @@ from tiny_llm.model import Llama, token_losses
 from tiny_llm.packed import PackedLlama, local_mean_losses
 from tiny_llm.packed_benchmark import benchmark_packed_worker
 from tiny_llm.packed_optimizer import PackedAdamW
-from tiny_llm.runtime import preserve_rng, rng_state, setup_runtime
+from tiny_llm.runtime import clip_grad_norm_, preserve_rng, rng_state, setup_runtime
 from tiny_llm.state import LoaderState, TrainingState
 from tiny_llm.train import (
     adaptive_consensus_schedule,
@@ -71,9 +71,13 @@ def matrix(n, topology, step, device="cpu", dtype=torch.float64):
         ("sdpa", "complete", False, "atc", None),
     ],
 )
+@pytest.mark.parametrize("optimizer_name,s", [("adamw", 2), ("accum_adamw", 2), ("accum_adamw", 4)])
 def test_independent_worker_parity(
-    tiny_config: Config, backend, topology, adaptive, scheme, grad_clip
+    tiny_config: Config, backend, topology, adaptive, scheme, grad_clip, optimizer_name, s
 ):
+    tiny_config.optimizer.name = optimizer_name
+    tiny_config.optimizer.accumulation_steps = s
+    tiny_config.optimizer.grad_clip = grad_clip
     n = 3
     schedule = None
     if adaptive:
@@ -92,10 +96,10 @@ def test_independent_worker_parity(
     locals_ = [Llama(tiny_config.model, backend).double() for _ in range(n)]
     for i, model in enumerate(locals_):
         model.load_state_dict(packed.local_state_dict(i))
-    optimizer = PackedAdamW(packed, tiny_config)
+    optimizer = make_optimizer(packed, tiny_config, torch.device("cpu"))
     optimizers = [make_optimizer(model, tiny_config, torch.device("cpu")) for model in locals_]
     consumed = 0
-    for step, batch in enumerate((2, 1, 2)):
+    for step, batch in enumerate((2, 1, 2, 1, 2)):
         consumed += n * batch * 4
         lr = learning_rate(tiny_config, consumed, 60)
         for opt in [optimizer, *optimizers]:
@@ -120,16 +124,23 @@ def test_independent_worker_parity(
                 assert p.grad is not None and q.grad is not None
                 torch.testing.assert_close(p.grad[i], q.grad, rtol=1e-9, atol=1e-11)
         optimizer.clip_grad_norm_(grad_clip)
-        if grad_clip is not None:
-            for model in locals_:
-                torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
+        for model in locals_:
+            clip_grad_norm_(model.parameters(), grad_clip)
         if scheme == "atc":
             optimizer.step()
             for local_optimizer in optimizers:
                 local_optimizer.step()
         moments_before = optimizer.first_moment_storage.clone()
+        buffer_before = (
+            optimizer.accumulated_gradient_storage.clone()
+            if optimizer.accumulated_gradient_storage is not None
+            else None
+        )
         packed.mix_(topology, step, gamma=gamma)
         assert torch.equal(moments_before, optimizer.first_moment_storage)
+        if buffer_before is not None:
+            assert optimizer.accumulated_gradient_storage is not None
+            assert torch.equal(buffer_before, optimizer.accumulated_gradient_storage)
         w = gamma * matrix(n, topology, step) + (1 - gamma) * torch.eye(n, dtype=torch.float64)
         with torch.no_grad():
             for name, _ in locals_[0].named_parameters():
@@ -156,15 +167,24 @@ def test_independent_worker_parity(
                         rtol=1e-9,
                         atol=1e-11,
                     )
+                if optimizer.accumulated_gradient_storage is not None:
+                    torch.testing.assert_close(
+                        packed.parameter_view(optimizer.accumulated_gradient_storage, entry)[i],
+                        local_optimizer.state[p]["accum_grad"],
+                        rtol=1e-9,
+                        atol=1e-11,
+                    )
         assert_storage(packed, optimizer)
 
 
 def assert_storage(model, optimizer):
-    arenas = (
+    arenas = [
         model.parameter_storage,
         optimizer.first_moment_storage,
         optimizer.second_moment_storage,
-    )
+    ]
+    if optimizer.accumulated_gradient_storage is not None:
+        arenas.append(optimizer.accumulated_gradient_storage)
     for arena in arenas:
         assert arena.is_contiguous()
         assert arena.shape == (model.num_models, model.storage_numel)
@@ -179,6 +199,11 @@ def assert_storage(model, optimizer):
             assert packed.untyped_storage().data_ptr() == arenas[0].untyped_storage().data_ptr()
             assert p.data_ptr() == packed[i].data_ptr()
             state = optimizer.optimizers[i].state[p]
+            if optimizer.accumulated_gradient_storage is not None:
+                assert (
+                    state["accum_grad"].data_ptr()
+                    == model.parameter_view(arenas[3], entry)[i].data_ptr()
+                )
             assert (
                 state["exp_avg"].data_ptr() == model.parameter_view(arenas[1], entry)[i].data_ptr()
             )
@@ -309,6 +334,7 @@ def decentralized_config(config, n=2, topology="one_peer_ring"):
 
 @pytest.mark.parametrize("scheme", ["awc", "atc"])
 @pytest.mark.parametrize("lr_schedule,grad_clip", [("cosine", 1.0), ("wsd", None)])
+@pytest.mark.parametrize("optimizer_name", ["adamw", "accum_adamw"])
 def test_training_resume(
     tiny_config: Config,
     cache_dir: Path,
@@ -316,7 +342,10 @@ def test_training_resume(
     scheme,
     grad_clip,
     lr_schedule,
+    optimizer_name,
 ):
+    tiny_config.optimizer.name = optimizer_name
+    tiny_config.optimizer.accumulation_steps = 3  # Epoch and final checkpoints end mid-window.
     if lr_schedule == "wsd":
         tiny_config.lr_schedule = WSDScheduleConfig(warmup_steps=1, decay_fraction=0.5)
     tiny_config.training.checkpoint_policy = "interval"
@@ -464,11 +493,13 @@ def test_benchmark_worker(
 
 @pytest.mark.cuda
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA required")
-def test_cuda_bf16_and_fused_optimizer(tiny_config: Config):
+@pytest.mark.parametrize("optimizer_name", ["adamw", "accum_adamw"])
+def test_cuda_bf16_and_fused_optimizer(tiny_config: Config, optimizer_name):
     from tiny_llm.checkpoints import load_training_checkpoint, save_epoch_checkpoint
     from tiny_llm.config import DecentralizedConfig
 
     cfg = tiny_config
+    cfg.optimizer.name = optimizer_name
     cfg.runtime.device, cfg.runtime.amp = "cuda:0", True
     cfg.runtime.deterministic = False
     cfg.training.batch_tokens = 64
@@ -477,7 +508,7 @@ def test_cuda_bf16_and_fused_optimizer(tiny_config: Config):
     )
     torch.use_deterministic_algorithms(False)
     packed = PackedLlama(cfg.model, 2).cuda()
-    optimizer = PackedAdamW(packed, cfg)
+    optimizer = make_optimizer(packed, cfg, torch.device("cuda"))
     locals_ = [Llama(cfg.model).cuda() for _ in range(2)]
     for i, model in enumerate(locals_):
         model.load_state_dict(packed.local_state_dict(i))
@@ -509,7 +540,7 @@ def test_cuda_bf16_and_fused_optimizer(tiny_config: Config):
         optimizer.clip_grad_norm_(cfg.optimizer.grad_clip)
         assert cfg.optimizer.grad_clip is not None
         for model in locals_:
-            torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.optimizer.grad_clip)
+            clip_grad_norm_(model.parameters(), cfg.optimizer.grad_clip)
         gamma = 1.0 if _step == 0 else 0.25
         packed.mix_("complete", _step, gamma=gamma)
         with torch.no_grad():
@@ -524,8 +555,7 @@ def test_cuda_bf16_and_fused_optimizer(tiny_config: Config):
         if _step == 0:
             # Continue the compiled BF16/fused update after restoring separate worker files.
             cfg.decentralized = DecentralizedConfig(num_models=2)
-            cfg.training.tokens_per_parameters = 128 / cfg.model.parameter_count
-            cfg.training.epoch_tokens_per_parameters = 64 / cfg.model.parameter_count
+            set_budget(cfg, 128, 64)
             directory = cfg.runtime.output_dir
             directory.mkdir()
             path = directory / "epoch-001.pt"
@@ -558,6 +588,8 @@ def test_cuda_bf16_and_fused_optimizer(tiny_config: Config):
                 packed.parameter_storage.zero_()
                 optimizer.first_moment_storage.zero_()
                 optimizer.second_moment_storage.zero_()
+                if optimizer.accumulated_gradient_storage is not None:
+                    optimizer.accumulated_gradient_storage.zero_()
             packed.load_packed_state_dict(restored["model"])
             optimizer.load_state_dict(restored["optimizer"])
             assert_storage(packed, optimizer)

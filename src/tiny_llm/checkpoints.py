@@ -10,8 +10,9 @@ import torch
 from tiny_llm.config import Config
 from tiny_llm.data import file_digest, training_boundaries
 from tiny_llm.model import Llama
+from tiny_llm.optimizer import validate_accum_state
 from tiny_llm.packed import PackedLlama
-from tiny_llm.packed_optimizer import PackedAdamW
+from tiny_llm.packed_optimizer import PackedOptimizer
 from tiny_llm.runtime import atomic_checkpoint, preserve_rng
 from tiny_llm.state import TorchState, TrainingState
 
@@ -40,7 +41,7 @@ def save_epoch_checkpoint(
     path: Path,
     state: TrainingState,
     model: Llama | PackedLlama,
-    optimizer: torch.optim.AdamW | PackedAdamW,
+    optimizer: torch.optim.Optimizer | PackedOptimizer,
 ) -> None:
     """Publish the root last; an interrupted uncommitted epoch may be rewritten."""
     path = Path(path)
@@ -48,7 +49,7 @@ def save_epoch_checkpoint(
     if not isinstance(model, PackedLlama):
         atomic_checkpoint(path, state)
         return
-    assert isinstance(optimizer, PackedAdamW)
+    assert isinstance(optimizer, PackedOptimizer)
     shared: dict[str, Any] = {
         key: value
         for key, value in state.items()
@@ -62,7 +63,7 @@ def save_epoch_checkpoint(
     ):
         name_by_id = {id(p): name for name, p in zip(names, parameters, strict=True)}
         local = dict(
-            version=1,
+            version=2 if optimizer.name == "accum_adamw" else 1,
             kind="packed_worker",
             worker=worker,
             num_workers=model.num_models,
@@ -94,9 +95,10 @@ def save_epoch_checkpoint(
 def _validate_worker(
     local: TorchState, root: dict[str, Any], config: Config, model: PackedLlama, index: int
 ) -> None:
+    accum = config.optimizer.name == "accum_adamw"
     if (
         local.get("kind") != "packed_worker"
-        or local.get("version") != 1
+        or local.get("version") != (2 if accum else 1)
         or local.get("worker") != index
         or local.get("num_workers") != model.num_models
         or local.get("model_config") != root["config"]["model"]
@@ -109,7 +111,8 @@ def _validate_worker(
     for entry in model.layout:
         parameter = local["model"][entry.name]
         moments = local["optimizer"]["state"][entry.name]
-        if set(moments) != {"step", "exp_avg", "exp_avg_sq"}:
+        expected_state = {"step", "exp_avg", "exp_avg_sq"} | ({"accum_grad"} if accum else set())
+        if set(moments) != expected_state:
             raise ValueError("incompatible worker optimizer state")
         for tensor in (parameter, moments["exp_avg"], moments["exp_avg_sq"]):
             if (
@@ -119,6 +122,8 @@ def _validate_worker(
                 or not torch.isfinite(tensor).all()
             ):
                 raise ValueError("invalid worker parameter/moment tensor")
+        if accum:
+            validate_accum_state(moments, parameter, config.optimizer.accumulation_steps)
         step = moments["step"]
         if (
             not isinstance(step, torch.Tensor)
@@ -144,8 +149,8 @@ def _validate_worker(
             or tuple(group["betas"]) != (config.optimizer.beta1, config.optimizer.beta2)
             or group["eps"] != config.optimizer.eps
             or group["weight_decay"] != decay
-            or group["amsgrad"]
-            or group["maximize"]
+            or (accum and group.get("accumulation_steps") != config.optimizer.accumulation_steps)
+            or (not accum and (group["amsgrad"] or group["maximize"]))
             or not math.isfinite(group["lr"])
             or group["lr"] < 0
         ):
@@ -191,6 +196,7 @@ def _load_packed_epoch(path: Path, state: dict[str, Any]) -> TrainingState:
         model = PackedLlama(config.model, count, "reference")
     first = torch.zeros_like(model.parameter_storage)
     second = torch.zeros_like(first)
+    buffer = torch.zeros_like(first) if config.optimizer.name == "accum_adamw" else None
     optimizers = []
     common_groups = None
     for index, member in enumerate(members):
@@ -215,6 +221,8 @@ def _load_packed_epoch(path: Path, state: dict[str, Any]) -> TrainingState:
             moments = local["optimizer"]["state"][entry.name]
             model.parameter_view(first, entry)[index].copy_(moments["exp_avg"])
             model.parameter_view(second, entry)[index].copy_(moments["exp_avg_sq"])
+            if buffer is not None:
+                model.parameter_view(buffer, entry)[index].copy_(moments["accum_grad"])
             steps.append(moments["step"].clone())
         optimizers.append(
             dict(
@@ -222,6 +230,15 @@ def _load_packed_epoch(path: Path, state: dict[str, Any]) -> TrainingState:
             )
         )
         del local
+    optimizer_state: TorchState = dict(
+        version=1 if buffer is None else 2,
+        layout=model.layout_metadata(),
+        first_moment_storage=first,
+        second_moment_storage=second,
+        workers=optimizers,
+    )
+    if buffer is not None:
+        optimizer_state.update(optimizer_name="accum_adamw", accumulated_gradient_storage=buffer)
     return TrainingState(
         version=3,
         recipe_identity=state["recipe_identity"],
@@ -234,12 +251,6 @@ def _load_packed_epoch(path: Path, state: dict[str, Any]) -> TrainingState:
         best_epoch=state["best_epoch"],
         loader=state["loader"],
         model=model.packed_state_dict(),
-        optimizer=dict(
-            version=1,
-            layout=model.layout_metadata(),
-            first_moment_storage=first,
-            second_moment_storage=second,
-            workers=optimizers,
-        ),
+        optimizer=optimizer_state,
         worker_files=members,
     )

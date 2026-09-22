@@ -303,10 +303,11 @@ under `node-NNN/`. The default `final.pt` retains all local training states.
 [Packed implementation details](../methods/implementation.md#packed-decentralized-training)
 cover topologies and optimizer behavior.
 
-Packed training defaults to adapt-while-combine (AWC): local gradients are computed
-and clipped, then parameters are mixed before the AdamW update. Set
+Packed training defaults to adapt-while-combine (AWC): local gradients are computed,
+then parameters are mixed before the optimizer update. Both AdamW and AccumAdamW
+clip local gradients before mixing. Set
 `--set decentralized.scheme=atc` for adapt-then-combine (ATC), which applies
-the AdamW update before mixing. Optimizer moments remain local in both schemes.
+the optimizer update before mixing. Optimizer moments remain local in both schemes.
 
 Set `--set optimizer.grad_clip=null` to disable gradient clipping. Gradient norms
 are still logged and nonfinite gradients still stop training. The default is
@@ -326,6 +327,85 @@ Activation uses the ceiling of `start_frac * total_steps`, counting complete
 global batches. See [adaptive consensus](../methods/implementation.md#adaptive-consensus)
 for the LR normalization and resume semantics. It is supported by training only;
 packed throughput benchmarks reject adaptive-consensus configurations.
+
+### AccumAdamW
+
+AdamW remains the default (`optimizer.name=adamw`). Select AccumAdamW for either
+ordinary or packed training, or their throughput benchmarks:
+
+```bash
+uv run tiny-llm train --config configs/packed4-20m-awc.yaml \
+  --set optimizer.name=accum_adamw --set optimizer.accumulation_steps=2 \
+  --set runtime.output_dir=runs/packed4-accum-adamw
+```
+
+`optimizer.accumulation_steps` is a positive integer and defaults to **2**. It is
+used only by AccumAdamW. Existing learning-rate, beta, epsilon, weight-decay, and
+clipping settings apply without changing their defaults. The Python optimizer is
+available as `tiny_llm.optimizer.AccumAdamW`; `make_optimizer` selects it from
+the configuration for both model types.
+
+AccumAdamW updates parameters and applies decoupled weight decay on **every**
+optimizer step. Each worker's current gradient is clipped once across all parameter
+groups before the parameter update and accumulation into `B`. For window length
+`s` and local update count `t`, the clipped gradient combines with the persistent
+moments of completed windows, using bias-correction exponent `ceil(t/s)`:
+
+```text
+g = g * min(1, grad_clip / (global_norm(g) + 1e-6))  # omit when grad_clip=null
+m = beta1*M + (1-beta1)*g
+v = beta2*V + (1-beta2)*g²
+k = ceil(t/s)
+m_hat = m / (1-beta1**k)
+v_hat = v / (1-beta2**k)
+parameter = (1-lr*weight_decay)*parameter - lr*m_hat/(sqrt(v_hat) + eps)
+B += g/s
+# After the parameter update on every s-th step:
+M = beta1*M + (1-beta1)*B
+V = beta2*V + (1-beta2)*B²
+B = 0
+```
+
+The clipping norm spans the worker's available gradients across decay and no-decay
+groups; it never combines workers. There is no additional clipping of `B` at the
+window boundary. Logged gradient norms describe each update's gradient before
+clipping. When using the Python optimizer directly, clip gradients before calling
+`step()`, as with PyTorch AdamW; training and benchmarks handle this automatically.
+
+The persistent second moment uses **beta2 and the square of the mean of clipped
+gradients**, correcting the beta1 typo in
+[Appendix C of the paper](https://arxiv.org/html/2410.11998v1#A3).
+Epsilon is outside the square root. The underlying accumulation formulas follow the
+[authors' implementation](https://github.com/WangZesen/Decent-DP/blob/main/src/decent_dp/optim.py).
+With `s=1`, the updates reduce to AdamW with the same gradient clipping.
+
+This window counts optimizer updates, independently of ordinary microbatch
+gradient accumulation. It does not change batch sizes, learning-rate scheduling,
+or the packed training requirement of one local batch per step. Moments and
+buffers stay local under both AWC and ATC, including adaptive consensus.
+
+The packed `PackedOptimizer` exposes `first_moment_storage`,
+`second_moment_storage`, and `accumulated_gradient_storage`. The first two hold
+ordinary, unscaled moments of completed windows; the third holds the partial
+sum of **clipped** gradients divided by `s` (raw gradients if clipping is disabled). Parameter states use `exp_avg`, `exp_avg_sq`,
+`accum_grad`, and `step`. Parameters without a gradient skip updates, decay, and
+counter advancement; their partial buffers remain unchanged. Sparse gradients are unsupported.
+
+All checkpoint formats retain partial windows, including checkpoints between
+window boundaries. Epochs and the end of training do not flush the buffer or
+introduce extra updates. Resume requires the same optimizer, window size, and
+clipping threshold. AccumAdamW recipe identities and checkpoint versions distinguish
+this restored per-update clipping behavior from completed-mean clipping. Original
+per-update AccumAdamW checkpoints are compatible again; completed-mean optimizer
+checkpoints are rejected. The ordinary optimizer state version is 1 and the
+packed/per-worker version is 2. Epsilon-inside checkpoints (ordinary version 3;
+packed/per-worker version 4) are also rejected before restoring live state.
+Existing AdamW checkpoints remain compatible.
+
+AccumAdamW uses foreach tensor operations normally and scalar operations with
+`runtime.deterministic=true`. It has no custom fused kernel, so
+`runtime.fused_optimizer` applies only to AdamW. Startup logs report the actual
+optimizer backend.
 
 
 ## Evaluation

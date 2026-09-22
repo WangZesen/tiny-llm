@@ -1,15 +1,18 @@
-"""Independent AdamW optimizers with shared, inspectable moment arenas."""
+"""Independent local optimizers with shared, inspectable state arenas."""
+
+import math
 
 import torch
 from torch import nn
 
 from tiny_llm.config import Config
+from tiny_llm.optimizer import AccumAdamW, make_local_optimizer, validate_accum_group
 from tiny_llm.packed import PackedLlama
 from tiny_llm.runtime import clip_grad_norm_
 from tiny_llm.state import TorchState
 
 
-class PackedAdamW:
+class PackedOptimizer:
     def __init__(self, model: PackedLlama, config: Config):
         self.model = model
         self.layout = model.layout
@@ -17,34 +20,24 @@ class PackedAdamW:
         self._arena = model.parameter_storage
         self.first_moment_storage = torch.zeros_like(self._arena)
         self.second_moment_storage = torch.zeros_like(self._arena)
-        self.optimizers: list[torch.optim.AdamW] = []
-        self.local_parameters: list[list[nn.Parameter]] = []
-        fused = (
-            config.runtime.fused_optimizer
-            and self._arena.device.type == "cuda"
-            and not config.runtime.deterministic
+        self.name = config.optimizer.name
+        self.accumulation_steps = config.optimizer.accumulation_steps
+        self.accumulated_gradient_storage = (
+            torch.zeros_like(self._arena) if self.name == "accum_adamw" else None
         )
-        cfg = config.optimizer
+        self.optimizers: list[torch.optim.Optimizer] = []
+        self.local_parameters: list[list[nn.Parameter]] = []
         for worker in range(model.num_models):
             parameters = [nn.Parameter(p[worker].detach()) for p in self._parameters]
-            decay = [p for p in parameters if p.ndim >= 2]
-            no_decay = [p for p in parameters if p.ndim < 2]
-            optimizer = torch.optim.AdamW(
-                [
-                    {"params": decay, "weight_decay": cfg.weight_decay},
-                    {"params": no_decay, "weight_decay": 0.0},
-                ],
-                lr=cfg.lr,
-                betas=(cfg.beta1, cfg.beta2),
-                eps=cfg.eps,
-                fused=fused,
-                foreach=False if config.runtime.deterministic else None,
-            )
+            optimizer = make_local_optimizer(parameters, config, self._arena.device)
+            fused = optimizer.param_groups[0].get("fused", False)
             for entry, parameter in zip(self.layout, parameters, strict=True):
                 optimizer.state[parameter] = {
                     "step": torch.zeros(
                         (),
-                        dtype=torch.float64
+                        dtype=torch.int64
+                        if isinstance(optimizer, AccumAdamW)
+                        else torch.float64
                         if not fused and torch.get_default_dtype() == torch.float64
                         else torch.float32,
                         device=self._arena.device if fused else "cpu",
@@ -52,6 +45,10 @@ class PackedAdamW:
                     "exp_avg": model.parameter_view(self.first_moment_storage, entry)[worker],
                     "exp_avg_sq": model.parameter_view(self.second_moment_storage, entry)[worker],
                 }
+                if self.accumulated_gradient_storage is not None:
+                    optimizer.state[parameter]["accum_grad"] = model.parameter_view(
+                        self.accumulated_gradient_storage, entry
+                    )[worker]
             self.optimizers.append(optimizer)
             self.local_parameters.append(parameters)
 
@@ -61,7 +58,9 @@ class PackedAdamW:
 
     def _check_storage(self):
         if self.model.parameter_storage is not self._arena:
-            raise RuntimeError("model storage changed; construct PackedAdamW after model placement")
+            raise RuntimeError(
+                "model storage changed; construct the optimizer after model placement"
+            )
 
     def zero_grad(self, set_to_none=True):
         self._check_storage()
@@ -87,8 +86,8 @@ class PackedAdamW:
             optimizer.step()
 
     def state_dict(self) -> TorchState:
-        return {
-            "version": 1,
+        state = {
+            "version": 2 if self.name == "accum_adamw" else 1,
             "layout": self.model.layout_metadata(),
             "first_moment_storage": self.first_moment_storage,
             "second_moment_storage": self.second_moment_storage,
@@ -105,18 +104,74 @@ class PackedAdamW:
                 )
             ],
         }
+        if self.accumulated_gradient_storage is not None:
+            state.update(
+                optimizer_name=self.name,
+                accumulated_gradient_storage=self.accumulated_gradient_storage,
+            )
+        return state
 
     @torch.no_grad()
     def load_state_dict(self, state: TorchState) -> None:
         self._check_storage()
-        if state.get("version") != 1 or state["layout"] != self.model.layout_metadata():
+        version = 2 if self.name == "accum_adamw" else 1
+        if (
+            state.get("version") != version
+            or state.get("optimizer_name", "adamw") != self.name
+            or state["layout"] != self.model.layout_metadata()
+        ):
             raise ValueError("incompatible packed optimizer layout")
-        for name in ("first_moment_storage", "second_moment_storage"):
-            if state[name].shape != self._arena.shape:
+        arenas = ["first_moment_storage", "second_moment_storage"]
+        if self.accumulated_gradient_storage is not None:
+            arenas.append("accumulated_gradient_storage")
+        for name in arenas:
+            value = state.get(name)
+            if (
+                not isinstance(value, torch.Tensor)
+                or value.shape != self._arena.shape
+                or value.dtype != self._arena.dtype
+                or not torch.isfinite(value).all()
+            ):
                 raise ValueError("incompatible optimizer arena shape")
+        if (state["second_moment_storage"] < 0).any():
+            raise ValueError("negative optimizer second moment")
         if len(state["workers"]) != len(self.optimizers):
             raise ValueError("incompatible optimizer worker count")
-        for name in ("first_moment_storage", "second_moment_storage"):
+        for index, (optimizer, parameters, worker) in enumerate(
+            zip(self.optimizers, self.local_parameters, state["workers"], strict=True)
+        ):
+            if len(worker["steps"]) != len(parameters) or len(worker["groups"]) != len(
+                optimizer.param_groups
+            ):
+                raise ValueError("incompatible optimizer parameters or groups")
+            for entry, step in zip(self.layout, worker["steps"], strict=True):
+                if (
+                    not isinstance(step, torch.Tensor)
+                    or step.ndim != 0
+                    or not torch.isfinite(step)
+                    or step.item() < 0
+                    or step.item() != int(step.item())
+                ):
+                    raise ValueError("invalid optimizer step counter")
+                if self.accumulated_gradient_storage is not None:
+                    buffer = self.model.parameter_view(
+                        state["accumulated_gradient_storage"], entry
+                    )[index]
+                    if int(step.item()) % self.accumulation_steps == 0 and buffer.count_nonzero():
+                        raise ValueError("nonzero AccumAdamW buffer at a window boundary")
+            for saved in worker["groups"]:
+                if self.name == "accum_adamw":
+                    validate_accum_group(saved)
+                    if saved["accumulation_steps"] != self.accumulation_steps:
+                        raise ValueError("incompatible optimizer accumulation_steps")
+                elif (
+                    any(key not in saved for key in self._mathematical_settings())
+                    or not math.isfinite(saved["lr"])
+                    or saved["lr"] < 0
+                ):
+                    raise ValueError("incompatible optimizer parameter groups")
+        # All validation precedes writes, and copying preserves the arena aliases.
+        for name in arenas:
             getattr(self, name).copy_(state[name])
         for optimizer, parameters, worker in zip(
             self.optimizers, self.local_parameters, state["workers"], strict=True
@@ -125,5 +180,20 @@ class PackedAdamW:
                 optimizer.state[parameter]["step"].copy_(step)
             for group, saved in zip(optimizer.param_groups, worker["groups"], strict=True):
                 # Execution flags follow the current device; mathematical settings resume.
-                for key in ("lr", "betas", "eps", "weight_decay", "amsgrad", "maximize"):
+                for key in self._mathematical_settings():
                     group[key] = saved[key]
+
+    def _mathematical_settings(self) -> tuple[str, ...]:
+        common = ("lr", "betas", "eps", "weight_decay")
+        return common + (
+            ("accumulation_steps",) if self.name == "accum_adamw" else ("amsgrad", "maximize")
+        )
+
+
+class PackedAdamW(PackedOptimizer):
+    """Backward-compatible entry point for independent packed AdamW optimizers."""
+
+    def __init__(self, model: PackedLlama, config: Config):
+        if config.optimizer.name != "adamw":
+            raise ValueError("PackedAdamW requires optimizer.name=adamw; use PackedOptimizer")
+        super().__init__(model, config)

@@ -14,9 +14,9 @@ from tiny_llm.checkpoints import load_training_checkpoint, save_epoch_checkpoint
 from tiny_llm.config import Config
 from tiny_llm.data import TokenCache, file_digest
 from tiny_llm.packed import PackedLlama
-from tiny_llm.packed_optimizer import PackedAdamW
+from tiny_llm.packed_optimizer import PackedOptimizer
 from tiny_llm.runtime import rng_state
-from tiny_llm.train import evaluate_checkpoint, recipe_identity, train
+from tiny_llm.train import evaluate_checkpoint, make_optimizer, recipe_identity, train
 
 
 @pytest.mark.parametrize(
@@ -104,8 +104,9 @@ def test_interruption_keeps_only_committed_epochs(
     assert {path.name for path in output.glob("*.safetensors")} == {"epoch-001.safetensors"}
 
 
-@pytest.fixture
-def packed_epoch(tiny_config: Config, cache_dir: Path):
+@pytest.fixture(params=["adamw", "accum_adamw"])
+def packed_epoch(tiny_config: Config, cache_dir: Path, request):
+    tiny_config.optimizer.name = request.param
     raw = tiny_config.model_dump()
     raw["decentralized"] = dict(num_models=4, topology="one_peer_exponential")
     raw["training"].update(
@@ -121,7 +122,11 @@ def packed_epoch(tiny_config: Config, cache_dir: Path):
 
 
 @pytest.mark.parametrize("workers", [1, 4])
-def test_epoch_continuation_and_retention(tiny_config: Config, cache_dir: Path, workers):
+@pytest.mark.parametrize("optimizer_name", ["adamw", "accum_adamw"])
+def test_epoch_continuation_and_retention(
+    tiny_config: Config, cache_dir: Path, workers, optimizer_name
+):
+    tiny_config.optimizer.name = optimizer_name
     raw = tiny_config.model_dump()
     raw["training"].update(
         checkpoint_policy="interval",
@@ -137,6 +142,12 @@ def test_epoch_continuation_and_retention(tiny_config: Config, cache_dir: Path, 
     train(config)
     output = config.runtime.output_dir
     epoch = output / "epoch-001.pt"
+    if optimizer_name == "adamw":
+        # Exercise legacy checkpoint recipes that predate optimizer selection.
+        legacy = torch.load(epoch, weights_only=False)
+        legacy["config"]["optimizer"].pop("name")
+        legacy["config"]["optimizer"].pop("accumulation_steps")
+        torch.save(legacy, epoch)
     original = load_training_checkpoint(epoch)
     assert original["completed_epochs"] == original["best_epoch"] == 1
     assert original["cursor"] == 12 and original["step"] == 3
@@ -214,7 +225,7 @@ def test_worker_files_compact_and_validated(packed_epoch):
     worker_path = path.parent / root["workers"][0]["path"]
     original = worker_path.read_bytes()
     local = torch.load(worker_path, weights_only=False)
-    for damage in (
+    damages = (
         "missing",
         "truncated",
         "swapped",
@@ -224,7 +235,8 @@ def test_worker_files_compact_and_validated(packed_epoch):
         "position",
         "counter",
         "moment",
-    ):
+    ) + (("window_mean", "inside_epsilon") if config.optimizer.name == "accum_adamw" else ())
+    for damage in damages:
         broken = copy.deepcopy(local)
         manifest = copy.deepcopy(root)
         if damage == "missing":
@@ -245,6 +257,11 @@ def test_worker_files_compact_and_validated(packed_epoch):
                 broken["cursor"] += 4
             elif damage == "counter":
                 broken["optimizer"]["state"][name]["step"].add_(1)
+            elif damage == "inside_epsilon":
+                broken["version"] = 4
+            elif damage == "window_mean":
+                broken["version"] = 3
+                broken["optimizer"]["grad_clip"] = config.optimizer.grad_clip
             else:
                 broken["optimizer"]["state"][name]["exp_avg_sq"].fill_(float("nan"))
             torch.save(broken, worker_path)
@@ -265,7 +282,8 @@ def test_interrupted_worker_export_and_immutability(packed_epoch, monkeypatch: p
     state = load_training_checkpoint(original)
     model = PackedLlama(config.model, 4)
     model.load_packed_state_dict(state["model"])
-    optimizer = PackedAdamW(model, config)
+    optimizer = make_optimizer(model, config, torch.device("cpu"))
+    assert isinstance(optimizer, PackedOptimizer)
     optimizer.load_state_dict(state["optimizer"])
     directory = original.parent.parent / "partial"
     directory.mkdir()
