@@ -144,9 +144,19 @@ recipe identity, so resuming requires the same clipping setting.
 Available `decentralized.topology` values:
 
 - `complete`: globally average parameters each step.
-- `one_peer_ring`: half self, half left/right neighbor, alternating each step.
-- `one_peer_exponential`: half self, half incoming neighbor at cyclic
-  power-of-two offsets modulo N.
+- `one_peer_ring`: half self, half peer in reciprocal adjacent pairs. Zero-based
+  even steps pair `(0,1), (2,3), ...`; odd steps pair
+  `(1,2), (3,4), ..., (N-1,0)`. Requires even N.
+- `one_peer_exponential`: half self, half peer at
+  `i XOR (1 << (step % log2(N)))`. Requires power-of-two N. With full mixing and
+  no local updates, one cycle of `log2(N)` steps gives the exact global average
+  in exact arithmetic.
+
+Both one-peer schedules send to and receive from the same peer at each step.
+N=1 is allowed for every topology and mixing is a no-op. The saved training step
+determines the pairing phase on resume. Decentralized recipe identities include
+`mixing_version=2`; checkpoints from the previous directed schedules cannot resume
+under the new identity, and there is no legacy mixing mode.
 
 Before validation, a separate ordinary Llama receives the global parameter
 average. It evaluates with the global `evaluation.batch_size`; training weights,

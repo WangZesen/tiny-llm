@@ -9,7 +9,7 @@ import torch
 from torch import Tensor, nn
 from torch.nn import functional as F
 
-from tiny_llm.config import ModelConfig
+from tiny_llm.config import ModelConfig, validate_topology_size
 from tiny_llm.model import Block, Llama, stable_dtype, token_losses
 from tiny_llm.state import TorchState
 
@@ -213,6 +213,7 @@ class PackedLlama(nn.Module):
     def mix_(self, topology: str, step: int, gamma: float = 1.0):
         if topology not in ("complete", "one_peer_ring", "one_peer_exponential") or step < 0:
             raise ValueError("invalid topology or step")
+        validate_topology_size(topology, self.num_models)
         if not math.isfinite(gamma) or not 0 <= gamma <= 1:
             raise ValueError("mixing gamma must be finite and in [0, 1]")
         if self.num_models == 1 or gamma == 0:
@@ -223,12 +224,14 @@ class PackedLlama(nn.Module):
         if topology == "complete":
             self._mix_scratch.copy_(arena.mean(dim=0, keepdim=True))
         else:
-            offset = (
-                (1 if step % 2 == 0 else -1)
-                if topology == "one_peer_ring"
-                else (1 << (step % (self.num_models - 1).bit_length()))
-            )
-            peers = (torch.arange(self.num_models, device=arena.device) - offset) % self.num_models
+            workers = torch.arange(self.num_models, device=arena.device)
+            if topology == "one_peer_ring":
+                # Alternate (0, 1), (2, 3), ... with (1, 2), (3, 4), ..., (N-1, 0).
+                direction = torch.where((workers + step % 2) % 2 == 0, 1, -1)
+                peers = (workers + direction) % self.num_models
+            else:
+                # Flipping one bit makes the peer relation reciprocal at every step.
+                peers = workers ^ (1 << (step % (self.num_models - 1).bit_length()))
             torch.index_select(arena, 0, peers, out=self._mix_scratch)
             self._mix_scratch.add_(arena).mul_(0.5)
         if gamma != 1:

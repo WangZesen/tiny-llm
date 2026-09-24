@@ -8,7 +8,7 @@ from safetensors.torch import load_file
 from torch.func import functional_call
 
 from tiny_llm.config import Config, ModelConfig, WSDScheduleConfig, load_config
-from tiny_llm.data import BufferedTokenLoader, TokenCache
+from tiny_llm.data import BufferedTokenLoader, TokenCache, fingerprint
 from tiny_llm.model import Llama, token_losses
 from tiny_llm.packed import PackedLlama, local_mean_losses
 from tiny_llm.packed_benchmark import benchmark_packed_worker
@@ -45,16 +45,20 @@ def test_initialization(tiny_config: Config, seed, n):
 
 
 def matrix(n, topology, step, device="cpu", dtype=torch.float64):
-    if topology == "complete":
+    if topology == "complete" or n == 1:
         return torch.full((n, n), 1 / n, device=device, dtype=dtype)
-    offset = (
-        (1 if step % 2 == 0 else -1)
-        if topology == "one_peer_ring"
-        else (1 << (step % max(1, (n - 1).bit_length())))
-    )
+    if topology == "one_peer_ring":
+        pairs = [(i, (i + 1) % n) for i in range(step % 2, n, 2)]
+    else:
+        stride = 1 << (step % (n - 1).bit_length())
+        pairs = [
+            (start + j, start + j + stride)
+            for start in range(0, n, 2 * stride)
+            for j in range(stride)
+        ]
     result = torch.eye(n, device=device, dtype=dtype) * 0.5
-    for i in range(n):
-        result[i, (i - offset) % n] += 0.5
+    for i, j in pairs:
+        result[i, j] = result[j, i] = 0.5
     return result
 
 
@@ -74,15 +78,17 @@ def matrix(n, topology, step, device="cpu", dtype=torch.float64):
 def test_independent_worker_parity(
     tiny_config: Config, backend, topology, adaptive, scheme, grad_clip
 ):
-    n = 3
+    n = 4
     schedule = None
     if adaptive:
         raw = tiny_config.model_dump()
-        raw["decentralized"] = dict(num_models=n, adaptive_consensus=dict(start_frac=0.2, p=2))
-        raw["training"]["batch_tokens"] = 24
+        raw["decentralized"] = dict(
+            num_models=n, topology=topology, adaptive_consensus=dict(start_frac=0.2, p=2)
+        )
+        raw["training"]["batch_tokens"] = 32
         raw["lr_schedule"]["min_lr_ratio"] = 0
         tiny_config = Config.model_validate(raw)
-        schedule = adaptive_consensus_schedule(tiny_config, [9, 15])
+        schedule = adaptive_consensus_schedule(tiny_config, [12, 20])
     torch.manual_seed(13)
     packed = PackedLlama(tiny_config.model, n, backend).double()
     # Distinct parameters detect mixing order and cross-worker contamination.
@@ -97,7 +103,7 @@ def test_independent_worker_parity(
     consumed = 0
     for step, batch in enumerate((2, 1, 2)):
         consumed += n * batch * 4
-        lr = learning_rate(tiny_config, consumed, 60)
+        lr = learning_rate(tiny_config, consumed, 80)
         for opt in [optimizer, *optimizers]:
             for group in opt.param_groups:
                 group["lr"] = lr
@@ -188,19 +194,74 @@ def assert_storage(model, optimizer):
             )
 
 
-@pytest.mark.parametrize("n", [1, 2, 3, 8])
-@pytest.mark.parametrize("topology", ["complete", "one_peer_ring", "one_peer_exponential"])
+@pytest.mark.parametrize(
+    "topology,n",
+    [("complete", n) for n in (1, 2, 3, 8)]
+    + [("one_peer_ring", n) for n in (1, 2, 4, 6, 8)]
+    + [("one_peer_exponential", n) for n in (1, 2, 4, 8, 16)],
+)
 def test_topologies(tiny_config: Config, n, topology):
     model = PackedLlama(tiny_config.model, n).double()
     with torch.no_grad():
         model.parameter_storage.normal_()
     original = model.parameter_storage.clone()
-    for step in range(max(2, (n - 1).bit_length())):
+    period = max(1, (n - 1).bit_length()) if topology == "one_peer_exponential" else 2
+    for step in range(2 * period):
         expected = matrix(n, topology, step) @ model.parameter_storage
         model.mix_(topology, step)
         torch.testing.assert_close(model.parameter_storage, expected)
-    if topology == "one_peer_exponential" and n & (n - 1) == 0:
-        torch.testing.assert_close(model.parameter_storage, original.mean(0).expand_as(original))
+        torch.testing.assert_close(model.parameter_storage.mean(0), original.mean(0))
+        if topology == "one_peer_exponential" and (step + 1) % period == 0:
+            torch.testing.assert_close(
+                model.parameter_storage, original.mean(0).expand_as(original)
+            )
+
+
+@pytest.mark.parametrize(
+    "topology,peer_schedule",
+    [
+        ("one_peer_ring", [[1, 0, 3, 2], [3, 2, 1, 0]]),
+        ("one_peer_ring", [[1, 0, 3, 2, 5, 4], [5, 2, 1, 4, 3, 0]]),
+        (
+            "one_peer_exponential",
+            [[1, 0, 3, 2, 5, 4, 7, 6], [2, 3, 0, 1, 6, 7, 4, 5], [4, 5, 6, 7, 0, 1, 2, 3]],
+        ),
+    ],
+)
+def test_reciprocal_peer_schedule(tiny_config: Config, topology, peer_schedule):
+    n = len(peer_schedule[0])
+    model = PackedLlama(tiny_config.model, n).double()
+    identity = torch.eye(n, dtype=torch.float64)
+    # Isolate every phase, including wraparound, before consensus can hide wrong peers.
+    for step in range(2 * len(peer_schedule) + 1):
+        model.parameter_storage.zero_()
+        model.parameter_storage[:, :n].copy_(identity)
+        model.mix_(topology, step)
+        actual = model.parameter_storage[:, :n]
+        peers = peer_schedule[step % len(peer_schedule)]
+        assert torch.equal(actual, (identity + identity[peers]) * 0.5)
+        assert torch.equal(actual, actual.T)
+        assert torch.equal(actual.sum(0), torch.ones(n, dtype=actual.dtype))
+        assert torch.equal(actual.sum(1), torch.ones(n, dtype=actual.dtype))
+        assert all(peers[peers[i]] == i and peers[i] != i for i in range(n))
+
+
+@pytest.mark.parametrize(
+    "topology,n,message",
+    [
+        ("one_peer_ring", 3, "even num_models"),
+        ("one_peer_ring", 5, "even num_models"),
+        ("one_peer_exponential", 3, "power-of-two num_models"),
+        ("one_peer_exponential", 6, "power-of-two num_models"),
+    ],
+)
+@pytest.mark.parametrize("gamma", [0, 1])
+def test_invalid_topology_size(tiny_config: Config, topology, n, message, gamma):
+    model = PackedLlama(tiny_config.model, n)
+    before = model.parameter_storage.clone()
+    with pytest.raises(ValueError, match=message):
+        model.mix_(topology, 0, gamma)
+    assert torch.equal(model.parameter_storage, before)
 
 
 def test_storage_roundtrip_and_moment_edits(tiny_config: Config, tmp_path: Path):
@@ -309,6 +370,7 @@ def decentralized_config(config, n=2, topology="one_peer_ring"):
 
 @pytest.mark.parametrize("scheme", ["awc", "atc"])
 @pytest.mark.parametrize("lr_schedule,grad_clip", [("cosine", 1.0), ("wsd", None)])
+@pytest.mark.parametrize("topology", ["one_peer_ring", "one_peer_exponential"])
 def test_training_resume(
     tiny_config: Config,
     cache_dir: Path,
@@ -316,11 +378,11 @@ def test_training_resume(
     scheme,
     grad_clip,
     lr_schedule,
+    topology,
 ):
     if lr_schedule == "wsd":
         tiny_config.lr_schedule = WSDScheduleConfig(warmup_steps=1, decay_fraction=0.5)
     tiny_config.training.checkpoint_policy = "interval"
-    topology = "one_peer_exponential"
     config = decentralized_config(tiny_config, n=4, topology=topology)
     assert config.decentralized is not None
     config.decentralized.scheme = scheme
@@ -328,8 +390,10 @@ def test_training_resume(
     config.runtime.deterministic = True
     # Cross buffer boundaries inside packed steps and switch prefetch on resume.
     config.data.shuffle_group_size = 1
-    # 12-block epochs: full local batch 2, followed by local batch 1.
-    set_budget(config, 128, 64)
+    # Three updates per epoch: resume must preserve the odd mixing phase.
+    config.training.micro_batch_size = 1
+    config.training.batch_tokens = 16
+    set_budget(config, 96, 48)
     complete = config.model_copy(deep=True)
     complete.runtime.output_dir = cache_dir.parent / "complete"
     result = train(complete)
@@ -343,12 +407,12 @@ def test_training_resume(
     b = torch.load(config.runtime.output_dir / "final.pt", weights_only=False)
     assert_nested_equal(a["model"], b["model"])
     assert_nested_equal(a["optimizer"], b["optimizer"])
-    assert a["step"] == b["step"] == 4
+    assert a["step"] == b["step"] == 6
     assert a["version"] == b["version"] == 3
     assert a["config"]["decentralized"]["scheme"] == scheme
     assert b["config"]["decentralized"]["scheme"] == scheme
     assert a["loader"] == b["loader"]
-    assert a["loader"]["cursor"] == a["cursor"] == 32
+    assert a["loader"]["cursor"] == a["cursor"] == 24
     expected = evaluate_checkpoint(config, config.runtime.output_dir / "final.pt", True)
     assert expected["loss"] == result["final_validation"]["loss"]
     averaged = load_file(str(config.runtime.output_dir / "epoch-002.safetensors"))
@@ -361,6 +425,34 @@ def test_training_resume(
             value, torch.stack([local[key] for local in locals_]).mean(0), rtol=0, atol=0
         )
     assert json.loads((config.runtime.output_dir / "best.json").read_text())["epoch"] in (1, 2)
+
+
+@pytest.mark.parametrize("topology", ["complete", "one_peer_ring", "one_peer_exponential"])
+def test_legacy_mixing_identity_rejected(
+    tiny_config: Config, cache_dir: Path, monkeypatch: pytest.MonkeyPatch, topology
+):
+    import tiny_llm.train as module
+
+    config = decentralized_config(tiny_config, n=4, topology=topology)
+    config.training.checkpoint_policy = "interval"
+    set_budget(config, 64, 32)
+    cache = TokenCache(cache_dir)
+    current_identity = recipe_identity(config, cache)
+
+    def legacy_fingerprint(value):
+        assert value.pop("mixing_version") == 2
+        return fingerprint(value)
+
+    # Create internally consistent root/worker files with the former recipe identity.
+    with monkeypatch.context() as patch:
+        patch.setattr(module, "fingerprint", legacy_fingerprint)
+        assert recipe_identity(config, cache) != current_identity
+        train(config)
+    for name in ("final.pt", "epoch-001.pt"):
+        resumed = config.model_copy(deep=True)
+        resumed.runtime.output_dir = cache_dir.parent / f"incompatible-{name}"
+        with pytest.raises(ValueError, match="incompatible with this recipe"):
+            train(resumed, config.runtime.output_dir / name)
 
 
 def test_config_and_buffered_identity(tiny_config: Config, cache_dir: Path):

@@ -111,7 +111,9 @@ def test_wsd_consensus(tiny_config: Config):
 
 @pytest.mark.parametrize(
     "topology,n",
-    [("complete", 1), ("complete", 4), ("one_peer_ring", 3), ("one_peer_exponential", 4)],
+    [("complete", n) for n in (1, 4)]
+    + [("one_peer_ring", n) for n in (1, 2, 6)]
+    + [("one_peer_exponential", n) for n in (1, 2, 8)],
 )
 def test_weighted_mixing(tiny_config: Config, topology, n):
     model = PackedLlama(tiny_config.model, n).double()
@@ -137,22 +139,20 @@ def test_weighted_mixing(tiny_config: Config, topology, n):
         ) @ before
         model.mix_(topology, step, gamma)
         torch.testing.assert_close(model.parameter_storage, expected, rtol=1e-14, atol=1e-14)
+        torch.testing.assert_close(model.parameter_storage.mean(0), before.mean(0))
         assert model.parameter_storage.data_ptr() == pointer
         if gamma == 0:
             assert torch.equal(model.parameter_storage, before)
         if gamma == 1:
             if n == 1:
-                legacy = before
+                unweighted = before
             elif topology == "complete":
-                legacy = before.mean(0).expand_as(before)
+                unweighted = before.mean(0).expand_as(before)
             else:
-                offset = (
-                    (1 if step % 2 == 0 else -1)
-                    if topology == "one_peer_ring"
-                    else 1 << (step % (n - 1).bit_length())
-                )
-                legacy = (before[(torch.arange(n) - offset) % n] + before) * 0.5
-            assert torch.equal(model.parameter_storage, legacy)
+                weights = matrix(n, topology, step) - 0.5 * torch.eye(n, dtype=before.dtype)
+                peers = weights.argmax(dim=1)
+                unweighted = (before[peers] + before) * 0.5
+            assert torch.equal(model.parameter_storage, unweighted)
         assert_storage(model, opt)
         assert torch.equal(opt.first_moment_storage, moments[0])
         assert torch.equal(opt.second_moment_storage, moments[1])
@@ -187,10 +187,14 @@ def test_identity_and_benchmark_guards(tiny_config: Config, cache_dir: Path, tmp
 
 @pytest.mark.parametrize("scheme,resume_epoch", [("awc", 1), ("atc", 3)])
 @pytest.mark.parametrize("lr_schedule", ["cosine", "wsd"])
-def test_adaptive_resume(tiny_config: Config, cache_dir: Path, resume_epoch, scheme, lr_schedule):
+@pytest.mark.parametrize("topology", ["one_peer_ring", "one_peer_exponential"])
+def test_adaptive_resume(
+    tiny_config: Config, cache_dir: Path, resume_epoch, scheme, lr_schedule, topology
+):
     config = adaptive_config(tiny_config)
     assert config.decentralized is not None and config.decentralized.adaptive_consensus is not None
     config.decentralized.scheme = scheme
+    config.decentralized.topology = topology
     config.training.checkpoint_policy = "interval"
     config.runtime.deterministic = True
     if lr_schedule == "wsd":

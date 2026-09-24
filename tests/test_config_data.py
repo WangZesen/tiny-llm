@@ -7,7 +7,7 @@ import pytest
 import torch
 from pydantic import ValidationError
 
-from tiny_llm.config import PRESETS, Config, ModelConfig, load_config
+from tiny_llm.config import PRESETS, Config, DecentralizedConfig, ModelConfig, load_config
 from tiny_llm.data import TokenCache, training_boundaries, validation_indices
 from tiny_llm.model import Llama
 from tiny_llm.runtime import setup_runtime
@@ -27,6 +27,34 @@ def test_strict_overrides(tmp_path: Path):
         load_config(path, ["missing_equals"])
     with pytest.raises(ValidationError):
         load_config(path, ["model.heads=7"])
+
+
+@pytest.mark.parametrize(
+    "topology,n",
+    [("complete", n) for n in (1, 2, 3, 5)]
+    + [("one_peer_ring", n) for n in (1, 2, 4, 6)]
+    + [("one_peer_exponential", n) for n in (1, 2, 4, 8)],
+)
+def test_supported_topology_sizes(topology, n):
+    config = DecentralizedConfig(num_models=n, topology=topology)
+    assert config.num_models == n and config.topology == topology
+
+
+@pytest.mark.parametrize(
+    "topology,n,message",
+    [
+        ("one_peer_ring", 3, "even num_models"),
+        ("one_peer_ring", 5, "even num_models"),
+        ("one_peer_exponential", 3, "power-of-two num_models"),
+        ("one_peer_exponential", 6, "power-of-two num_models"),
+    ],
+)
+def test_unsupported_topology_sizes(topology, n, message):
+    with pytest.raises(ValidationError, match=message):
+        DecentralizedConfig(num_models=n, topology=topology)
+    config = DecentralizedConfig(num_models=n)
+    with pytest.raises(ValidationError, match=message):
+        config.topology = topology
 
 
 def test_preparation_defaults_and_presets():

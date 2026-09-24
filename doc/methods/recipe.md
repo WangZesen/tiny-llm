@@ -149,13 +149,17 @@ cursor; ordinary buffered checkpoints retain upstream format v2. Prefetch may
 change on resume, but shard-group size may not. Historical loader checkpoints
 require their original source version.
 
-Every training step performs one topology event: complete averaging, alternating
-left/right one-peer ring averaging, or one-peer exponential averaging with
-offsets 1, 2, 4, ... below N. Peers are incoming, so row i receives row
-`(i - offset) % N`. One-peer weights are half self and half peer. For exponential
-graphs, powers of two admit exact cycle averaging; arbitrary N remains supported
-without that guarantee. See the
-[exponential-graph paper](https://proceedings.neurips.cc/paper/2021/file/74e1ed8b55ea44fd7dbb685c412568a4-Paper.pdf).
+Every training step performs one topology event: complete averaging, reciprocal
+one-peer ring averaging, or reciprocal one-peer exponential averaging. Each
+one-peer worker sends to and receives from the same peer, with half self and half
+peer weights. Ring mixing requires even N and alternates adjacent pairs:
+`(0,1), (2,3), ...` on zero-based even steps and
+`(1,2), (3,4), ..., (N-1,0)` on odd steps. Exponential mixing requires power-of-two
+N and pairs worker i with `i XOR (1 << (step % log2(N)))`. Without local updates,
+full exponential mixing reaches the global average in `log2(N)` rounds in exact
+arithmetic. N=1 is a no-op for all topologies. These schedules replace the former
+directed shifts; decentralized recipe identities now include `mixing_version=2`
+and reject resume from older checkpoints.
 
 Evaluation first snapshots the global parameter mean into an ordinary Llama.
 The snapshot uses FP32 averaging and the global evaluation batch size. It never

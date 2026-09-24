@@ -295,6 +295,8 @@ def recipe_identity(config: Config, cache: TokenCache) -> str:
     value["data"].pop("prepare_workers")  # Tokenization scheduling does not alter cache contents.
     value["cache_identity"] = cache.manifest["identity"]
     value["loader_version"] = BufferedTokenLoader.VERSION
+    if config.decentralized is not None:
+        value["mixing_version"] = 2
     return fingerprint(value)
 
 

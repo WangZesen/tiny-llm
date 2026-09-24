@@ -44,7 +44,16 @@ ATC mixes updated parameters, but it still does not mix moment buffers. For sync
 
 ## Topology and evaluation
 
-One-peer exponential mixing uses incoming offsets 1, 2, 4, and so on below the number of workers, cycling across updates. Each row assigns half its weight to the worker itself and half to its selected incoming peer. Other supported topologies include complete averaging and an alternating one-peer ring. Details and checkpoint behavior are in the [implementation reference](implementation.md).
+One-peer mixing uses reciprocal pairs: each worker sends to and receives from the
+same peer. Each row assigns half its weight to itself and half to its peer, so
+$W_t$ is symmetric and doubly stochastic. Exponential mixing pairs worker $i$ with
+`i XOR (1 << (t % log2(N)))` and requires power-of-two $N$. With no local updates,
+the product of $\log_2 N$ consecutive full mixing matrices is the global averaging
+matrix. Ring mixing requires even $N$ and alternates adjacent pairs
+`(0,1), (2,3), ...` at even $t$ and `(1,2), (3,4), ..., (N-1,0)` at odd $t$.
+All topologies allow $N=1$ as a no-op; complete averaging supports any positive
+worker count. Details and checkpoint behavior are in the
+[implementation reference](implementation.md).
 
 Packed validation evaluates the ordinary model with weights
 

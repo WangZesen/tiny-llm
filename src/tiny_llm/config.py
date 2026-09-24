@@ -159,11 +159,25 @@ class AdaptiveConsensusConfig(StrictModel):
     p: float = Field(ge=0)
 
 
+def validate_topology_size(topology: str, num_models: int) -> None:
+    if num_models == 1:
+        return
+    if topology == "one_peer_ring" and num_models % 2:
+        raise ValueError("one_peer_ring requires an even num_models (or 1)")
+    if topology == "one_peer_exponential" and num_models & (num_models - 1):
+        raise ValueError("one_peer_exponential requires a power-of-two num_models (or 1)")
+
+
 class DecentralizedConfig(StrictModel):
     num_models: int = Field(gt=0)
     topology: Literal["complete", "one_peer_ring", "one_peer_exponential"] = "complete"
     scheme: Literal["awc", "atc"] = "awc"
     adaptive_consensus: AdaptiveConsensusConfig | None = None
+
+    @model_validator(mode="after")
+    def topology_size(self) -> Self:
+        validate_topology_size(self.topology, self.num_models)
+        return self
 
 
 class Config(StrictModel):
