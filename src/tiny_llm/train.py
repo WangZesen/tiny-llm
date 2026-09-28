@@ -508,6 +508,7 @@ def _train(config: Config, resume: Path | None) -> dict:
         packed_metrics: tuple[torch.Tensor, torch.Tensor, float] | None = None
         for epoch_index in range(completed_epochs, len(boundaries)):
             boundary = boundaries[epoch_index]
+            clip_counts = torch.zeros(num_models, device=device, dtype=torch.int64)
             while cursor < boundary:
                 step_blocks = config.training.batch_tokens // length
                 lr = learning_rate(config, (cursor + step_blocks) * length, blocks * length)
@@ -528,6 +529,7 @@ def _train(config: Config, resume: Path | None) -> dict:
                     means.sum().backward()
                     step_loss = means.detach().sum() * (local_batch * length)
                     local_grad_norms = optimizer.clip_grad_norm_(config.optimizer.grad_clip)
+                    step_grad_norms = local_grad_norms
                     grad_norm = local_grad_norms.max()
                     if not torch.isfinite(step_loss).item():
                         raise FloatingPointError(f"nonfinite training loss at step {step}")
@@ -549,6 +551,9 @@ def _train(config: Config, resume: Path | None) -> dict:
                         device,
                         step_blocks,
                     )
+                    step_grad_norms = grad_norm
+                if config.optimizer.grad_clip is not None:
+                    clip_counts.add_(step_grad_norms > config.optimizer.grad_clip)
                 cursor += step_blocks
                 step += 1
                 window_loss += step_loss.item()
@@ -608,10 +613,15 @@ def _train(config: Config, resume: Path | None) -> dict:
             evaluation = evaluate(
                 epoch_model, cache, config, device, full=False, should_stop=lambda: stopped
             )
+            local_clip_counts: list[int] = clip_counts.tolist()
+            clipping_metrics: dict[str, object] = {"grad_clip_count": sum(local_clip_counts)}
+            if decentralized:
+                clipping_metrics["local_grad_clip_counts"] = local_clip_counts
             append_metric(
                 metrics_path,
                 {
                     **evaluation,
+                    **clipping_metrics,
                     "event": "validation",
                     "epoch": epoch_index + 1,
                     "step": step,
@@ -620,10 +630,12 @@ def _train(config: Config, resume: Path | None) -> dict:
                 },
             )
             logger.info(
-                "Epoch {} validation loss {:.5f} | perplexity {}",
+                "Epoch {} validation loss {:.5f} | perplexity {} | gradient clips {}{}",
                 epoch_index + 1,
                 evaluation["loss"],
                 evaluation["perplexity"],
+                clipping_metrics["grad_clip_count"],
+                f" | per worker {local_clip_counts}" if decentralized else "",
             )
             save_epoch = epoch_index + 1 in selected_epochs
             if save_epoch:

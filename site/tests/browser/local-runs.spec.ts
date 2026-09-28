@@ -175,9 +175,10 @@ test('partial and invalid logs report per-file feedback even without published r
     page.getByText('partial.jsonl, line 2: incomplete final record ignored.', { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByText('loss-only.jsonl: no subset-validation loss or gradient norm measurements.', {
-      exact: true,
-    }),
+    page.getByText(
+      'loss-only.jsonl: no subset-validation loss or gradient norm or gradient clipping count measurements.',
+      { exact: true },
+    ),
   ).toBeVisible();
   await expect(
     page.getByText('No subset-validation loss measurements available in this comparison.', {

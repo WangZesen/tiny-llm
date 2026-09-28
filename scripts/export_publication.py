@@ -551,6 +551,42 @@ def stitch(parent, local, cursor):
     return points
 
 
+def gradient_clipping_curve(events, parent=(), cursor=0):
+    """Optional epoch counts, retaining only the parent's pre-continuation history."""
+
+    def integer(value):
+        return type(value) is int and 0 <= value <= 2**53 - 1
+
+    local = []
+    for event in events:
+        if event.get("event") != "validation" or not (
+            "grad_clip_count" in event or "local_grad_clip_counts" in event
+        ):
+            continue
+        total = event.get("grad_clip_count")
+        workers = event.get("local_grad_clip_counts", [total])
+        tokens, epoch = event.get("tokens"), event.get("epoch")
+        require(integer(tokens), "Invalid clipping tokens")
+        require(integer(epoch) and epoch > 0, "Invalid clipping epoch")
+        require(integer(total), "Invalid grad_clip_count")
+        require(
+            isinstance(workers, list) and len(workers) > 0 and all(map(integer, workers)),
+            "Invalid local_grad_clip_counts",
+        )
+        require(sum(workers) == total, "Clipping worker counts do not sum to total")
+        require(tokens > cursor, "Child clipping observations precede continuation cursor")
+        local.append(dict(tokens=tokens, epoch=epoch, total=total, workers=workers))
+    points = [point for point in parent if point["tokens"] <= cursor] + local
+    require(
+        all(
+            a["tokens"] < b["tokens"] and a["epoch"] < b["epoch"]
+            for a, b in itertools.pairwise(points)
+        ),
+        "Nonmonotonic clipping curve",
+    )
+    return points
+
+
 def steady_throughput(events, warmup=312):
     tokens, seconds, previous_step, previous_tokens = 0, 0.0, 0, 0
     for e in events:
@@ -784,6 +820,11 @@ def collect(root):
             require(points[-1][0] == result["tokens"], "Incomplete curve endpoint")
             curve[kind] = points
         require(len(curve["validation"]) == result["epochs"], "Incomplete epoch validation history")
+        clipping = gradient_clipping_curve(
+            events, parent.get("gradientClipping", []) if parent else [], cursor
+        )
+        if clipping:
+            curve["gradientClipping"] = clipping
         curve["sources"] = (
             [
                 dict(s, endTokens=min(s["endTokens"], cursor))

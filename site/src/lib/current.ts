@@ -1,3 +1,5 @@
+import { validateClippingSeries, type GradientClippingPoint } from './clipping';
+
 export type Schedule = 'cosine' | 'wsd';
 export type Method = 'sync' | 'awc4' | 'awc8';
 export const methods: Record<Method, string> = {
@@ -100,6 +102,7 @@ export interface RecordedCurve {
     train: [number, number][];
     validation: [number, number][];
     gradientNorm: [number, number][];
+    gradientClipping?: GradientClippingPoint[];
     sources: {
       path: string;
       container: string;
@@ -161,6 +164,8 @@ export async function loadCurve(id: string, signal: AbortSignal): Promise<Record
   if (!response.ok) throw new Error('Missing curve');
   const curve: RecordedCurve = await response.json();
   if (curve.configuration !== id) throw new Error('Wrong curve');
+  for (const run of curve.runs)
+    if (run.gradientClipping !== undefined) validateClippingSeries(run.gradientClipping);
   return curve;
 }
 export const winners = (data: Publication, shared = true) =>

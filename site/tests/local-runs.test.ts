@@ -21,6 +21,7 @@ test('trainer logs preserve global tokens and separate subset from full validati
     train: [[131072, 4.2]],
     validation: [[131072, 4.1]],
     gradientNorm: [[131072, 1.5]],
+    gradientClipping: [],
     warnings: [],
   });
 });
@@ -120,4 +121,60 @@ test('default run labels distinguish identically named files', () => {
     localRunLabel('metrics.jsonl', ['metrics.jsonl', 'metrics.jsonl (2)']),
     'metrics.jsonl (3)',
   );
+});
+
+test('epoch clipping counts preserve zeros, worker identity, and repeated positions', () => {
+  const epoch = { event: 'validation', epoch: 1, tokens: 10, grad_clip_count: 0 };
+  const packed = {
+    ...epoch,
+    epoch: 2,
+    tokens: 20,
+    grad_clip_count: 3,
+    local_grad_clip_counts: [1, 2],
+  };
+  const metrics = parseLocalMetrics(
+    log(
+      packed,
+      epoch,
+      { ...packed, grad_clip_count: 5, local_grad_clip_counts: [2, 3] },
+      { event: 'validation', tokens: 20, loss: 3 },
+      { ...epoch, event: 'final_validation', tokens: 30 },
+    ),
+    'clips.jsonl',
+  );
+  assert.deepEqual(metrics.gradientClipping, [
+    { tokens: 10, epoch: 1, total: 0, workers: [0] },
+    { tokens: 20, epoch: 2, total: 5, workers: [2, 3] },
+  ]);
+  assert.deepEqual(metrics.gradientNorm, []);
+  assert.deepEqual(parseLocalMetrics(log(train), 'old.jsonl').gradientClipping, []);
+  const partial = parseLocalMetrics(log(epoch) + '\n{"event":', 'live.jsonl');
+  assert.equal(partial.gradientClipping[0].total, 0);
+  assert.equal(partial.warnings.length, 1);
+});
+
+test('invalid clipping counts identify the source line', () => {
+  const epoch = { event: 'validation', epoch: 1, tokens: 10, grad_clip_count: 0 };
+  for (const change of [
+    { grad_clip_count: -1 },
+    { grad_clip_count: 0.5 },
+    { grad_clip_count: '0' },
+    { grad_clip_count: null },
+    { grad_clip_count: true },
+    { grad_clip_count: 2 ** 53 },
+    { epoch: 0 },
+    { epoch: null },
+    { epoch: 1.5 },
+    { local_grad_clip_counts: [] },
+    { local_grad_clip_counts: null },
+    { local_grad_clip_counts: [0, -1] },
+    { local_grad_clip_counts: [0, 1] },
+    { local_grad_clip_counts: [0.5] },
+    { local_grad_clip_counts: [false] },
+    { grad_clip_count: undefined, local_grad_clip_counts: [0] },
+  ])
+    assert.throws(
+      () => parseLocalMetrics(log(train, { ...epoch, ...change }), 'bad.jsonl'),
+      /bad.jsonl, line 2:/,
+    );
 });

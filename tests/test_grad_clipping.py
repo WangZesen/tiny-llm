@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 import torch
+from helpers import set_budget
 
 from tiny_llm.config import Config, load_config
 from tiny_llm.data import TokenCache
@@ -74,6 +75,97 @@ def test_clipping_identity_resume_and_logging(tiny_config: Config, cache_dir: Pa
     assert all(row["grad_norm"] >= 0 for row in updates)
     if workers == 4:
         assert all(len(row["local_grad_norms"]) == 4 for row in updates)
+    for row in metrics:
+        if row["event"] == "validation":
+            assert row["grad_clip_count"] == 0
+            if workers == 4:
+                assert row["local_grad_clip_counts"] == [0] * workers
     config.optimizer.grad_clip = 1.0
     with pytest.raises(ValueError, match="recipe"):
         train(config, checkpoint)
+
+
+@pytest.mark.parametrize("scheme", [None, "awc", "atc"])
+@pytest.mark.parametrize("maximum", [1.0, None])
+def test_epoch_clipping_counts_include_unlogged_updates(
+    tiny_config: Config, cache_dir: Path, monkeypatch: pytest.MonkeyPatch, scheme, maximum
+):
+    # Script the reported pre-clipping norms, while preserving the real optimizer update.
+    # Exact-threshold norms do not count, and workers have deliberately different counts.
+    norms = [
+        [2.0, 0.5, 1.0, 2.0],
+        [0.5, 2.0, 0.5, 2.0],
+        [1.0, 0.5, 3.0, 0.5],
+        [0.5, 0.5, 0.5, 0.5],
+        [0.5, 0.5, 0.5, 2.0],
+        [2.0, 1.0, 0.5, 2.0],
+        [2.0, 1.0, 0.5, 2.0],
+        [1.0, 1.0, 0.5, 1.0],
+    ]
+    workers = 4 if scheme else 1
+    values = iter(value for row in norms for value in row[:workers])
+    set_budget(tiny_config, 128, 64)
+    raw = tiny_config.model_dump()
+    raw["training"].update(micro_batch_size=1, log_every=100)
+    raw["optimizer"]["grad_clip"] = maximum
+    if scheme:
+        raw["decentralized"] = dict(num_models=workers, scheme=scheme)
+    config = Config.model_validate(raw)
+
+    def scripted(parameters, maximum):
+        norm = clip_grad_norm_(parameters, maximum)
+        return norm.new_tensor(next(values))
+
+    module = "packed_optimizer" if scheme else "train"
+    monkeypatch.setattr(f"tiny_llm.{module}.clip_grad_norm_", scripted)
+    train(config)
+    assert next(values, None) is None
+    events = [
+        json.loads(line)
+        for line in (config.runtime.output_dir / "metrics.jsonl").read_text().splitlines()
+    ]
+    assert len([row for row in events if row["event"] == "train"]) == 2
+    epochs = [row for row in events if row["event"] == "validation"]
+    expected = [[1, 1, 1, 2], [2, 0, 0, 3]] if maximum else [[0] * 4] * 2
+    for row, counts in zip(epochs, expected, strict=True):
+        assert row["grad_clip_count"] == sum(counts[:workers])
+        if scheme:
+            assert row["local_grad_clip_counts"] == counts
+        else:
+            assert "local_grad_clip_counts" not in row
+    log = (config.runtime.output_dir / "run.log").read_text()
+    assert "gradient clips" in log
+    if scheme:
+        assert "per worker" in log
+
+
+@pytest.mark.parametrize("scheme", [None, "awc", "atc"])
+@pytest.mark.parametrize("maximum,clipped", [(1e-8, True), (1e8, False)])
+def test_epoch_counts_match_actual_norms(
+    tiny_config: Config, cache_dir: Path, scheme, maximum, clipped
+):
+    raw = tiny_config.model_dump()
+    raw["optimizer"]["grad_clip"] = maximum
+    if scheme:
+        raw["decentralized"] = dict(num_models=4, scheme=scheme)
+        raw["training"]["micro_batch_size"] = 1
+    config = Config.model_validate(raw)
+    train(config)
+    rows = [
+        json.loads(line)
+        for line in (config.runtime.output_dir / "metrics.jsonl").read_text().splitlines()
+    ]
+    for epoch in (1, 2):
+        updates = [row for row in rows if row["event"] == "train" and row["epoch"] == epoch]
+        summary = next(
+            row for row in rows if row["event"] == "validation" and row["epoch"] == epoch
+        )
+        counts = [0] * (4 if scheme else 1)
+        for row in updates:
+            norms = row.get("local_grad_norms", [row["grad_norm"]])
+            for worker, norm in enumerate(norms):
+                assert (norm > maximum) == clipped
+                counts[worker] += int(norm > maximum)
+        assert summary["grad_clip_count"] == sum(counts)
+        if scheme:
+            assert summary["local_grad_clip_counts"] == counts

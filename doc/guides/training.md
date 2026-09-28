@@ -314,6 +314,19 @@ are still logged and nonfinite gradients still stop training. The default is
 ordinary training and packed/sequential benchmarks. Changing it changes the
 recipe identity, so resuming requires the same clipping setting.
 
+Each epoch's `validation` record in `metrics.jsonl` includes `grad_clip_count`:
+the number of optimizer updates whose pre-clipping norm strictly exceeded the
+threshold. Counts cover every update, independently of `training.log_every`, and
+reset each virtual epoch. A norm equal to the threshold does not count; disabled
+clipping records zero. Gradient accumulation counts once per optimizer update.
+
+For decentralized training, `local_grad_clip_counts` lists counts in worker-index
+order, and `grad_clip_count` is their sum. If two workers clip in one update, that
+adds two to the total. Both AWC and ATC use this convention. Epoch summaries in
+`run.log` include the same counts. Resuming an epoch checkpoint starts fresh
+counters for the next epoch. The [results explorer](/tiny-llm/results/explorer/)
+can plot totals or individual workers from these logs.
+
 Optional adaptive consensus weakens mixing as the learning rate falls. The sample
 config retains its separate 32,768-token recipe and uses four workers,
 `start_frac=0.5`, and `p=1.0`:

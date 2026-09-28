@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Data } from 'plotly.js';
 import Plot from './Plot';
+import GradientClippingPlot, { type ClippingCurve } from './GradientClippingPlot';
 import {
   methods,
   schedules,
@@ -48,6 +49,7 @@ type State = {
   focus: boolean;
   yScale: 'linear' | 'log';
   gradScale: 'linear' | 'log';
+  clipWorker: number | null;
 };
 const defaults: State = {
   schedule: 'cosine',
@@ -65,6 +67,7 @@ const defaults: State = {
   focus: false,
   yScale: 'linear',
   gradScale: 'linear',
+  clipWorker: null,
 };
 const horizons = ['20', '40', '80', '120', '160'];
 const fmt = (v: number) => v.toFixed(6);
@@ -142,6 +145,13 @@ export default function CurrentExplorer({ data }: { data: Publication }) {
       next.focus = p.get('focus') === '1';
       next.yScale = p.get('yScale') === 'log' ? 'log' : 'linear';
       next.gradScale = p.get('gradScale') === 'log' ? 'log' : 'linear';
+      const clipWorker = p.get('clipWorker');
+      if (
+        clipWorker !== null &&
+        /^\d+$/.test(clipWorker) &&
+        Number.isSafeInteger(Number(clipWorker))
+      )
+        next.clipWorker = Number(clipWorker);
       setState((previous) => ({
         ...next,
         localRuns: previous.localRuns,
@@ -173,6 +183,7 @@ export default function CurrentExplorer({ data }: { data: Publication }) {
     if (state.focus) params.set('focus', '1');
     if (state.yScale === 'log') params.set('yScale', 'log');
     if (state.gradScale === 'log') params.set('gradScale', 'log');
+    if (state.clipWorker !== null) params.set('clipWorker', String(state.clipWorker));
     // A comma is a legal sub-delimiter and keeps eight pinned ids readable in the bar.
     const query = params.toString().replace(/%2C/g, ',');
     history.replaceState(null, '', location.pathname + '?' + query);
@@ -550,6 +561,34 @@ export default function CurrentExplorer({ data }: { data: Publication }) {
   );
   const missing = curveIds.filter((id) => failed.includes(id));
   const loading = curveIds.some((id) => lookup.has(id) && !curves[id] && !failed.includes(id));
+  const clippingCurves = useMemo<ClippingCurve[]>(
+    () =>
+      curveIds.flatMap((id, i) => {
+        const local = state.localRuns[id];
+        const group = lookup.get(id);
+        if (!local && !group) return [];
+        return [
+          {
+            id,
+            name: local ? 'Local · ' + (local.label || local.filename) : curveLabel(group!),
+            color: palette[i % palette.length],
+            symbol: seriesSymbols[i % seriesSymbols.length],
+            dash: local ? 'dot' : group!.schedule === 'wsd' ? 'dash' : 'solid',
+            local: Boolean(local),
+            runs: local
+              ? [{ points: local.gradientClipping }]
+              : group!.runs.map((run) => ({
+                  seed: run.seed,
+                  points: curves[id]?.runs.find((r) => r.seed === run.seed)?.gradientClipping ?? [],
+                })),
+          },
+        ];
+      }),
+    [curveIds, state.localRuns, lookup, palette, curves],
+  );
+  const setClipWorker = useCallback((worker: number | null) => {
+    setState((s) => ({ ...s, clipWorker: worker }));
+  }, []);
   function inspect(id: string) {
     const g = lookup.get(id);
     if (g)
@@ -1096,6 +1135,14 @@ export default function CurrentExplorer({ data }: { data: Publication }) {
             />
           </>
         )}
+        <GradientClippingPlot
+          curves={clippingCurves}
+          worker={state.clipWorker}
+          onWorkerChange={setClipWorker}
+          seeds={state.seeds}
+          focus={state.focus}
+          loading={loading}
+        />
       </section>
       {selected && (
         <section className="publication-section" aria-label="Selected configuration">

@@ -1,9 +1,11 @@
 import type { Point } from './types';
+import { parseClippingPoint, type GradientClippingPoint } from './clipping';
 
 export interface LocalMetrics {
   train: Point[];
   validation: Point[];
   gradientNorm: Point[];
+  gradientClipping: GradientClippingPoint[];
   warnings: string[];
 }
 
@@ -17,6 +19,7 @@ export const localSeriesLabels = {
   train: 'training loss',
   validation: 'subset-validation loss',
   gradientNorm: 'gradient norm',
+  gradientClipping: 'gradient clipping count',
 } as const;
 
 export function localRunLabel(filename: string, existing: string[]): string {
@@ -34,6 +37,7 @@ export function parseLocalMetrics(text: string, filename: string): LocalMetrics 
     gradientNorm: new Map<number, number>(),
   };
   const warnings: string[] = [];
+  const clipping = new Map<number, GradientClippingPoint>();
   const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/);
   const fail = (line: number, reason: string): never => {
     throw new Error(`${filename}, line ${line}: ${reason}`);
@@ -74,11 +78,29 @@ export function parseLocalMetrics(text: string, filename: string): LocalMetrics 
     if (event.event === 'train') {
       add('train', 'loss');
       add('gradientNorm', 'grad_norm');
-    } else add('validation', 'loss');
+    } else {
+      add('validation', 'loss');
+      if (event.grad_clip_count !== undefined || event.local_grad_clip_counts !== undefined) {
+        try {
+          const point = parseClippingPoint({
+            tokens: event.tokens,
+            epoch: event.epoch,
+            total: event.grad_clip_count,
+            workers:
+              event.local_grad_clip_counts === undefined
+                ? [event.grad_clip_count]
+                : event.local_grad_clip_counts,
+          });
+          clipping.set(point.tokens, point);
+        } catch (error) {
+          fail(index + 1, (error as Error).message);
+        }
+      }
+    }
   }
-  if (!Object.values(points).some((series) => series.size))
+  if (!clipping.size && !Object.values(points).some((series) => series.size))
     throw new Error(
-      `${filename}: no usable training loss, subset-validation loss, or gradient norm measurements.`,
+      `${filename}: no usable training loss, subset-validation loss, gradient norm, or clipping count measurements.`,
     );
   const sorted = (series: Map<number, number>): Point[] =>
     [...series].sort(([left], [right]) => left - right);
@@ -86,6 +108,7 @@ export function parseLocalMetrics(text: string, filename: string): LocalMetrics 
     train: sorted(points.train),
     validation: sorted(points.validation),
     gradientNorm: sorted(points.gradientNorm),
+    gradientClipping: [...clipping.values()].sort((a, b) => a.tokens - b.tokens),
     warnings,
   };
 }

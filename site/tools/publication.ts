@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { containerFor, type Publication, type RecordedCurve } from '../src/lib/current.ts';
 import { mean, sd, validatePoints } from '../src/lib/statistics.ts';
+import { validateClippingSeries } from '../src/lib/clipping.ts';
 
 export const publicationRoot = fileURLToPath(
   new URL('../../doc/data/current-training/', import.meta.url),
@@ -77,6 +78,7 @@ export function loadPublication(root = publicationRoot): Publication {
       .find((c) => c.schedule === group.schedule && c.method === group.method)!
       .stages.find((s) => s.horizon === group.horizon)!;
     for (const r of curve.runs) {
+      if (r.gradientClipping !== undefined) validateClippingSeries(r.gradientClipping);
       near(r.final, group.runs.find((s) => s.seed === r.seed)!.loss);
       assert.equal(r.validation.length, stage.epochs);
       for (const points of [r.train, r.validation]) {

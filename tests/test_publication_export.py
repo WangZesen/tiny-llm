@@ -77,6 +77,51 @@ def test_continuation_discards_parent_decay_and_rejects_overlap():
         stitch([], [[20, 4], [10, 3]], 0)
 
 
+def test_optional_gradient_clipping_curve_and_continuation():
+    curve = publication["gradient_clipping_curve"]
+    legacy = dict(event="validation", tokens=10, epoch=1, loss=4)
+    assert curve([legacy]) == []
+    sync = dict(legacy, grad_clip_count=0)
+    packed = dict(sync, tokens=20, epoch=2, grad_clip_count=3, local_grad_clip_counts=[1, 2])
+    expected = [
+        dict(tokens=10, epoch=1, total=0, workers=[0]),
+        dict(tokens=20, epoch=2, total=3, workers=[1, 2]),
+    ]
+    assert curve([sync, packed]) == expected
+    # Parent decay is discarded; missing historical counts are not invented.
+    child = dict(packed, grad_clip_count=5, local_grad_clip_counts=[2, 3])
+    assert curve([child], expected, 10) == [expected[0], dict(expected[1], total=5, workers=[2, 3])]
+    assert curve([child], [], 10) == [dict(expected[1], total=5, workers=[2, 3])]
+    assert curve([dict(legacy, tokens=30, epoch=3)], expected, 20) == expected
+    with pytest.raises(ValueError, match="precede"):
+        curve([sync], expected, 10)
+    with pytest.raises(ValueError, match="Nonmonotonic"):
+        curve([packed, sync])
+    with pytest.raises(ValueError, match="Nonmonotonic"):
+        curve([sync, dict(packed, epoch=1)])
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"grad_clip_count": -1},
+        {"grad_clip_count": 0.5},
+        {"grad_clip_count": True},
+        {"grad_clip_count": 2**53},
+        {"epoch": 0},
+        {"tokens": -1},
+        {"local_grad_clip_counts": []},
+        {"local_grad_clip_counts": None},
+        {"local_grad_clip_counts": [1, -1]},
+        {"local_grad_clip_counts": [0, 1]},
+    ],
+)
+def test_invalid_gradient_clipping_counts_rejected(change):
+    event = dict(event="validation", tokens=10, epoch=1, grad_clip_count=0)
+    with pytest.raises(ValueError):
+        publication["gradient_clipping_curve"]([dict(event, **change)])
+
+
 def test_steady_rate_uses_tokens_over_time_and_excludes_crossing_warmup_window():
     events = [
         dict(event="train", step=300, tokens=3000, training_seconds=100),
@@ -138,6 +183,11 @@ def test_strip_metrics_deletes_only_the_per_worker_arrays():
     assert dropped == ["local_grad_norms", "local_losses"]
     assert text == b'{"event": "train", "step": 20, "loss": 9.5, "tokens": 2621440}\n'
     assert json.loads(text)["loss"] == json.loads(packed)["loss"]
+    counts = (
+        b'{"event": "validation", "epoch": 1, "tokens": 2621440, '
+        b'"grad_clip_count": 3, "local_grad_clip_counts": [1, 2]}\n'
+    )
+    assert strip(counts) == (counts, [])
 
 
 def test_container_entries_and_hashes_detect_corrupt_or_missing_sources(tmp_path):

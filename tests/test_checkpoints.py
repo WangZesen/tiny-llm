@@ -168,6 +168,17 @@ def test_epoch_continuation_and_retention(tiny_config: Config, cache_dir: Path, 
         for line in (branch.runtime.output_dir / "metrics.jsonl").read_text().splitlines()
     ]
     assert {row["epoch"] for row in events if row["event"] == "train"} == {2}
+    original_events = [
+        json.loads(line) for line in (output / "metrics.jsonl").read_text().splitlines()
+    ]
+    expected_counts = next(
+        row for row in original_events if row["event"] == "validation" and row["epoch"] == 2
+    )
+    resumed_counts = next(row for row in events if row["event"] == "validation")
+    assert resumed_counts["epoch"] == 2
+    assert resumed_counts["grad_clip_count"] == expected_counts["grad_clip_count"]
+    if workers > 1:
+        assert resumed_counts["local_grad_clip_counts"] == expected_counts["local_grad_clip_counts"]
     # Analysis accepts retention changes and reads the same epoch weights.
     branch.training.checkpoint_policy = "final"
     a, info = load_checkpoint(branch, epoch)

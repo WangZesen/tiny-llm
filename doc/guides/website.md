@@ -96,7 +96,7 @@ article, and performance article. Keep those table markers intact.
 In the [current results explorer](/tiny-llm/results/explorer/), choose **Add local runs**
 and select one or more plain `metrics.jsonl` files. Each file joins the trajectory
 comparison as a single run, with an editable name and matching colors in the loss
-and gradient-norm charts. Dotted lines identify local runs. The comparison holds
+and gradient-norm and clipping-count charts. Dotted lines identify local runs. The comparison holds
 up to eight published configurations and local runs combined.
 
 Files are read in your browser without uploading them. Imports survive filter
@@ -109,6 +109,22 @@ curves. Unfinished logs and missing series are supported, and an incomplete fina
 record is skipped with a warning. Repeated token positions use the last logged
 measurement. Each file contributes only its own history; continuation parents
 are not reconstructed. Local runs do not change published rankings or statistics.
+
+The **Gradient clipping per epoch** chart reads `validation.grad_clip_count` and
+`validation.local_grad_clip_counts`. Each point shows that epoch's count at its
+ending global token count; hover shows the epoch number and count. **Clipping
+count view** defaults to **Total**, the sum across workers, and can select an
+individual worker. Synchronous runs have only Worker 0. Runs without the selected
+worker are omitted and identified below the chart.
+
+The chart shares comparison colors, names, seed display, and final-half focus
+with the other plots. Published configurations show the mean across available
+seeds and sample SD bands, bounded below by zero; individual seeds and imported
+runs show exact counts. Counts are per epoch, not cumulative. The linear count
+axis includes zero, including runs with clipping disabled. Worker selection is
+saved in comparison links, and resets to Total when that worker is unavailable.
+Older logs remain usable for the other charts, but their missing clipping counts
+are not treated as zero or reconstructed from sampled gradient norms.
 
 ### Preview the website
 
