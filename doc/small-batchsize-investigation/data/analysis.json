@@ -95059,6 +95059,168 @@
       "batch_ticks": null,
       "vector": true,
       "symlog_linear_threshold": null
+    },
+    "heatmap-clipped-b16": {
+      "batch_ticks": null,
+      "vector": true,
+      "cell_count": 210,
+      "scope": "complete seed-42 Cartesian screening grid",
+      "color_scale": {
+        "normalization": "symlog",
+        "linthresh": 0.01,
+        "linscale": 1.0,
+        "base": 10,
+        "vmin": 0.0,
+        "vmax": 2.096607101183933,
+        "cmap": "cividis",
+        "saturation": false,
+        "shared_across": "all 1418 cells in nine figures"
+      },
+      "data_file": "data/heatmap-cells.json"
+    },
+    "heatmap-clipped-b32": {
+      "batch_ticks": null,
+      "vector": true,
+      "cell_count": 210,
+      "scope": "complete seed-42 Cartesian screening grid",
+      "color_scale": {
+        "normalization": "symlog",
+        "linthresh": 0.01,
+        "linscale": 1.0,
+        "base": 10,
+        "vmin": 0.0,
+        "vmax": 2.096607101183933,
+        "cmap": "cividis",
+        "saturation": false,
+        "shared_across": "all 1418 cells in nine figures"
+      },
+      "data_file": "data/heatmap-cells.json"
+    },
+    "heatmap-clipped-b64": {
+      "batch_ticks": null,
+      "vector": true,
+      "cell_count": 210,
+      "scope": "complete seed-42 Cartesian screening grid",
+      "color_scale": {
+        "normalization": "symlog",
+        "linthresh": 0.01,
+        "linscale": 1.0,
+        "base": 10,
+        "vmin": 0.0,
+        "vmax": 2.096607101183933,
+        "cmap": "cividis",
+        "saturation": false,
+        "shared_across": "all 1418 cells in nine figures"
+      },
+      "data_file": "data/heatmap-cells.json"
+    },
+    "heatmap-clipped-b128": {
+      "batch_ticks": null,
+      "vector": true,
+      "cell_count": 210,
+      "scope": "complete seed-42 Cartesian screening grid",
+      "color_scale": {
+        "normalization": "symlog",
+        "linthresh": 0.01,
+        "linscale": 1.0,
+        "base": 10,
+        "vmin": 0.0,
+        "vmax": 2.096607101183933,
+        "cmap": "cividis",
+        "saturation": false,
+        "shared_across": "all 1418 cells in nine figures"
+      },
+      "data_file": "data/heatmap-cells.json"
+    },
+    "heatmap-unclipped-b16": {
+      "batch_ticks": null,
+      "vector": true,
+      "cell_count": 120,
+      "scope": "complete seed-42 Cartesian screening grid",
+      "color_scale": {
+        "normalization": "symlog",
+        "linthresh": 0.01,
+        "linscale": 1.0,
+        "base": 10,
+        "vmin": 0.0,
+        "vmax": 2.096607101183933,
+        "cmap": "cividis",
+        "saturation": false,
+        "shared_across": "all 1418 cells in nine figures"
+      },
+      "data_file": "data/heatmap-cells.json"
+    },
+    "heatmap-unclipped-b32": {
+      "batch_ticks": null,
+      "vector": true,
+      "cell_count": 120,
+      "scope": "complete seed-42 Cartesian screening grid",
+      "color_scale": {
+        "normalization": "symlog",
+        "linthresh": 0.01,
+        "linscale": 1.0,
+        "base": 10,
+        "vmin": 0.0,
+        "vmax": 2.096607101183933,
+        "cmap": "cividis",
+        "saturation": false,
+        "shared_across": "all 1418 cells in nine figures"
+      },
+      "data_file": "data/heatmap-cells.json"
+    },
+    "heatmap-unclipped-b64": {
+      "batch_ticks": null,
+      "vector": true,
+      "cell_count": 120,
+      "scope": "complete seed-42 Cartesian screening grid",
+      "color_scale": {
+        "normalization": "symlog",
+        "linthresh": 0.01,
+        "linscale": 1.0,
+        "base": 10,
+        "vmin": 0.0,
+        "vmax": 2.096607101183933,
+        "cmap": "cividis",
+        "saturation": false,
+        "shared_across": "all 1418 cells in nine figures"
+      },
+      "data_file": "data/heatmap-cells.json"
+    },
+    "heatmap-unclipped-b128": {
+      "batch_ticks": null,
+      "vector": true,
+      "cell_count": 120,
+      "scope": "complete seed-42 Cartesian screening grid",
+      "color_scale": {
+        "normalization": "symlog",
+        "linthresh": 0.01,
+        "linscale": 1.0,
+        "base": 10,
+        "vmin": 0.0,
+        "vmax": 2.096607101183933,
+        "cmap": "cividis",
+        "saturation": false,
+        "shared_across": "all 1418 cells in nine figures"
+      },
+      "data_file": "data/heatmap-cells.json"
+    },
+    "heatmap-sync": {
+      "batch_ticks": null,
+      "vector": true,
+      "cell_count": 98,
+      "scope": "Available initial beta1=.9 candidates only: current screening plus broad historical B128; later beta1 sensitivity and fresh reference repeat excluded",
+      "color_scale": {
+        "normalization": "symlog",
+        "linthresh": 0.01,
+        "linscale": 1.0,
+        "base": 10,
+        "vmin": 0.0,
+        "vmax": 2.096607101183933,
+        "cmap": "cividis",
+        "saturation": false,
+        "shared_across": "all 1418 cells in nine figures"
+      },
+      "data_file": "data/heatmap-cells.json"
     }
   }
 }

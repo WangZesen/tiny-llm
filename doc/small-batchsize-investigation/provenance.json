@@ -2177,7 +2177,7 @@
     },
     {
       "file": "data/analysis.json",
-      "sha256": "a4d37371d9ad394c4f8a38b24c95f4e5d3430dc7e6658ea36597fd7d8f0f0d46"
+      "sha256": "3849d480dada2acdf70765f7183ba17ba8caf59f64360ec57af748a01e55acd8"
     },
     {
       "file": "data/configuration-identities.json",
@@ -2186,6 +2186,10 @@
     {
       "file": "data/gaps.csv",
       "sha256": "df2c117c0c41947dc87f1bd8f25945929b5d7a683f7ef4b34f3ac53cf792546c"
+    },
+    {
+      "file": "data/heatmap-cells.json",
+      "sha256": "891e2aee914fcefce539e56c0f2c2d91489855e0d6c710fee7a5af0ff6b6c8c5"
     },
     {
       "file": "data/matched-screening.csv",
@@ -2252,6 +2256,78 @@
     {
       "file": "assets/gap.svg",
       "sha256": "4cec83d718410ac53877d30a8a3ed2042cadf672306a10233efc78c642a512d5"
+    },
+    {
+      "file": "assets/heatmap-clipped-b128.pdf",
+      "sha256": "dfe9406740228b1a570d62db76d0ec851447d604234956d8603896487291ff75"
+    },
+    {
+      "file": "assets/heatmap-clipped-b128.svg",
+      "sha256": "b669cc35be150f3c7b3834b3efcaaaa80cb785b6661c69d15e6008d337de23ed"
+    },
+    {
+      "file": "assets/heatmap-clipped-b16.pdf",
+      "sha256": "147f6f9e2a461d8820e9bff3299acfb15048665a7fe9814b17134457518009c1"
+    },
+    {
+      "file": "assets/heatmap-clipped-b16.svg",
+      "sha256": "a36569111261fe8dbd6c7c8ce489aa5335a6aebf53c11fe5955596a0d2c3c4aa"
+    },
+    {
+      "file": "assets/heatmap-clipped-b32.pdf",
+      "sha256": "adfe93f0125214dc4e7e124b1efdc0fe12fe64e103e81d63b3718dde466ce7a8"
+    },
+    {
+      "file": "assets/heatmap-clipped-b32.svg",
+      "sha256": "9efb4af65a111eaa0c2e292770c38425787d1df95cac4fb3ada9481eea0ed702"
+    },
+    {
+      "file": "assets/heatmap-clipped-b64.pdf",
+      "sha256": "a610f27bf251fca9ac9c3cd7ba3fd69a5f0e372a25ec436143cc1541bc0f27fc"
+    },
+    {
+      "file": "assets/heatmap-clipped-b64.svg",
+      "sha256": "a71b5feed3b629f121a39b48b02c5e149573c5ad521b8dd41dccd9e3c45c2c41"
+    },
+    {
+      "file": "assets/heatmap-sync.pdf",
+      "sha256": "bfb75c69bbe2448e03bbda9fec280da60ee5fd913dd4d26b9a542ea87090c94a"
+    },
+    {
+      "file": "assets/heatmap-sync.svg",
+      "sha256": "8cd40a277457649b8ea2a6f33729560f8fb2584cc4bf42e0dc7483444efb1895"
+    },
+    {
+      "file": "assets/heatmap-unclipped-b128.pdf",
+      "sha256": "885643f397cb5c0cbc3af5106df64191bf277a8cc65b20b44451561a41d14505"
+    },
+    {
+      "file": "assets/heatmap-unclipped-b128.svg",
+      "sha256": "171e033f52c72c26d0497482a0ec0ef59bcfc4ad859f12cade5299a73db3f825"
+    },
+    {
+      "file": "assets/heatmap-unclipped-b16.pdf",
+      "sha256": "3c4281f20dd40a4573784028facd7a1a0407dd2a99b747c083867a72711b3fbd"
+    },
+    {
+      "file": "assets/heatmap-unclipped-b16.svg",
+      "sha256": "2a83744d9eab07e41f025258965bd94812cab51e15520181387ee96684069c22"
+    },
+    {
+      "file": "assets/heatmap-unclipped-b32.pdf",
+      "sha256": "aa0b0c1f5f6e8b3ec573d93661b4f0c0243cb78e1368b27ec7c7f2bf994ce248"
+    },
+    {
+      "file": "assets/heatmap-unclipped-b32.svg",
+      "sha256": "2e337c7e4e374468a194815038f6123cd09768a5412a4819a2daee4f8896220c"
+    },
+    {
+      "file": "assets/heatmap-unclipped-b64.pdf",
+      "sha256": "d1c73153c2da887e3a47d66f3fdb049c3628ba3dbbff0ec4f9d34a28dbc6d70e"
+    },
+    {
+      "file": "assets/heatmap-unclipped-b64.svg",
+      "sha256": "5c90c5f4bbf8bd0d0ae0813ea19d97388b8ee421d49b36e6102e975d5120438e"
     },
     {
       "file": "assets/matched-grid.pdf",

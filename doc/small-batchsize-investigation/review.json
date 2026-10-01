@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "passed",
-  "reviewed_at_utc": "2026-10-01T09:28:31.702006+00:00",
+  "reviewed_at_utc": "2026-10-01T13:32:53.169512+00:00",
   "evidence_as_of": "2026-10-01",
   "visual_review": {
     "status": "passed",
@@ -49,22 +49,298 @@
       25,
       26,
       27,
-      28
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37
     ],
     "slides": "13 pages, 16:9; white backgrounds, navy headings, consistent method colors, vector figures, source footers",
-    "report": "28 A4 pages, including three landscape pages for full replication tables",
+    "report": "37 A4 pages, including three landscape replication tables and nine landscape heatmap pages",
     "checks": [
       "Readable typography at presentation/document scale",
       "No text or figure overflow or overlap",
       "Figure axes and labels visible",
       "Only 16, 32, 64 and 128 appear on numerical batch axes",
-      "Sample SD and missing measurements labeled"
+      "Sample SD and missing measurements labeled",
+      "All nine heatmap pages: legible cell annotations, full color bars, panel titles, captions and historical/missing-data labels"
     ],
     "render_commands": [
       "pdftoppm -scale-to 1600 -png slides.pdf /tmp/small-batch-slide",
       "pdftoppm -scale-to 1600 -png report.pdf /tmp/small-batch-report"
     ],
-    "rendered_previews_retained_in_package": false
+    "rendered_previews_retained_in_package": false,
+    "new_pages_inspected": [
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37
+    ],
+    "original_pages": "Pages 1\u201328 were previously visually reviewed and their current rendered PNGs are byte-identical to those review images.",
+    "original_page_checks": [
+      {
+        "page": 1,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-01.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-01.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "aa7c53f4fc965f1614029236e7cd3c401e9e73537878422aad123fc2af064299",
+        "render_sha256": "aa7c53f4fc965f1614029236e7cd3c401e9e73537878422aad123fc2af064299"
+      },
+      {
+        "page": 2,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-02.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-02.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "aa5ea4422a0e5e88fdd6e4bf397671f665fbb87acd360dfb9777875d32d1a62a",
+        "render_sha256": "aa5ea4422a0e5e88fdd6e4bf397671f665fbb87acd360dfb9777875d32d1a62a"
+      },
+      {
+        "page": 3,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-03.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-03.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "ee2c89b5e034360d42ee5d59f3ee3cc52eb883b5b14f48606dc2b2eafa7cbafa",
+        "render_sha256": "ee2c89b5e034360d42ee5d59f3ee3cc52eb883b5b14f48606dc2b2eafa7cbafa"
+      },
+      {
+        "page": 4,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-04.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-04.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "8afef66d40d099c324b0e745bdf7ef35ef305462cb64f150b8ef0e62a6faae5d",
+        "render_sha256": "8afef66d40d099c324b0e745bdf7ef35ef305462cb64f150b8ef0e62a6faae5d"
+      },
+      {
+        "page": 5,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-05.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-05.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "68f331ab84ae444986f62e9d3f2f32a5852d3611a6cae4fe9a02752d2e04c364",
+        "render_sha256": "68f331ab84ae444986f62e9d3f2f32a5852d3611a6cae4fe9a02752d2e04c364"
+      },
+      {
+        "page": 6,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-06.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-06.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "559c82925b81dbb40845fc3283b9d17eca107a532e2ddb8f02c89766e423a1d6",
+        "render_sha256": "559c82925b81dbb40845fc3283b9d17eca107a532e2ddb8f02c89766e423a1d6"
+      },
+      {
+        "page": 7,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-07.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-07.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "c19551dff723205269f4a1e97682a241e97c813ba2a39584d9abf39c39715be6",
+        "render_sha256": "c19551dff723205269f4a1e97682a241e97c813ba2a39584d9abf39c39715be6"
+      },
+      {
+        "page": 8,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-08.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-08.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "aa92451371055de94655fdedc4100b591b2874857f84f6cf8535d47ae0abb9b0",
+        "render_sha256": "aa92451371055de94655fdedc4100b591b2874857f84f6cf8535d47ae0abb9b0"
+      },
+      {
+        "page": 9,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-09.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-09.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "b4d608732bd835e006d70f1e84f8f0eb11931c4cf6dc50de809c2d7840ac66a1",
+        "render_sha256": "b4d608732bd835e006d70f1e84f8f0eb11931c4cf6dc50de809c2d7840ac66a1"
+      },
+      {
+        "page": 10,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-10.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-10.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "6aa2b9cc9b77c60bc9dc7a5bc1e38d43d59528f074f670d26c1fe1f9c8d26fb1",
+        "render_sha256": "6aa2b9cc9b77c60bc9dc7a5bc1e38d43d59528f074f670d26c1fe1f9c8d26fb1"
+      },
+      {
+        "page": 11,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-11.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-11.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "1cbddef8c465921eeb9fdfddcc523aa7055ca8f79d772ca29f9e17130b38987d",
+        "render_sha256": "1cbddef8c465921eeb9fdfddcc523aa7055ca8f79d772ca29f9e17130b38987d"
+      },
+      {
+        "page": 12,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-12.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-12.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "1cd466ce4b7405c36435a01f32c871c2aab9da48d667cb43d802bde97f9f260f",
+        "render_sha256": "1cd466ce4b7405c36435a01f32c871c2aab9da48d667cb43d802bde97f9f260f"
+      },
+      {
+        "page": 13,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-13.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-13.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "592aed4c63ac8a0e781c69a0bcc727d189bbdf93adb3b76f8076676a96d117fe",
+        "render_sha256": "592aed4c63ac8a0e781c69a0bcc727d189bbdf93adb3b76f8076676a96d117fe"
+      },
+      {
+        "page": 14,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-14.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-14.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "9f2753d825a7dc6e923ee1866a5fd4a8cd5214e2b93dea560b4504ee1adeff1c",
+        "render_sha256": "9f2753d825a7dc6e923ee1866a5fd4a8cd5214e2b93dea560b4504ee1adeff1c"
+      },
+      {
+        "page": 15,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-15.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-15.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "ca681dc2d43e56c0c908be9e6c4280ead9ea46cfaad8727454c073e6fe7d9cc6",
+        "render_sha256": "ca681dc2d43e56c0c908be9e6c4280ead9ea46cfaad8727454c073e6fe7d9cc6"
+      },
+      {
+        "page": 16,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-16.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-16.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "c754c48670aa5bfec0d1a6d62b97532f98b7cd6e79a67b20750ffd4012020cef",
+        "render_sha256": "c754c48670aa5bfec0d1a6d62b97532f98b7cd6e79a67b20750ffd4012020cef"
+      },
+      {
+        "page": 17,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-17.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-17.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "dc3e85561c78e803f166ef3ba99812c87677ddb5907d5b1749bf2fb7c8bc6bdc",
+        "render_sha256": "dc3e85561c78e803f166ef3ba99812c87677ddb5907d5b1749bf2fb7c8bc6bdc"
+      },
+      {
+        "page": 18,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-18.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-18.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "890f8ad0e47a15398859b84a1240600421c485d92b93df2c67b318eaf8443910",
+        "render_sha256": "890f8ad0e47a15398859b84a1240600421c485d92b93df2c67b318eaf8443910"
+      },
+      {
+        "page": 19,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-19.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-19.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "d6047f33bd685114f44dbe0587024485c7d6175207c0f66c134728e30509a778",
+        "render_sha256": "d6047f33bd685114f44dbe0587024485c7d6175207c0f66c134728e30509a778"
+      },
+      {
+        "page": 20,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-20.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-20.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "78c4ed2430e2eb9d8414f5e1c6b5e015a422f06cc56ef6cfe9e154836f24ac5c",
+        "render_sha256": "78c4ed2430e2eb9d8414f5e1c6b5e015a422f06cc56ef6cfe9e154836f24ac5c"
+      },
+      {
+        "page": 21,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-21.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-21.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "6f3b42ef9c40789721b486dfd957de1d1753b3037130aa295d769ba9d1dcca87",
+        "render_sha256": "6f3b42ef9c40789721b486dfd957de1d1753b3037130aa295d769ba9d1dcca87"
+      },
+      {
+        "page": 22,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-22.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-22.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "df5dc43788364993800c7aa9a4d15ffbe519a3304d8af7d705587e66b6da40d0",
+        "render_sha256": "df5dc43788364993800c7aa9a4d15ffbe519a3304d8af7d705587e66b6da40d0"
+      },
+      {
+        "page": 23,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-23.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-23.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "5005504b617f69b22e9f5f492feef4dd9ed79310f14f699ba63cb7bb41f669c1",
+        "render_sha256": "5005504b617f69b22e9f5f492feef4dd9ed79310f14f699ba63cb7bb41f669c1"
+      },
+      {
+        "page": 24,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-24.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-24.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "ba1760bbe5ba7c372d3cf5617dfae088232af7d60b49190d9c39e4ea2b2c0993",
+        "render_sha256": "ba1760bbe5ba7c372d3cf5617dfae088232af7d60b49190d9c39e4ea2b2c0993"
+      },
+      {
+        "page": 25,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-25.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-25.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "4243f1ffa3f3f947d462c04a44f129386c0f4e37befae46435c20ea631bc5067",
+        "render_sha256": "4243f1ffa3f3f947d462c04a44f129386c0f4e37befae46435c20ea631bc5067"
+      },
+      {
+        "page": 26,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-26.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-26.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "47ef2cce42054f53d03caed3bad7785560d8548d87f22a274e2610a36432550c",
+        "render_sha256": "47ef2cce42054f53d03caed3bad7785560d8548d87f22a274e2610a36432550c"
+      },
+      {
+        "page": 27,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-27.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-27.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "97e4e237d875c3867666bff3afa0333d91fa785081f73f4167dc28bb00e27cbc",
+        "render_sha256": "97e4e237d875c3867666bff3afa0333d91fa785081f73f4167dc28bb00e27cbc"
+      },
+      {
+        "page": 28,
+        "reference": "/tmp/small-batch-doc-review-20261001/report-28.png",
+        "render": "/tmp/small-batch-heatmap-portability-292o4zsr/render/report-28.png",
+        "reference_exists": true,
+        "identical": true,
+        "reference_sha256": "7cbed641dc79bcb0931a050492e29a9635ccac000d94bc35cbe4806906f70e1e",
+        "render_sha256": "7cbed641dc79bcb0931a050492e29a9635ccac000d94bc35cbe4806906f70e1e"
+      }
+    ]
   },
   "scientific_review": {
     "status": "passed",
@@ -76,7 +352,10 @@
       "Frozen screening eligibility, full-configuration identities including clipping, imported-result deduplication",
       "480 matched seed-42 pairs and 13 matched three-seed recipes",
       "Earlier synchronous fresh-seed confirmation separated from final conditional beta1 recipes",
-      "Optimizer ordering, clipped gradient, Adam bias correction and half-life notation reviewed"
+      "Optimizer ordering, clipped gradient, Adam bias correction and half-life notation reviewed",
+      "All 1,418 heatmap cells and displayed rounded annotations checked against bundled seed-42 source records",
+      "Shared unsaturated color normalization, per-method/batch minima, 32 historical tags and two untested synchronous cells verified",
+      "Initial synchronous beta1=0.9 screening kept separate from later conditional beta1 tuning"
     ],
     "interpretation_limits": [
       "Findings apply to the tested model, cache, budgets and finite grids",
@@ -93,8 +372,8 @@
     "provenance": {
       "bundled_extracts": 42,
       "indexed_sources": 261,
-      "derived_files": 10,
-      "figure_files": 20,
+      "derived_files": 11,
+      "figure_files": 38,
       "original_sources_checked": true
     },
     "statistics": {
@@ -120,8 +399,29 @@
       "loss_differences_and_perplexity": true,
       "beta2_profile_cells": 28
     },
+    "heatmaps": {
+      "figures": 9,
+      "clipped_cells": 840,
+      "unclipped_cells": 480,
+      "synchronous_cells": 98,
+      "historical_cells": 32,
+      "raw_losses_and_differences_verified": true,
+      "normalization": {
+        "normalization": "symlog",
+        "linthresh": 0.01,
+        "linscale": 1.0,
+        "base": 10,
+        "vmin": 0.0,
+        "vmax": 2.096607101183933,
+        "cmap": "cividis",
+        "saturation": false,
+        "shared_across": "all 1418 cells in nine figures"
+      },
+      "rounded_cell_annotations_checked_in_svg": 1418,
+      "source": "bundled seed-42 records only; no interpolated or newly trained measurements"
+    },
     "figures": {
-      "figures": 10,
+      "figures": 19,
       "vector_formats": [
         "pdf",
         "svg"
@@ -147,17 +447,36 @@
         "throughput.pdf": "13358952b4a451ca40e4afec6d78e767f043ac47347ec82a1a25043b7e691c4e",
         "throughput.svg": "b72d16633f5c80b1d2ca3b384a1423aae98479381454e5a89526495740afd56e",
         "replication.pdf": "26ec9917306898f6e291d546ba826b2038f0b4960caf95fad2e18241f126d21d",
-        "replication.svg": "b1bbd276c2324cccb8baea368acf22bb3770c91d46368f90729a933b8e684088"
+        "replication.svg": "b1bbd276c2324cccb8baea368acf22bb3770c91d46368f90729a933b8e684088",
+        "heatmap-clipped-b16.pdf": "147f6f9e2a461d8820e9bff3299acfb15048665a7fe9814b17134457518009c1",
+        "heatmap-clipped-b16.svg": "a36569111261fe8dbd6c7c8ce489aa5335a6aebf53c11fe5955596a0d2c3c4aa",
+        "heatmap-clipped-b32.pdf": "adfe93f0125214dc4e7e124b1efdc0fe12fe64e103e81d63b3718dde466ce7a8",
+        "heatmap-clipped-b32.svg": "9efb4af65a111eaa0c2e292770c38425787d1df95cac4fb3ada9481eea0ed702",
+        "heatmap-clipped-b64.pdf": "a610f27bf251fca9ac9c3cd7ba3fd69a5f0e372a25ec436143cc1541bc0f27fc",
+        "heatmap-clipped-b64.svg": "a71b5feed3b629f121a39b48b02c5e149573c5ad521b8dd41dccd9e3c45c2c41",
+        "heatmap-clipped-b128.pdf": "dfe9406740228b1a570d62db76d0ec851447d604234956d8603896487291ff75",
+        "heatmap-clipped-b128.svg": "b669cc35be150f3c7b3834b3efcaaaa80cb785b6661c69d15e6008d337de23ed",
+        "heatmap-unclipped-b16.pdf": "3c4281f20dd40a4573784028facd7a1a0407dd2a99b747c083867a72711b3fbd",
+        "heatmap-unclipped-b16.svg": "2a83744d9eab07e41f025258965bd94812cab51e15520181387ee96684069c22",
+        "heatmap-unclipped-b32.pdf": "aa0b0c1f5f6e8b3ec573d93661b4f0c0243cb78e1368b27ec7c7f2bf994ce248",
+        "heatmap-unclipped-b32.svg": "2e337c7e4e374468a194815038f6123cd09768a5412a4819a2daee4f8896220c",
+        "heatmap-unclipped-b64.pdf": "d1c73153c2da887e3a47d66f3fdb049c3628ba3dbbff0ec4f9d34a28dbc6d70e",
+        "heatmap-unclipped-b64.svg": "5c90c5f4bbf8bd0d0ae0813ea19d97388b8ee421d49b36e6102e975d5120438e",
+        "heatmap-unclipped-b128.pdf": "885643f397cb5c0cbc3af5106df64191bf277a8cc65b20b44451561a41d14505",
+        "heatmap-unclipped-b128.svg": "171e033f52c72c26d0497482a0ec0ef59bcfc4ad859f12cade5299a73db3f825",
+        "heatmap-sync.pdf": "bfb75c69bbe2448e03bbda9fec280da60ee5fd913dd4d26b9a542ea87090c94a",
+        "heatmap-sync.svg": "8cd40a277457649b8ea2a6f33729560f8fb2584cc4bf42e0dc7483444efb1895"
       }
     },
     "documents": {
       "slide_pages": 13,
-      "report_pages": 28,
+      "report_pages": 37,
       "slide_aspect_ratio": "16:9",
       "report_paper": "A4",
       "text_within_page_bounds": true,
       "recomputed_numeric_callouts": 16,
-      "replicated_report_values": 382
+      "replicated_report_values": 382,
+      "heatmap_appendix_pages": 9
     }
   },
   "portable_rebuild": {
@@ -169,53 +488,283 @@
     "campaign_paths_required": false,
     "rebuilt_from_bundled_data": true,
     "pdf_and_figures_byte_identical": true,
-    "compared_files": {
-      "data/analysis.json": true,
-      "assets/throughput.pdf": true,
-      "assets/replication.pdf": true,
-      "assets/beta2.svg": true,
-      "assets/clipping.svg": true,
-      "assets/gap.pdf": true,
-      "assets/clipping.pdf": true,
-      "assets/beta2.pdf": true,
-      "assets/beta1.pdf": true,
-      "assets/matched-grid.pdf": true,
-      "assets/gap.svg": true,
-      "assets/quality.pdf": true,
-      "assets/replication.svg": true,
-      "assets/retuned.svg": true,
-      "assets/beta1.svg": true,
-      "assets/throughput.svg": true,
-      "assets/retuned.pdf": true,
-      "assets/ablation.svg": true,
-      "assets/quality.svg": true,
-      "assets/ablation.pdf": true,
-      "assets/matched-grid.svg": true,
-      "slides.pdf": true,
-      "report.pdf": true
-    }
+    "asset_count": 38,
+    "compared_artifacts": [
+      {
+        "path": "slides.pdf",
+        "reference_sha256": "8846cfca7d9ee834feaa9f7dc15402712dc693ff7e5daadf9a85d3f9156d689c",
+        "portable_sha256": "8846cfca7d9ee834feaa9f7dc15402712dc693ff7e5daadf9a85d3f9156d689c",
+        "identical": true
+      },
+      {
+        "path": "report.pdf",
+        "reference_sha256": "78f3405807a53954c419a410954f35ec9fb65a7cdffc463267da5c5ad2783fc5",
+        "portable_sha256": "78f3405807a53954c419a410954f35ec9fb65a7cdffc463267da5c5ad2783fc5",
+        "identical": true
+      },
+      {
+        "path": "data/heatmap-cells.json",
+        "reference_sha256": "891e2aee914fcefce539e56c0f2c2d91489855e0d6c710fee7a5af0ff6b6c8c5",
+        "portable_sha256": "891e2aee914fcefce539e56c0f2c2d91489855e0d6c710fee7a5af0ff6b6c8c5",
+        "identical": true
+      },
+      {
+        "path": "assets/ablation.pdf",
+        "reference_sha256": "718d221ffddd64f413af8add06f11137c9d8d4d2072f2ad2c705b5f331c8d600",
+        "portable_sha256": "718d221ffddd64f413af8add06f11137c9d8d4d2072f2ad2c705b5f331c8d600",
+        "identical": true
+      },
+      {
+        "path": "assets/ablation.svg",
+        "reference_sha256": "218a37db4ff5770bd36d1f851c70edb74855835f16c4fb6ee9c58f35447e484b",
+        "portable_sha256": "218a37db4ff5770bd36d1f851c70edb74855835f16c4fb6ee9c58f35447e484b",
+        "identical": true
+      },
+      {
+        "path": "assets/beta1.pdf",
+        "reference_sha256": "010f2ddac82db3ebd7cb7e9cbcc55fbf0d9f713a0356f6bbda3aa2cd99273c03",
+        "portable_sha256": "010f2ddac82db3ebd7cb7e9cbcc55fbf0d9f713a0356f6bbda3aa2cd99273c03",
+        "identical": true
+      },
+      {
+        "path": "assets/beta1.svg",
+        "reference_sha256": "9879042ca6170d3b28ebf3bb6b2ae824a6e1fab602eca30eb7f5f3284843c2f1",
+        "portable_sha256": "9879042ca6170d3b28ebf3bb6b2ae824a6e1fab602eca30eb7f5f3284843c2f1",
+        "identical": true
+      },
+      {
+        "path": "assets/beta2.pdf",
+        "reference_sha256": "cfe3ad1d8a64b4cce158e2244b8999cbb58006b8ecf1592a49faa062f686d46a",
+        "portable_sha256": "cfe3ad1d8a64b4cce158e2244b8999cbb58006b8ecf1592a49faa062f686d46a",
+        "identical": true
+      },
+      {
+        "path": "assets/beta2.svg",
+        "reference_sha256": "7d48d6683dd79d62fe28cd99fd59ab0372b30eae7b8a051caea223b5f96e4b52",
+        "portable_sha256": "7d48d6683dd79d62fe28cd99fd59ab0372b30eae7b8a051caea223b5f96e4b52",
+        "identical": true
+      },
+      {
+        "path": "assets/clipping.pdf",
+        "reference_sha256": "712c7bc5bca261e8a9be7c95779bfb2df2bd984fa88e24675743f62ff9948ef7",
+        "portable_sha256": "712c7bc5bca261e8a9be7c95779bfb2df2bd984fa88e24675743f62ff9948ef7",
+        "identical": true
+      },
+      {
+        "path": "assets/clipping.svg",
+        "reference_sha256": "8f620fae772ce446efe1d94a67e4394380e9de1f3579427ca64eb1d108da6160",
+        "portable_sha256": "8f620fae772ce446efe1d94a67e4394380e9de1f3579427ca64eb1d108da6160",
+        "identical": true
+      },
+      {
+        "path": "assets/gap.pdf",
+        "reference_sha256": "f0c5d8df155eb1d1f27314ef13658460c6d2d5108eaa534132c3d85dc552e221",
+        "portable_sha256": "f0c5d8df155eb1d1f27314ef13658460c6d2d5108eaa534132c3d85dc552e221",
+        "identical": true
+      },
+      {
+        "path": "assets/gap.svg",
+        "reference_sha256": "4cec83d718410ac53877d30a8a3ed2042cadf672306a10233efc78c642a512d5",
+        "portable_sha256": "4cec83d718410ac53877d30a8a3ed2042cadf672306a10233efc78c642a512d5",
+        "identical": true
+      },
+      {
+        "path": "assets/heatmap-clipped-b128.pdf",
+        "reference_sha256": "dfe9406740228b1a570d62db76d0ec851447d604234956d8603896487291ff75",
+        "portable_sha256": "dfe9406740228b1a570d62db76d0ec851447d604234956d8603896487291ff75",
+        "identical": true
+      },
+      {
+        "path": "assets/heatmap-clipped-b128.svg",
+        "reference_sha256": "b669cc35be150f3c7b3834b3efcaaaa80cb785b6661c69d15e6008d337de23ed",
+        "portable_sha256": "b669cc35be150f3c7b3834b3efcaaaa80cb785b6661c69d15e6008d337de23ed",
+        "identical": true
+      },
+      {
+        "path": "assets/heatmap-clipped-b16.pdf",
+        "reference_sha256": "147f6f9e2a461d8820e9bff3299acfb15048665a7fe9814b17134457518009c1",
+        "portable_sha256": "147f6f9e2a461d8820e9bff3299acfb15048665a7fe9814b17134457518009c1",
+        "identical": true
+      },
+      {
+        "path": "assets/heatmap-clipped-b16.svg",
+        "reference_sha256": "a36569111261fe8dbd6c7c8ce489aa5335a6aebf53c11fe5955596a0d2c3c4aa",
+        "portable_sha256": "a36569111261fe8dbd6c7c8ce489aa5335a6aebf53c11fe5955596a0d2c3c4aa",
+        "identical": true
+      },
+      {
+        "path": "assets/heatmap-clipped-b32.pdf",
+        "reference_sha256": "adfe93f0125214dc4e7e124b1efdc0fe12fe64e103e81d63b3718dde466ce7a8",
+        "portable_sha256": "adfe93f0125214dc4e7e124b1efdc0fe12fe64e103e81d63b3718dde466ce7a8",
+        "identical": true
+      },
+      {
+        "path": "assets/heatmap-clipped-b32.svg",
+        "reference_sha256": "9efb4af65a111eaa0c2e292770c38425787d1df95cac4fb3ada9481eea0ed702",
+        "portable_sha256": "9efb4af65a111eaa0c2e292770c38425787d1df95cac4fb3ada9481eea0ed702",
+        "identical": true
+      },
+      {
+        "path": "assets/heatmap-clipped-b64.pdf",
+        "reference_sha256": "a610f27bf251fca9ac9c3cd7ba3fd69a5f0e372a25ec436143cc1541bc0f27fc",
+        "portable_sha256": "a610f27bf251fca9ac9c3cd7ba3fd69a5f0e372a25ec436143cc1541bc0f27fc",
+        "identical": true
+      },
+      {
+        "path": "assets/heatmap-clipped-b64.svg",
+        "reference_sha256": "a71b5feed3b629f121a39b48b02c5e149573c5ad521b8dd41dccd9e3c45c2c41",
+        "portable_sha256": "a71b5feed3b629f121a39b48b02c5e149573c5ad521b8dd41dccd9e3c45c2c41",
+        "identical": true
+      },
+      {
+        "path": "assets/heatmap-sync.pdf",
+        "reference_sha256": "bfb75c69bbe2448e03bbda9fec280da60ee5fd913dd4d26b9a542ea87090c94a",
+        "portable_sha256": "bfb75c69bbe2448e03bbda9fec280da60ee5fd913dd4d26b9a542ea87090c94a",
+        "identical": true
+      },
+      {
+        "path": "assets/heatmap-sync.svg",
+        "reference_sha256": "8cd40a277457649b8ea2a6f33729560f8fb2584cc4bf42e0dc7483444efb1895",
+        "portable_sha256": "8cd40a277457649b8ea2a6f33729560f8fb2584cc4bf42e0dc7483444efb1895",
+        "identical": true
+      },
+      {
+        "path": "assets/heatmap-unclipped-b128.pdf",
+        "reference_sha256": "885643f397cb5c0cbc3af5106df64191bf277a8cc65b20b44451561a41d14505",
+        "portable_sha256": "885643f397cb5c0cbc3af5106df64191bf277a8cc65b20b44451561a41d14505",
+        "identical": true
+      },
+      {
+        "path": "assets/heatmap-unclipped-b128.svg",
+        "reference_sha256": "171e033f52c72c26d0497482a0ec0ef59bcfc4ad859f12cade5299a73db3f825",
+        "portable_sha256": "171e033f52c72c26d0497482a0ec0ef59bcfc4ad859f12cade5299a73db3f825",
+        "identical": true
+      },
+      {
+        "path": "assets/heatmap-unclipped-b16.pdf",
+        "reference_sha256": "3c4281f20dd40a4573784028facd7a1a0407dd2a99b747c083867a72711b3fbd",
+        "portable_sha256": "3c4281f20dd40a4573784028facd7a1a0407dd2a99b747c083867a72711b3fbd",
+        "identical": true
+      },
+      {
+        "path": "assets/heatmap-unclipped-b16.svg",
+        "reference_sha256": "2a83744d9eab07e41f025258965bd94812cab51e15520181387ee96684069c22",
+        "portable_sha256": "2a83744d9eab07e41f025258965bd94812cab51e15520181387ee96684069c22",
+        "identical": true
+      },
+      {
+        "path": "assets/heatmap-unclipped-b32.pdf",
+        "reference_sha256": "aa0b0c1f5f6e8b3ec573d93661b4f0c0243cb78e1368b27ec7c7f2bf994ce248",
+        "portable_sha256": "aa0b0c1f5f6e8b3ec573d93661b4f0c0243cb78e1368b27ec7c7f2bf994ce248",
+        "identical": true
+      },
+      {
+        "path": "assets/heatmap-unclipped-b32.svg",
+        "reference_sha256": "2e337c7e4e374468a194815038f6123cd09768a5412a4819a2daee4f8896220c",
+        "portable_sha256": "2e337c7e4e374468a194815038f6123cd09768a5412a4819a2daee4f8896220c",
+        "identical": true
+      },
+      {
+        "path": "assets/heatmap-unclipped-b64.pdf",
+        "reference_sha256": "d1c73153c2da887e3a47d66f3fdb049c3628ba3dbbff0ec4f9d34a28dbc6d70e",
+        "portable_sha256": "d1c73153c2da887e3a47d66f3fdb049c3628ba3dbbff0ec4f9d34a28dbc6d70e",
+        "identical": true
+      },
+      {
+        "path": "assets/heatmap-unclipped-b64.svg",
+        "reference_sha256": "5c90c5f4bbf8bd0d0ae0813ea19d97388b8ee421d49b36e6102e975d5120438e",
+        "portable_sha256": "5c90c5f4bbf8bd0d0ae0813ea19d97388b8ee421d49b36e6102e975d5120438e",
+        "identical": true
+      },
+      {
+        "path": "assets/matched-grid.pdf",
+        "reference_sha256": "cc64b872e6ff0518002e73ad1951ee7e03fb7440579cb7b81897659edd9d834b",
+        "portable_sha256": "cc64b872e6ff0518002e73ad1951ee7e03fb7440579cb7b81897659edd9d834b",
+        "identical": true
+      },
+      {
+        "path": "assets/matched-grid.svg",
+        "reference_sha256": "40a016585c483d96877bd5eba1d20c0bd03772c70a5e2be339c97c576e15cca2",
+        "portable_sha256": "40a016585c483d96877bd5eba1d20c0bd03772c70a5e2be339c97c576e15cca2",
+        "identical": true
+      },
+      {
+        "path": "assets/quality.pdf",
+        "reference_sha256": "f792f3cc40516ec8a11d255704e201f6aa12a5987ffe5576de805547ddc91bc1",
+        "portable_sha256": "f792f3cc40516ec8a11d255704e201f6aa12a5987ffe5576de805547ddc91bc1",
+        "identical": true
+      },
+      {
+        "path": "assets/quality.svg",
+        "reference_sha256": "8af4ff9d7039de532bac93aeb20847ec2b12248218c41042cb8bced6e0a86f10",
+        "portable_sha256": "8af4ff9d7039de532bac93aeb20847ec2b12248218c41042cb8bced6e0a86f10",
+        "identical": true
+      },
+      {
+        "path": "assets/replication.pdf",
+        "reference_sha256": "26ec9917306898f6e291d546ba826b2038f0b4960caf95fad2e18241f126d21d",
+        "portable_sha256": "26ec9917306898f6e291d546ba826b2038f0b4960caf95fad2e18241f126d21d",
+        "identical": true
+      },
+      {
+        "path": "assets/replication.svg",
+        "reference_sha256": "b1bbd276c2324cccb8baea368acf22bb3770c91d46368f90729a933b8e684088",
+        "portable_sha256": "b1bbd276c2324cccb8baea368acf22bb3770c91d46368f90729a933b8e684088",
+        "identical": true
+      },
+      {
+        "path": "assets/retuned.pdf",
+        "reference_sha256": "a53020d613dd88666a536342b288fad766bb2b4ad86b44244e8bb802ba313b18",
+        "portable_sha256": "a53020d613dd88666a536342b288fad766bb2b4ad86b44244e8bb802ba313b18",
+        "identical": true
+      },
+      {
+        "path": "assets/retuned.svg",
+        "reference_sha256": "6a6b1bf60636a42625d6a26aa61ed518e2f00e8bb6d39085e25570e3d958da43",
+        "portable_sha256": "6a6b1bf60636a42625d6a26aa61ed518e2f00e8bb6d39085e25570e3d958da43",
+        "identical": true
+      },
+      {
+        "path": "assets/throughput.pdf",
+        "reference_sha256": "13358952b4a451ca40e4afec6d78e767f043ac47347ec82a1a25043b7e691c4e",
+        "portable_sha256": "13358952b4a451ca40e4afec6d78e767f043ac47347ec82a1a25043b7e691c4e",
+        "identical": true
+      },
+      {
+        "path": "assets/throughput.svg",
+        "reference_sha256": "b72d16633f5c80b1d2ca3b384a1423aae98479381454e5a89526495740afd56e",
+        "portable_sha256": "b72d16633f5c80b1d2ca3b384a1423aae98479381454e5a89526495740afd56e",
+        "identical": true
+      }
+    ]
   },
   "reproducibility": {
     "build_command": "bash build.sh",
     "refresh_command": "bash build.sh --refresh",
     "original_sources_required_for_default_build": false,
-    "pdf_and_figure_comparison": "Byte-identical outputs after removing generated PDFs, figures and validation from an isolated copy and rebuilding from bundled data"
+    "pdf_and_figure_comparison": "Byte-identical outputs after removing generated PDFs, figures and validation from an isolated copy and rebuilding from bundled data",
+    "bounded_audit": "heatmap-audit/manifest.json",
+    "initial_edition_audit": "build-audit/manifest.json retains the historical 28-page edition record; use the current heatmap audit for current file hashes."
   },
   "artifact_sha256": {
     "slides.pdf": "8846cfca7d9ee834feaa9f7dc15402712dc693ff7e5daadf9a85d3f9156d689c",
-    "report.pdf": "4b9f1df8dea84970ef8cf2ffb11d0abe8c376357c207576ba6760cb5d972828c",
+    "report.pdf": "78f3405807a53954c419a410954f35ec9fb65a7cdffc463267da5c5ad2783fc5",
     "slides.typ": "df8197a1a1723690b6e09d4c0c9874b721fe97600c34bc027999a834dfe74d7e",
-    "report.typ": "40f4903028e87bec137061a8173cf247ce390cd4768c70f679257d2cf50777f2",
+    "report.typ": "546526f1a46f5120a1ea774a981bafff574f3d7f7880439b375e3c59f782010e",
     "build.sh": "78d59357dc7bd59f3b1cbdb83eaa00d5c951efdcb5cb24a25cb397c69e8d127f",
-    "build_figures.py": "2adf1007c4281cd42dd25bea3e168e83983e7db9a5f4ee3ec61ef1a03d92b60c",
-    "verify.py": "fbc54f4cdeb109b89cf2059c466a48d0ad832080cbc5571f6a7775678c2676a0",
-    "provenance.json": "385db0f8dd354611c5a855cc53968bedbb5453b86f49eb18feaeefd958c3f912",
-    "data/analysis.json": "a4d37371d9ad394c4f8a38b24c95f4e5d3430dc7e6658ea36597fd7d8f0f0d46",
-    "validation.json": "558dde74a8b6d158143e122887f2719a0c63dab123eea573af447b87fa493bfe"
+    "build_figures.py": "bc7a1873548bce2bc66fabc71eed7d5eaf826b6e94402d30882daceb131d8899",
+    "verify.py": "2155577775419d64791fe2c339bb02c539f812232b6976559d362ab9a9692594",
+    "provenance.json": "218d60f454ff2fc487759127ba552dd5132201408d92152a635f39b98fed6dc0",
+    "data/analysis.json": "3849d480dada2acdf70765f7183ba17ba8caf59f64360ec57af748a01e55acd8",
+    "validation.json": "3a8f9784303f30727d0930645830d8a731c099811d9c2eae23f2f49021f1e394",
+    "data/heatmap-cells.json": "891e2aee914fcefce539e56c0f2c2d91489855e0d6c710fee7a5af0ff6b6c8c5",
+    "heatmap-audit/manifest.json": "443f3fde5c39d03e0bb8d97934e388b3798e9a413fe02e0b97b59e04438f6505",
+    "heatmap-audit/verification.json": "3a8f9784303f30727d0930645830d8a731c099811d9c2eae23f2f49021f1e394"
   },
   "preservation": {
     "training_or_job_submission": false,
     "existing_campaigns_and_documents_modified": false,
     "preexisting_tracked_edit_preserved": "configs/packed8-20m-awc.yaml"
-  }
+  },
+  "edition": "Heatmap appendix extension"
 }

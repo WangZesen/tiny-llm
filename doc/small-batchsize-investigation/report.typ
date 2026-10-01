@@ -502,3 +502,33 @@ The table gives medians across the source-specific screening pools. Rates are in
 Synchronous screening uses the available current-source weight-decay-0.1 runs. The clipped decentralized summary uses 210 screening configurations per batch; no clipping uses the reduced 120-configuration grid. A historical selected synchronous recipe can therefore differ from the runs used for the corresponding performance pool. In particular, the historical batch-128 clipping rate is missing even though current-source batch-128 performance measurements exist. These are distinct records with distinct purposes.
 
 The memory peaks are close in magnitude across batch sizes. They summarize the full measured execution, including fixed-batch evaluation, parameter and moment storage, and compiled execution. This measurement scope is consistent with the absence of a simple monotonic training-batch relationship, but the metrics do not identify the allocation that sets each peak. A controlled training-only memory experiment would be needed to answer that narrower question; no such experiment is added here.
+
+#let heatmap-page(title, name, introduction, caption) = {
+  pagebreak()
+  set page(paper: "a4", flipped: true, margin: (x: 16mm, top: 15mm, bottom: 15mm))
+  set text(size: 10pt)
+  show heading.where(level: 1): set text(size: 16pt)
+  heading(level: 1, numbering: none, title)
+  introduction
+  v(3pt)
+  figure(image("assets/" + name + ".svg", width: 100%, height: 126mm, fit: "contain"), caption: caption)
+}
+
+#heatmap-page(
+  [Appendix I · Tuning heatmaps: synchronous screening],
+  "heatmap-sync",
+  [Initial LR/$beta_2$ screening at fixed $beta_1=0.9$ and weight decay 0.1. Each panel fixes the global batch. These seed-42 measurements precede the conditional $beta_1$ tuning that supplies the final synchronous reference. [S1]],
+  [All 98 eligible initial-screening observations are shown. Cell labels give excess final validation loss above the best displayed initial-screening candidate at that batch; grey cells were not tested in this stage. “H” identifies retained historical batch-128 observations. The fresh repeat of a historical reference is excluded from this grid, and later $beta_1$ diagnostics are not pooled. “HL 10M” means $beta_2=2^(-B times 512 / 10^7)$. Colors are linear for excess loss up to 0.01 and logarithmic above it; the complete numerical range is retained. The red outline marks the screening minimum. Values are rounded to 0.001 with leading zeros omitted, so a displayed .000 can be positive. These are screening losses, not three-seed means.],
+)
+
+#for method in ("clipped", "unclipped") {
+  for batch in batches {
+    let clipped = method == "clipped"
+    heatmap-page(
+      [Appendix I · #label(method): global batch #batch, local batch #int(batch / 4)],
+      "heatmap-" + method + "-b" + str(batch),
+      [Full seed-42 Cartesian grid: #if clipped [210] else [120] configurations. Each panel fixes $beta_1$; rows vary LR and columns vary $beta_2$. #if clipped [The original search and its second-moment extension are unified here. [S2]] else [Clipping is disabled throughout this reduced grid. [S5]]],
+      [Cell labels give excess final validation loss above the best seed-42 observation for this method and batch. Every tested configuration, including poor outcomes, is retained. All nine maps share one color scale: linear up to excess loss 0.01, logarithmic above, with the upper limit set to the largest displayed excess. The red outline marks the screening minimum; labels are rounded to 0.001 with leading zeros omitted, so .000 can be positive. “HL 10M” means $beta_2=2^(-B times 512 / 10^7)$, a nominal half-life of 10 million global targets or 2.5 million per-worker targets. Screening maps show tuning sensitivity; final rankings use the separate three-seed results.],
+    )
+  }
+}

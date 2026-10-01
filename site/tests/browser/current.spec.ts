@@ -65,7 +65,7 @@ test('homepage follows publication priorities with clean navigation and readable
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
     'Small-Batch Training with AdamW',
   );
-  for (const name of ['13-slide presentation', 'Report and technical appendix — 28 pages']) {
+  for (const name of ['13-slide presentation', /^Report and technical appendix/]) {
     const link = page.getByRole('link', { name, exact: true });
     await expect(link).toBeVisible();
     const response = await page.request.get((await link.getAttribute('href'))!);

@@ -194,6 +194,7 @@ def analyze():
     for entry in imports:
         r=entry['row'];importledger.append({'recipe':r['recipe'],'seed':r['seed'],'recipe_identity':r['recipe_identity'],'grad_clip':None,'loss':r['loss'],'primary':(r['recipe_identity'],r['seed']) in primary_ids,'account':entry['account'],'job_key':r['job_key'],'artifact_hashes':entry['artifact_hashes']})
     data={'schema_version':1,'as_of':'2026-10-01','winners':winners,'replicated':replicated,'screening':screening,'matched_screening':matched,'matched_replicated':load(DATA/'matched-replicated.json'),'matched_summary':matchedstats,'ablation':load(DATA/'ablation-comparison.json'),'ablation_seeds':load(DATA/'ablation-runs.json'),'clipping_selected':clipping,'performance':performance,'confirmation':confirmation,'protocols':protocol,'beta2_profiles':beta2profiles,'imports':importledger,'supplemental':supplemental,'gaps':gaps,'sources':prov['sources'],'callouts':{'clipped_sync_gap_min':min(r['clipped_minus_sync'] for r in gaps),'clipped_sync_gap_max':max(r['clipped_minus_sync'] for r in gaps),'clipped_sync_ppl_percent_min':min(r['perplexity_increase_percent'] for r in gaps),'clipped_sync_ppl_percent_max':max(r['perplexity_increase_percent'] for r in gaps)},'counts':{'clipped_observations':920,'clipped_screening':840,'clipped_replicated':40,'unclipped_primary':520,'unclipped_screening':480,'unclipped_replicated':20,'unclipped_supplemental':4,'unclipped_unique_observations':524,'imported_observations':12,'imported_primary':sum(r['primary'] for r in importledger)},'figure_metadata':{name:{'batch_ticks':BATCHES if name in ['quality','gap','beta1','clipping','matched-grid','retuned','throughput'] else None,'vector':True,'symlog_linear_threshold':.025 if name=='matched-grid' else None} for name in ['quality','gap','beta1','beta2','clipping','ablation','matched-grid','retuned','throughput','replication']}}
+    add_heatmap_data(data)
     save(DATA/'analysis.json',data)
     for key in ['matched_summary','gaps','ablation','performance']:csvsave(DATA/(key.replace('_','-')+'.csv'),data[key])
     for method in ['sync','clipped','unclipped']:csvsave(DATA/('replicated-'+method+'.csv'),replicated[method])
@@ -201,6 +202,121 @@ def analyze():
     prov['derived']=[{'file':str(p.relative_to(HERE)),'sha256':sha(p)} for p in sorted(DATA.glob('*')) if p.is_file() and str(p.relative_to(HERE)) not in {e['file'] for e in prov['extracts']}]
     save(HERE/'provenance.json',prov)
     return data
+
+def add_heatmap_data(data):
+    """Retain every measured seed-42 cell; do not combine later conditional stages."""
+    cells=[]
+    figures=[]
+    for method in ['clipped','unclipped']:
+        for batch in BATCHES:
+            rows=[r for r in data['screening'][method] if r['batch']==batch]
+            minimum=min(r['loss'] for r in rows)
+            name=f'heatmap-{method}-b{batch}'
+            panels=[]
+            for beta1 in sorted({r['beta1'] for r in rows}):
+                subset=[r for r in rows if r['beta1']==beta1]
+                panels.append({'batch':batch,'beta1':beta1,'lrs':sorted({r['lr'] for r in subset}),
+                               'beta2s':sorted({r['beta2'] for r in subset}),
+                               'minimum_loss':minimum,'cell_count':len(subset)})
+            figures.append({'name':name,'method':method,'batch':batch,'scope':'complete seed-42 Cartesian screening grid',
+                            'cell_count':len(rows),'panels':panels})
+            for r in rows:
+                cells.append({**{k:r[k] for k in ['batch','lr','beta1','beta2','seed','recipe','recipe_identity','loss','stage','kind']},
+                              'figure':name,'method':method,'minimum_loss':minimum,'delta':r['loss']-minimum,'historical':False})
+    # Available original beta1=.9 candidates include the broader historical B128 grid.
+    # The current-source reference repeat is excluded rather than replacing its historical twin.
+    sync=[r for r in load(DATA/'sync-runs.json') if r['seed']==42 and r['weight_decay']==.1
+          and r['beta1']==.9 and r['role']=='candidate' and r['stage'] in ['screen','historical']]
+    panels=[]
+    for batch in BATCHES:
+        rows=[r for r in sync if r['batch']==batch];minimum=min(r['loss'] for r in rows)
+        panels.append({'batch':batch,'beta1':.9,'lrs':sorted({r['lr'] for r in rows}),
+                       'beta2s':sorted({r['beta2'] for r in rows}),
+                       'minimum_loss':minimum,'cell_count':len(rows)})
+        for r in rows:
+            cells.append({**{k:r[k] for k in ['batch','lr','beta1','beta2','seed','recipe','recipe_identity','loss','stage','kind']},
+                          'figure':'heatmap-sync','method':'sync','minimum_loss':minimum,
+                          'delta':r['loss']-minimum,'historical':r['kind']=='historical'})
+    figures.append({'name':'heatmap-sync','method':'sync','batch':None,'cell_count':len(sync),'panels':panels,
+                    'scope':'Available initial beta1=.9 candidates only: current screening plus broad historical B128; later beta1 sensitivity and fresh reference repeat excluded'})
+    maximum=max(r['delta'] for r in cells)
+    scale={'normalization':'symlog','linthresh':.01,'linscale':1.0,'base':10,'vmin':0.0,'vmax':maximum,
+           'cmap':'cividis','saturation':False,'shared_across':'all 1418 cells in nine figures'}
+    bundle={'schema_version':1,'color_scale':scale,'figures':figures,'cells':cells,
+            'annotation':'Delta rounded to 3 decimals, leading zero omitted below 1; exact zero shown as 0; H suffix marks historical synchronous measurements.',
+            'missing_cells':'Unmeasured synchronous combinations are light gray with an em dash; no missing decentralized grid cells.',
+            'half_life_label':'HL10M = 2^(-global_batch * 512 / 10000000)',
+            'method_colors':COLORS}
+    assert len(cells)==1418 and len(sync)==98
+    save(DATA/'heatmap-cells.json',bundle)
+    for f in figures:
+        data['figure_metadata'][f['name']]={'batch_ticks':None,'vector':True,'cell_count':f['cell_count'],
+                                          'scope':f['scope'],'color_scale':scale,
+                                          'data_file':'data/heatmap-cells.json'}
+
+
+def heatmap_annotation(cell):
+    value=cell['delta']
+    text='0' if value==0 else f'{value:.3f}'
+    if text.startswith('0.'):text=text[1:]
+    return text+('H' if cell['historical'] else '')
+
+
+def draw_heatmaps(data):
+    from matplotlib.colors import SymLogNorm
+    from matplotlib.patches import Rectangle
+    bundle=load(DATA/'heatmap-cells.json');scale=bundle['color_scale']
+    norm=SymLogNorm(linthresh=scale['linthresh'],linscale=scale['linscale'],base=scale['base'],
+                   vmin=scale['vmin'],vmax=scale['vmax'])
+    cmap=plt.get_cmap(scale['cmap']).copy();cmap.set_bad('#E5E7EB')
+    for metadata in bundle['figures']:
+        method=metadata['method'];panels=metadata['panels']
+        columns=3 if len(panels)==5 else 2
+        f,axes=plt.subplots(2,columns,figsize=(27/2.54,13.5/2.54),layout='constrained')
+        axes=np.asarray(axes).ravel()
+        selected=[r for r in bundle['cells'] if r['figure']==metadata['name']]
+        for ax,panel in zip(axes,panels):
+            beta2s=panel['beta2s'];lrs=panel['lrs'];batch=panel['batch'];beta1=panel['beta1']
+            rows=[r for r in selected if r['batch']==batch and r['beta1']==beta1]
+            lookup={(r['lr'],r['beta2']):r for r in rows}
+            z=np.full((len(lrs),len(beta2s)),np.nan)
+            for j,lr in enumerate(lrs):
+                for i,beta2 in enumerate(beta2s):
+                    if (lr,beta2) in lookup:z[j,i]=lookup[lr,beta2]['delta']
+            im=ax.imshow(np.ma.masked_invalid(z),norm=norm,cmap=cmap,aspect='auto',interpolation='none')
+            ax.grid(False)
+            labels=['HL10M' if abs(beta-2**(-batch*512/1e7))<1e-12 else f'{beta:.9f}'.rstrip('0') for beta in beta2s]
+            ax.set_xticks(range(len(beta2s)),labels,rotation=35,ha='right',fontsize=9.5)
+            ax.set_yticks(range(len(lrs)),[f'{lr:g}' for lr in lrs],fontsize=9.5)
+            ax.set_xlabel('β₂',fontsize=11,labelpad=1);ax.set_ylabel('Learning rate',fontsize=11,labelpad=2)
+            title=f'β₁ = {beta1:g}' if method!='sync' else f'Global batch {batch} · β₁ = .9'
+            ax.set_title(title,fontsize=11.5,color=COLORS[method],pad=4)
+            for j,lr in enumerate(lrs):
+                for i,beta2 in enumerate(beta2s):
+                    cell=lookup.get((lr,beta2))
+                    if cell is None:ax.text(i,j,'—',ha='center',va='center',fontsize=10,color='#6B7280');continue
+                    rgba=cmap(norm(cell['delta']));luminance=.2126*rgba[0]+.7152*rgba[1]+.0722*rgba[2]
+                    ax.text(i,j,heatmap_annotation(cell),ha='center',va='center',fontsize=9.5 if columns==3 else 10.5,
+                            color='white' if luminance<.48 else '#111827')
+                    if cell['delta']==0:ax.add_patch(Rectangle((i-.48,j-.48),.96,.96,fill=False,edgecolor='#E15759',lw=1.7))
+            ax.set_xticks(np.arange(-.5,len(beta2s),1),minor=True);ax.set_yticks(np.arange(-.5,len(lrs),1),minor=True)
+            ax.grid(which='minor',color='white',linewidth=.6);ax.tick_params(which='minor',length=0)
+            for spine in ax.spines.values():spine.set_visible(False)
+        for ax in axes[len(panels):]:
+            ax.axis('off')
+            minimum=min(r['loss'] for r in selected)
+            ax.text(.04,.89,f"Global batch {metadata['batch']}\n{metadata['cell_count']} seed-42 configurations\nMinimum loss: {minimum:.6f}\n\nCell: loss − batch minimum\nOutline: minimum observed cell\nHL10M: 10M-global-target half-life",transform=ax.transAxes,
+                    fontsize=10.5,va='top',linespacing=1.45,color='#17324D')
+        ticks=[0,.01,.1,1,scale['vmax']]
+        cbar=f.colorbar(im,ax=list(axes),orientation='horizontal',fraction=.055,pad=.04,shrink=.88,ticks=ticks,aspect=65)
+        cbar.ax.set_xticklabels(['0','.01','.1','1',f"{scale['vmax']:.3f}"],fontsize=10)
+        cbar.set_label('Δ validation loss from method/batch minimum · shared scale: linear to .01, logarithmic above',fontsize=10)
+        finish(f,metadata['name'])
+    # Refresh derived/file hashes after adding the atlas to the original ten figures.
+    prov=load(HERE/'provenance.json')
+    prov['figures']=[{'file':str(p.relative_to(HERE)),'sha256':sha(p)} for p in sorted(ASSETS.glob('*')) if p.suffix in ['.svg','.pdf']]
+    save(HERE/'provenance.json',prov)
+
 
 # Figures use exact raw values; no smoothing or hidden outcome exclusions.
 def style():
@@ -271,5 +387,5 @@ def draw(data):
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--refresh',action='store_true');p.add_argument('--repo',type=Path,default=HERE.parent.parent);args=p.parse_args()
     if args.refresh:refresh(args.repo.resolve())
-    data=analyze();draw(data);print('Rebuilt ten SVG/PDF figures and portable analysis from bundled evidence.')
+    data=analyze();draw(data);draw_heatmaps(data);print('Rebuilt nineteen SVG/PDF figures and portable analysis from bundled evidence.')
 if __name__=='__main__':main()

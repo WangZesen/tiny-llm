@@ -1,11 +1,13 @@
 # Small-Batch Training with AdamW
 
-[Presentation — 13 slides](slides.pdf) · [Report and technical appendix — 28 pages](report.pdf)
+[Presentation — 13 slides](slides.pdf) · [Report and technical appendix — 37 pages](report.pdf)
 
 A formal investigation of synchronous and four-worker decentralized AdamW,
 using completed evidence through **1 October 2026**. The presentation has one
 title slide and twelve content slides. The report includes the full replicated
-results, exact protocols, definitions, and provenance.
+results, exact protocols, definitions, and provenance. Appendix I contains nine
+tuning heatmaps: the initial synchronous screening and the complete clipped and
+unclipped decentralized grids at each of the four batch sizes.
 
 ## Findings
 
@@ -87,12 +89,20 @@ interventions, and comparisons of separately tuned winners remain distinct.
 - `provenance.json`: original source identities and bundled extract hashes.
 - `verify.py` and `validation.json`: numerical and document acceptance checks.
 - `review.json`: scientific, visual, and portable-rebuild review record.
-- `build-audit/`: bounded final verification record and pinned inputs.
+- `build-audit/`: initial 28-page edition's bounded verification record.
+- `heatmap-audit/`: current edition's bounded verification record and pinned inputs.
 
 Figures use blue for synchronous training, purple for clipped decentralized
 training, and orange for decentralized training without clipping. Batch axes
 show only 16, 32, 64, and 128. Distribution figures retain poor configurations;
 screening profiles are explicitly labeled as seed-42 diagnostics.
+
+Heatmaps retain every plotted screening outcome and label excess loss relative
+to the minimum for that method and batch. Their sequential color scale is linear
+up to 0.01 and logarithmic above it, with no saturation; all nine maps share the same range. Cell labels are rounded
+to 0.001; red outlines mark exact screening minima. Synchronous maps separate initial β₁=0.9 screening
+from later conditional tuning, mark historical observations, and leave untested
+cells grey. Full-precision cell values are bundled in `data/heatmap-cells.json`.
 
 Clipping frequency counts clipped updates, not the magnitude or benefit of the
 intervention. Disabled clipping produces zero counters by configuration, not
@@ -113,4 +123,4 @@ The automated checks verify page counts, dimensions, text bounds, numerical
 callouts, and evidence consistency. All rendered pages are also reviewed for
 overlap, legibility, scientific notation, and figure labels.
 
-Final acceptance records: [numerical and provenance checks](validation.json), [visual and portable-rebuild review](review.json), and [bounded audit](build-audit/manifest.json).
+Final acceptance records: [numerical and provenance checks](validation.json), [visual and portable-rebuild review](review.json), and [bounded audit](heatmap-audit/manifest.json).

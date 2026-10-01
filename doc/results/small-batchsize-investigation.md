@@ -10,7 +10,7 @@ respectively. This investigation combines completed tuning and clipping experime
 through 1 October 2026.
 
 [13-slide presentation](../small-batchsize-investigation/slides.pdf) ·
-[Report and technical appendix — 28 pages](../small-batchsize-investigation/report.pdf)
+[Report and technical appendix — 37 pages](../small-batchsize-investigation/report.pdf)
 
 [![Selected synchronous and clipped four-worker validation loss versus global batch; error bars show sample SD over seeds 42–44](../small-batchsize-investigation/assets/quality.svg)](../small-batchsize-investigation/assets/quality.pdf)
 
@@ -49,7 +49,9 @@ cross-method comparisons remain exploratory.
 
 The report includes all 64 final replicated configurations across the three
 methods, individual seed losses, matched clipping comparisons, moment half-lives,
-throughput and memory definitions, and provenance. The
+throughput and memory definitions, and provenance. Appendix I includes nine
+tuning heatmaps covering synchronous screening and the full clipped and unclipped
+decentralized grids. The
 [document package and build instructions](../small-batchsize-investigation/README.md)
 provide editable Typst sources and bundled data for reproducing both PDFs without
 running training.

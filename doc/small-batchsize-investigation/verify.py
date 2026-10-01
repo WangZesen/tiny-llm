@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import hashlib
 import importlib.metadata
 import itertools
@@ -18,8 +19,11 @@ import xml.etree.ElementTree as ET
 
 HERE = Path(__file__).resolve().parent
 BATCHES = (16, 32, 64, 128)
-FIGURES = ("quality", "gap", "beta1", "beta2", "clipping", "ablation",
-           "matched-grid", "retuned", "throughput", "replication")
+SUMMARY_FIGURES = ("quality", "gap", "beta1", "beta2", "clipping", "ablation",
+                   "matched-grid", "retuned", "throughput", "replication")
+HEATMAP_FIGURES = tuple(f"heatmap-{method}-b{batch}"
+                       for method in ("clipped", "unclipped") for batch in BATCHES) + ("heatmap-sync",)
+FIGURES = SUMMARY_FIGURES + HEATMAP_FIGURES
 CHECKS: dict[str, object] = {}
 
 
@@ -293,6 +297,96 @@ def verify_analysis(groups, screen, matched):
                                       "loss_differences_and_perplexity": True, "beta2_profile_cells": len(data["beta2_profiles"])}
 
 
+def verify_heatmaps(screen):
+    """Check complete plotted cells independently of the plotting implementation."""
+    bundle = read("data/heatmap-cells.json")
+    require(bundle["schema_version"] == 1, "Unsupported heatmap-cell schema")
+    figures = {row["name"]: row for row in bundle["figures"]}
+    require(len(bundle["figures"]) == len(HEATMAP_FIGURES)
+            and set(figures) == set(HEATMAP_FIGURES), "Missing or duplicate heatmap figure")
+    sync = [r for r in read("data/sync-runs.json")
+            if r["seed"] == 42 and r["weight_decay"] == .1 and r["beta1"] == .9
+            and r["role"] == "candidate" and r["stage"] in ("screen", "historical")]
+    require(len(sync) == 98 and [sum(r["batch"] == b for r in sync) for b in BATCHES] == [21, 21, 18, 38],
+            "Synchronous heatmap must retain the 98 initial/historical candidates and exclude the fresh reference repeat")
+    originals = {**screen, "sync": sync}
+    expected = {(method, key(row)): row for method, rows in originals.items() for row in rows}
+    require(len(expected) == 1418, "Unexpected duplicate heatmap source configuration")
+    cells = bundle["cells"]
+    require(len(cells) == 1418, "Expected all 1,418 measured heatmap cells")
+    seen = set()
+    historical_count = 0
+    minimums = {(method, batch): min(r["loss"] for r in rows if r["batch"] == batch)
+                for method, rows in originals.items() for batch in BATCHES}
+    for row in cells:
+        identity = (row["method"], key(row))
+        require(identity in expected and identity not in seen, "Unknown or duplicated heatmap observation")
+        seen.add(identity)
+        original = expected[identity]
+        method, batch = row["method"], row["batch"]
+        figure = "heatmap-sync" if method == "sync" else f"heatmap-{method}-b{batch}"
+        require(row["figure"] == figure and row["seed"] == 42, "Heatmap figure/seed mismatch")
+        for field in ("recipe", "recipe_identity", "stage", "kind"):
+            require(row[field] == original[field], f"Heatmap {field} identity mismatch")
+        historical = original["kind"] == "historical"
+        require(row["historical"] is historical, "Historical observation mislabeled in heatmap")
+        historical_count += historical
+        close(row["loss"], original["loss"], "Heatmap raw loss")
+        close(row["minimum_loss"], minimums[(method, batch)], "Heatmap batch/method reference minimum")
+        close(row["delta"], original["loss"] - minimums[(method, batch)], "Heatmap displayed loss difference")
+        require(row["delta"] >= 0 and original["status"] == "complete", "Heatmap contains a failed or negative-delta cell")
+    require(seen == set(expected) and historical_count == 32, "Heatmap coverage or historical tagging mismatch")
+    for name, figure in figures.items():
+        rows = [r for r in cells if r["figure"] == name]
+        require(figure["cell_count"] == len(rows), "Heatmap figure cell count mismatch")
+        require(figure["scope"], "Missing heatmap scope description")
+        panels = figure["panels"]
+        panel_keys = {(p["batch"], p["beta1"]) for p in panels}
+        require(len(panel_keys) == len(panels) and panel_keys == {(r["batch"], r["beta1"]) for r in rows},
+                "Heatmap panels omit, duplicate, or add configurations")
+        missing = 0
+        for panel in panels:
+            measured = [r for r in rows if (r["batch"], r["beta1"]) == (panel["batch"], panel["beta1"])]
+            require(panel["cell_count"] == len(measured), "Heatmap panel cell count mismatch")
+            require(panel["lrs"] == sorted({r["lr"] for r in measured}), "Heatmap LR rows omit or add configurations")
+            require(panel["beta2s"] == sorted({r["beta2"] for r in measured}), "Heatmap beta2 columns omit or add configurations")
+            close(panel["minimum_loss"], minimums[(figure["method"], panel["batch"])], "Heatmap panel reference")
+            missing += len(panel["lrs"]) * len(panel["beta2s"]) - len(measured)
+        if figure["method"] != "sync":
+            require(len(rows) == (210 if figure["method"] == "clipped" else 120), "Incomplete decentralized heatmap")
+            require({r["batch"] for r in rows} == {figure["batch"]}, "Incorrect heatmap batch metadata")
+            require(missing == 0, "A measured decentralized configuration was replaced by an empty cell")
+        else:
+            require(figure["batch"] is None and missing == 2, "Synchronous heatmap must retain two untested historical-grid combinations")
+        expected_labels = Counter()
+        for row in rows:
+            label = "0" if row["delta"] == 0 else f"{row['delta']:.3f}"
+            if label.startswith("0."):
+                label = label[1:]
+            expected_labels[label + ("H" if row["historical"] else "")] += 1
+        svg = ET.parse(HERE / "assets" / f"{name}.svg")
+        rendered_labels = Counter("".join(t.itertext()).strip() for t in svg.findall(
+            ".//s:text", {"s": "http://www.w3.org/2000/svg"}))
+        require(all(rendered_labels[label] >= count for label, count in expected_labels.items()),
+                f"Heatmap cell values are missing or incorrectly rounded in {name}.svg")
+    scale = bundle["color_scale"]
+    require(scale["normalization"] == "symlog", "Heatmaps require the declared shared symlog color scale")
+    close(scale["linthresh"], .01, "Heatmap linear color threshold")
+    close(scale["vmin"], 0, "Heatmap color minimum")
+    close(scale["vmax"], max(r["delta"] for r in cells), "Heatmap scale must span every measured difference without saturation")
+    require(scale["saturation"] is False, "Heatmap scale must not saturate measured outcomes")
+    figure_metadata = read("data/analysis.json")["figure_metadata"]
+    for name, figure in figures.items():
+        meta = figure_metadata[name]
+        require(meta["cell_count"] == figure["cell_count"] and meta["color_scale"] == scale
+                and meta["data_file"] == "data/heatmap-cells.json", "Heatmap figure metadata disagrees with measured-cell table")
+    CHECKS["heatmaps"] = {"figures": len(figures), "clipped_cells": 840, "unclipped_cells": 480,
+                           "synchronous_cells": 98, "historical_cells": historical_count,
+                           "raw_losses_and_differences_verified": True, "normalization": scale,
+                           "rounded_cell_annotations_checked_in_svg": len(cells),
+                           "source": "bundled seed-42 records only; no interpolated or newly trained measurements"}
+
+
 def verify_documents(groups, matched):
     ns = {"x": "http://www.w3.org/1999/xhtml"}
     counts = {}
@@ -301,7 +395,7 @@ def verify_documents(groups, matched):
         bbox = ET.fromstring(command("pdftotext", "-bbox", str(document), "-"))
         pages = bbox.findall(".//x:page", ns)
         counts[name] = len(pages)
-        require(len(pages) == 13 if name == "slides" else len(pages) > 0, f"Unexpected {name} page count")
+        require(len(pages) == (13 if name == "slides" else 37), f"Unexpected {name} page count")
         for index, page in enumerate(pages, 1):
             width, height = float(page.attrib["width"]), float(page.attrib["height"])
             if name == "slides":
@@ -309,6 +403,8 @@ def verify_documents(groups, matched):
             else:
                 require(abs(min(width, height) - 595.276) < .1 and abs(max(width, height) - 841.890) < .1,
                         f"Report page {index} is not A4")
+                if index > 28:
+                    require(width > height, f"Heatmap appendix page {index} is not landscape")
             for word in page.findall(".//x:word", ns):
                 a = {k: float(v) for k, v in word.attrib.items()}
                 require(a["xMin"] >= 0 and a["yMin"] >= 0 and a["xMax"] <= width + .5 and a["yMax"] <= height + .5,
@@ -332,7 +428,16 @@ def verify_documents(groups, matched):
         text = re.sub(r"\s+", "", pages[page - 1])
         for value in callouts:
             require(value in text, f"Slide {page}: expected numeric callout {value}")
-    report_text = re.sub(r"\s+", "", command("pdftotext", "-layout", str(HERE / "report.pdf"), "-"))
+    report_pages = command("pdftotext", "-layout", str(HERE / "report.pdf"), "-").split("\f")[:37]
+    compact_pages = [re.sub(r"\s+", "", text) for text in report_pages]
+    report_text = "".join(compact_pages)
+    heatmap_pages = [text for text in compact_pages if "AppendixI" in text]
+    require(len(heatmap_pages) == 9 and heatmap_pages == compact_pages[-9:],
+            "Expected nine distinct final Appendix I heatmap pages")
+    require("Tuningheatmaps:synchronousscreening" in heatmap_pages[0], "Missing synchronous heatmap appendix")
+    for index, (method, batch) in enumerate(itertools.product(("clipped", "no clipping"), BATCHES), 1):
+        heading = re.sub(r"\s+", "", f"Decentralized, {method}: global batch {batch}, local batch {batch // 4}")
+        require(heading in heatmap_pages[index], f"Missing heatmap page for {method}, batch {batch}")
     appendix_values = set()
     for rows in groups.values():
         for row in rows:
@@ -344,7 +449,8 @@ def verify_documents(groups, matched):
                             "slide_aspect_ratio": "16:9", "report_paper": "A4",
                             "text_within_page_bounds": True,
                             "recomputed_numeric_callouts": sum(map(len, expected.values())),
-                            "replicated_report_values": len(appendix_values)}
+                            "replicated_report_values": len(appendix_values),
+                            "heatmap_appendix_pages": len(heatmap_pages)}
 
 
 def verify_figures():
@@ -387,6 +493,7 @@ def main():
     groups, screen, matched = verify_statistics()
     verify_eligibility(groups, screen)
     verify_analysis(groups, screen, matched)
+    verify_heatmaps(screen)
     verify_figures()
     verify_documents(groups, matched)
     software = {"python": platform.python_version(), "platform": platform.platform()}
