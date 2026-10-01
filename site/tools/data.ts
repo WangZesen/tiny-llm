@@ -211,11 +211,11 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     rmSync(path.join(curveDir, container));
   }
   assert.equal(exploded, 594);
-  cpSync(
-    path.join(root, 'doc/adaptive-consensus-investigation'),
-    path.join(assets, 'adaptive-consensus-investigation'),
-    { recursive: true },
-  );
+  for (const investigation of ['adaptive-consensus-investigation', 'small-batchsize-investigation']) {
+    cpSync(path.join(root, 'doc', investigation), path.join(assets, investigation), {
+      recursive: true,
+    });
+  }
   cpSync(path.join(root, 'configs'), path.join(assets, 'configs'), { recursive: true });
   console.log(
     `Validated ${total} runs, ${studies.reduce((n, s) => n + s.groups.length, 0)} configurations; ${available} curves, ${total - available} unavailable.`,

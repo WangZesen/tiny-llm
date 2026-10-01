@@ -7,7 +7,10 @@ export function sourceLink(source: string, target: string): string {
   const resolved = path.posix.normalize(path.posix.join(path.posix.dirname(source), file));
   const suffix = anchor ? '#' + anchor : '';
   if (resolved.startsWith('doc/data/')) return url('assets/' + resolved.slice(4)) + suffix;
-  if (resolved.startsWith('doc/adaptive-consensus-investigation/'))
+  if (
+    resolved.startsWith('doc/adaptive-consensus-investigation/') ||
+    resolved.startsWith('doc/small-batchsize-investigation/')
+  )
     return url('assets/' + resolved.slice(4)) + suffix;
   if (resolved.startsWith('configs/')) return url('assets/' + resolved) + suffix;
   if (resolved.startsWith('doc/') && resolved.endsWith('.md'))

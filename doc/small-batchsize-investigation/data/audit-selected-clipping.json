@@ -1,0 +1,191 @@
+[
+  {
+    "method": "Decentralized",
+    "recipe": "c352ddd312366e4e4b7c",
+    "batch": 16,
+    "local_batch": 4,
+    "lr": 0.002,
+    "beta1": 0.99,
+    "beta2": 0.9999,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "clip_counts": [
+      165082,
+      169279,
+      169564
+    ],
+    "seed_clipping_frequencies": [
+      0.8284587281194797,
+      0.8495212381564156,
+      0.8509515015256143
+    ],
+    "mean_clipping_frequency": 0.8429771559338365,
+    "mean_epochs3_to40_clipping_frequency": 0.8368163409050889,
+    "mean_first_epoch_fraction_of_clips": 0.027356121566127233
+  },
+  {
+    "method": "Decentralized",
+    "recipe": "d4ae9345d30625e06017",
+    "batch": 16,
+    "local_batch": 4,
+    "lr": 0.002,
+    "beta1": 0.99,
+    "beta2": 0.99999,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "clip_counts": [
+      160426,
+      164807,
+      164351
+    ],
+    "seed_clipping_frequencies": [
+      0.8050927412879396,
+      0.8270786494299021,
+      0.8247902280391842
+    ],
+    "mean_clipping_frequency": 0.818987206252342,
+    "mean_epochs3_to40_clipping_frequency": 0.8115900686740624,
+    "mean_first_epoch_fraction_of_clips": 0.028155032888960957
+  },
+  {
+    "method": "Decentralized",
+    "recipe": "4f89a0e069c0bcd94efb",
+    "batch": 32,
+    "local_batch": 8,
+    "lr": 0.004,
+    "beta1": 0.98,
+    "beta2": 0.9999,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "clip_counts": [
+      8615,
+      7792,
+      7887
+    ],
+    "seed_clipping_frequencies": [
+      0.08646820298699213,
+      0.07820780472137466,
+      0.07916131363417377
+    ],
+    "mean_clipping_frequency": 0.08127910711418018,
+    "mean_epochs3_to40_clipping_frequency": 0.07799447801772105,
+    "mean_first_epoch_fraction_of_clips": 0.07568535107520813
+  },
+  {
+    "method": "Decentralized",
+    "recipe": "e3fbe27da09d02fa5f59",
+    "batch": 32,
+    "local_batch": 8,
+    "lr": 0.004,
+    "beta1": 0.98,
+    "beta2": 0.999999,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "clip_counts": [
+      2910,
+      2270,
+      2161
+    ],
+    "seed_clipping_frequencies": [
+      0.029207483539425084,
+      0.022783844547936406,
+      0.02168981853219849
+    ],
+    "mean_clipping_frequency": 0.024560382206519994,
+    "mean_epochs3_to40_clipping_frequency": 0.01827395793714519,
+    "mean_first_epoch_fraction_of_clips": 0.2560832856266952
+  },
+  {
+    "method": "Synchronous",
+    "recipe": "ea57b24fb579aefcb996",
+    "batch": 16,
+    "local_batch": 16,
+    "lr": 0.001,
+    "beta1": 0.99,
+    "beta2": 0.9994323350124558,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "clip_counts": [
+      334,
+      314,
+      302
+    ],
+    "seed_clipping_frequencies": [
+      0.006704673197366308,
+      0.006303195760398265,
+      0.00606230929821744
+    ],
+    "mean_clipping_frequency": 0.006356726085327338,
+    "mean_epochs3_to40_clipping_frequency": 0.0011340024652227506,
+    "mean_first_epoch_fraction_of_clips": 0.7853582917263293
+  },
+  {
+    "method": "Synchronous",
+    "recipe": "d613dd2426f46dc1410a",
+    "batch": 32,
+    "local_batch": 32,
+    "lr": 0.002,
+    "beta1": 0.98,
+    "beta2": 0.9988649922684496,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "clip_counts": [
+      125,
+      116,
+      118
+    ],
+    "seed_clipping_frequencies": [
+      0.00501846796210053,
+      0.004657138268829292,
+      0.0047374337562229
+    ],
+    "mean_clipping_frequency": 0.0048043466623842405,
+    "mean_epochs3_to40_clipping_frequency": 0.00015495358435814,
+    "mean_first_epoch_fraction_of_clips": 0.9581745567894019
+  },
+  {
+    "method": "Synchronous",
+    "recipe": "d3671f105dd8f2f253c7",
+    "batch": 64,
+    "local_batch": 64,
+    "lr": 0.006,
+    "beta1": 0.96,
+    "beta2": 0.9899494936611666,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "clip_counts": [
+      50,
+      50,
+      58
+    ],
+    "seed_clipping_frequencies": [
+      0.004014774369680424,
+      0.004014774369680424,
+      0.004657138268829292
+    ],
+    "mean_clipping_frequency": 0.004228895669396713,
+    "mean_epochs3_to40_clipping_frequency": 0.0,
+    "mean_first_epoch_fraction_of_clips": 1.0
+  }
+]

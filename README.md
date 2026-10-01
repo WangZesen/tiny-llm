@@ -8,6 +8,21 @@ and the loss Hessian.
 [Interactive results](https://wangzesen.github.io/tiny-llm/results/explorer/) ·
 [Experimental protocol](doc/methods/protocol.md)
 
+## Small-batch AdamW investigation
+
+At a fixed 408M-target budget and context 512, the best observed synchronous and
+clipped four-worker decentralized recipes use global batches **64 and 32**, respectively.
+Smaller batches favor longer Adam moment memory. Tuned clipped decentralized
+training comes close to synchronous quality; clipping helps more at larger batches
+within the tested common grid, despite acting most frequently at the smallest
+decentralized local batch. Tuning procedures differ, so comparisons are exploratory.
+
+[![Selected synchronous and clipped four-worker validation loss versus global batch; error bars show sample SD over three seeds](doc/small-batchsize-investigation/assets/quality.svg)](doc/small-batchsize-investigation/assets/quality.pdf)
+
+[Investigation, report, and slides](https://wangzesen.github.io/tiny-llm/results/small-batchsize-investigation/) ·
+[13-slide presentation](doc/small-batchsize-investigation/slides.pdf) ·
+[Report and technical appendix](doc/small-batchsize-investigation/report.pdf)
+
 ## Latest tuning results
 
 Cosine-to-zero and warmup-stable-decay (WSD), with 20.4M-parameter models on C4.

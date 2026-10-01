@@ -1,0 +1,2227 @@
+{
+  "schema_version": 2,
+  "claim_id": "SMALL_BATCHSIZE_INVESTIGATION_DOCUMENT_EVIDENCE_2026_10_01",
+  "repository": {
+    "commit": "11c1b4a30e526322c90f973e8da3eaade36b8d37",
+    "dirty": true
+  },
+  "command": [
+    "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/.venv-x86_64/bin/python",
+    "-B",
+    "doc/small-batchsize-investigation/verify.py",
+    "--check-sources",
+    "--output",
+    "doc/small-batchsize-investigation/build-audit/verification.json"
+  ],
+  "environment": {
+    "software": [
+      {
+        "name": "runner-python",
+        "version": "3.12.13"
+      },
+      {
+        "name": "verification Python",
+        "version": "3.12.13"
+      },
+      {
+        "name": "matplotlib",
+        "version": "3.11.1"
+      },
+      {
+        "name": "numpy",
+        "version": "2.5.3"
+      },
+      {
+        "name": "Poppler pdftotext",
+        "version": "pdftotext version 21.01.0"
+      },
+      {
+        "name": "Typst compiler used for pinned PDFs",
+        "version": "typst 0.15.1 (9dfd3a08)"
+      }
+    ],
+    "hardware": "Linux-5.14.0-687.29.1.el9_8.x86_64-x86_64-with-glibc2.34"
+  },
+  "mathematics": {
+    "assertion_tested": "The final 13-slide presentation and 28-page report are numerically consistent with the pinned completed small-batch AdamW campaign records over the stated finite grids and promoted seed sets; source, extract, derived-data, and figure hashes authenticate the exact evidence package.",
+    "coefficient_domain": "IEEE 754 binary64 for loss means, sample standard deviations, moment half-lives, and exp(loss-gap) perplexity ratios; exact integer counts, recipe/seed sets, full input bytes, and SHA-256 identities.",
+    "conventions": "Lower mean final full-validation cross-entropy is better. Means use seeds 42–44; SD uses n-1=2; replication-only means use 43–44 without reselection. Half-life is -ln(2)/ln(beta) updates, scaled by global_batch*512 for global targets and divided by four for decentralized per-worker targets. Clipping rate divides worker exceedance counts by four times updates for decentralized training. Historical synchronous batch-128 clipping is unavailable, not zero.",
+    "inputs": [
+      "840 clipped seed-42 Cartesian-grid observations",
+      "480 no-clipping seed-42 Cartesian-grid observations",
+      "40 clipped, 20 no-clipping, and 4 synchronous three-seed replicated recipes",
+      "480 matched clipping pairs and 13 matched three-seed recipes",
+      "Frozen selections and 12 imported observations: 8 primary and 4 supplemental",
+      "261 pinned original source artifacts, 42 bundled extracts, 10 derived files, and 20 vector figure files",
+      "Final 13-page 16:9 slides.pdf and 28-page A4 report.pdf"
+    ],
+    "bounds": {
+      "global_batches": [
+        16,
+        32,
+        64,
+        128
+      ],
+      "decentralized_workers": 4,
+      "training_targets": 408092672,
+      "warmup_targets": 20447232,
+      "full_validation_targets": 197411295,
+      "clipped_screening": 840,
+      "unclipped_screening": 480,
+      "replicated_recipes": 64,
+      "seeds": [
+        42,
+        43,
+        44
+      ],
+      "matched_seed42_pairs": 480,
+      "original_source_hashes": 261,
+      "slide_pages": 13,
+      "observed_report_pages": 28,
+      "floating_comparison_absolute_tolerance": 1e-11,
+      "floating_comparison_relative_tolerance": 2e-12,
+      "presentation_rounding": "Six decimal places for losses and sample SD; source precision retained in bundled JSON.",
+      "resources": {
+        "wall_seconds": 180,
+        "per_process_cpu_seconds": 120,
+        "cpu_affinity_cores": 2,
+        "cooperative_numerical_threads": 2,
+        "per_process_address_space_bytes": 4294967296,
+        "combined_log_bytes": 1048576
+      }
+    },
+    "non_claims": [
+      "No statistical significance, causal mechanism, optimizer equivalence, non-inferiority, or universal batch-size scaling claim.",
+      "No fresh-seed confirmation of final selected recipes; selection procedures and tuning budgets differ.",
+      "No four-physical-GPU scaling or controlled speed benchmark; workers share one GH200.",
+      "No training, source-campaign mutation, configuration reselection, checkpoint creation, or grid extension.",
+      "No complete revalidation of every raw training metric; authenticated completed campaign audits supply that evidence.",
+      "Automated text page-bound checks and numeric coverage do not establish visual legibility or absence of overlapping content; root visual review is separate."
+    ],
+    "outcomes": {
+      "pass": "Finite numerical consistency and pinned evidence identity verified in this stated package; observed PDF counts are checked against the requested 13-slide and final 28-page artifacts.",
+      "failure": "An identity, numerical, eligibility, or presentation assertion is inconsistent; inspect the retained failure log before relying on the package.",
+      "timeout_or_resource_limit": "Inconclusive verification; no evidence of a scientific counterexample follows.",
+      "inputs_changed": "Reject the record as evidence for the originally pinned package until its changes are reconciled."
+    }
+  },
+  "randomness": {
+    "used": false,
+    "generator": "",
+    "seed": null
+  },
+  "run": {
+    "started_at": "2026-10-01T09:29:22.428985+00:00",
+    "runtime_seconds": 0.558643,
+    "exit_status": 0,
+    "status": "completed",
+    "timeout_seconds": 180.0,
+    "max_output_bytes": 1048576,
+    "resource_limits": {
+      "memory_bytes": 4294967296,
+      "cpu_seconds": 120,
+      "max_cores": 2,
+      "max_threads": 2
+    },
+    "missing_results": [],
+    "invalid_results": []
+  },
+  "execution_artifacts": [
+    "doc/small-batchsize-investigation/assets/ablation.pdf",
+    "doc/small-batchsize-investigation/assets/ablation.svg",
+    "doc/small-batchsize-investigation/assets/beta1.pdf",
+    "doc/small-batchsize-investigation/assets/beta1.svg",
+    "doc/small-batchsize-investigation/assets/beta2.pdf",
+    "doc/small-batchsize-investigation/assets/beta2.svg",
+    "doc/small-batchsize-investigation/assets/clipping.pdf",
+    "doc/small-batchsize-investigation/assets/clipping.svg",
+    "doc/small-batchsize-investigation/assets/gap.pdf",
+    "doc/small-batchsize-investigation/assets/gap.svg",
+    "doc/small-batchsize-investigation/assets/matched-grid.pdf",
+    "doc/small-batchsize-investigation/assets/matched-grid.svg",
+    "doc/small-batchsize-investigation/assets/quality.pdf",
+    "doc/small-batchsize-investigation/assets/quality.svg",
+    "doc/small-batchsize-investigation/assets/replication.pdf",
+    "doc/small-batchsize-investigation/assets/replication.svg",
+    "doc/small-batchsize-investigation/assets/retuned.pdf",
+    "doc/small-batchsize-investigation/assets/retuned.svg",
+    "doc/small-batchsize-investigation/assets/throughput.pdf",
+    "doc/small-batchsize-investigation/assets/throughput.svg",
+    "doc/small-batchsize-investigation/audit-contract.json",
+    "doc/small-batchsize-investigation/build.sh",
+    "doc/small-batchsize-investigation/build_figures.py",
+    "doc/small-batchsize-investigation/data/ablation-comparison.json",
+    "doc/small-batchsize-investigation/data/ablation-manifest.json",
+    "doc/small-batchsize-investigation/data/ablation-runs.json",
+    "doc/small-batchsize-investigation/data/ablation-validation.json",
+    "doc/small-batchsize-investigation/data/ablation.csv",
+    "doc/small-batchsize-investigation/data/analysis.json",
+    "doc/small-batchsize-investigation/data/audit-clipping-runs.json",
+    "doc/small-batchsize-investigation/data/audit-input-evidence.json",
+    "doc/small-batchsize-investigation/data/audit-selected-clipping.json",
+    "doc/small-batchsize-investigation/data/audit-synchronous-screen-clipping.json",
+    "doc/small-batchsize-investigation/data/clipped-base-manifest.json",
+    "doc/small-batchsize-investigation/data/clipped-base-protocol.json",
+    "doc/small-batchsize-investigation/data/clipped-base-screening-selection.json",
+    "doc/small-batchsize-investigation/data/clipped-extension-manifest.json",
+    "doc/small-batchsize-investigation/data/clipped-extension-protocol.json",
+    "doc/small-batchsize-investigation/data/clipped-extension-screening-selection.json",
+    "doc/small-batchsize-investigation/data/clipped-input-evidence.json",
+    "doc/small-batchsize-investigation/data/clipped-performance-summary.json",
+    "doc/small-batchsize-investigation/data/clipped-protocol.json",
+    "doc/small-batchsize-investigation/data/clipped-replicated.json",
+    "doc/small-batchsize-investigation/data/clipped-runs.json",
+    "doc/small-batchsize-investigation/data/clipped-screening.json",
+    "doc/small-batchsize-investigation/data/clipped-selected-recipes.json",
+    "doc/small-batchsize-investigation/data/clipped-source-verification.json",
+    "doc/small-batchsize-investigation/data/clipped-validation.json",
+    "doc/small-batchsize-investigation/data/configuration-identities.json",
+    "doc/small-batchsize-investigation/data/gaps.csv",
+    "doc/small-batchsize-investigation/data/matched-replicated.json",
+    "doc/small-batchsize-investigation/data/matched-screening.csv",
+    "doc/small-batchsize-investigation/data/matched-screening.json",
+    "doc/small-batchsize-investigation/data/matched-summary.csv",
+    "doc/small-batchsize-investigation/data/performance.csv",
+    "doc/small-batchsize-investigation/data/replicated-clipped.csv",
+    "doc/small-batchsize-investigation/data/replicated-sync.csv",
+    "doc/small-batchsize-investigation/data/replicated-unclipped.csv",
+    "doc/small-batchsize-investigation/data/sync-beta1-replicated.json",
+    "doc/small-batchsize-investigation/data/sync-confirmation.json",
+    "doc/small-batchsize-investigation/data/sync-manifest.json",
+    "doc/small-batchsize-investigation/data/sync-runs.json",
+    "doc/small-batchsize-investigation/data/sync-throughput-summary.json",
+    "doc/small-batchsize-investigation/data/sync-validation.json",
+    "doc/small-batchsize-investigation/data/synchronous-selected.json",
+    "doc/small-batchsize-investigation/data/unclipped-imports.json",
+    "doc/small-batchsize-investigation/data/unclipped-manifest.json",
+    "doc/small-batchsize-investigation/data/unclipped-performance-summary.json",
+    "doc/small-batchsize-investigation/data/unclipped-replicated.json",
+    "doc/small-batchsize-investigation/data/unclipped-runs.json",
+    "doc/small-batchsize-investigation/data/unclipped-screening.json",
+    "doc/small-batchsize-investigation/data/unclipped-selected-recipes.json",
+    "doc/small-batchsize-investigation/data/unclipped-selection.json",
+    "doc/small-batchsize-investigation/data/unclipped-supplemental.json",
+    "doc/small-batchsize-investigation/data/unclipped-validation.json",
+    "doc/small-batchsize-investigation/provenance.json",
+    "doc/small-batchsize-investigation/report.pdf",
+    "doc/small-batchsize-investigation/report.typ",
+    "doc/small-batchsize-investigation/slides.pdf",
+    "doc/small-batchsize-investigation/slides.typ",
+    "doc/small-batchsize-investigation/verify.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/manifest.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/provenance/protocol.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/provenance/screening-selection.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/campaign.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/configs/20m.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/configs/cosine.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/pyproject.toml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/__init__.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/__main__.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/analysis/__init__.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/analysis/core.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/analysis/plot.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/analysis/slurm.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/benchmark.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/checkpoints.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/cli.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/config.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/data.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/experiments.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/model.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/packed.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/packed_benchmark.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/packed_optimizer.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/runtime.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/state.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/train.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/uv.lock",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/watch.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/clipping-audit/clipping-runs.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/clipping-audit/input-evidence.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/clipping-audit/selected-clipping.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/clipping-audit/synchronous-screen-clipping.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/configs/4f89a0e069c0bcd94efb-s42.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/configs/4f89a0e069c0bcd94efb-s43.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/configs/4f89a0e069c0bcd94efb-s44.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/configs/c352ddd312366e4e4b7c-s42.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/configs/c352ddd312366e4e4b7c-s43.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/configs/c352ddd312366e4e4b7c-s44.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/configs/d4ae9345d30625e06017-s42.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/configs/d4ae9345d30625e06017-s43.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/configs/d4ae9345d30625e06017-s44.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/configs/e3fbe27da09d02fa5f59-s42.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/configs/e3fbe27da09d02fa5f59-s43.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/configs/e3fbe27da09d02fa5f59-s44.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s42/attempt-001/environment.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s42/attempt-001/metrics.jsonl",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s42/attempt-001/resolved.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s42/attempt-001/result.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s42/attempt-001/run.log",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s42/attempt-001/success.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s43/attempt-001/environment.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s43/attempt-001/metrics.jsonl",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s43/attempt-001/resolved.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s43/attempt-001/result.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s43/attempt-001/run.log",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s43/attempt-001/success.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s44/attempt-001/environment.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s44/attempt-001/metrics.jsonl",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s44/attempt-001/resolved.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s44/attempt-001/result.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s44/attempt-001/run.log",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s44/attempt-001/success.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s42/attempt-001/environment.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s42/attempt-001/metrics.jsonl",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s42/attempt-001/resolved.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s42/attempt-001/result.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s42/attempt-001/run.log",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s42/attempt-001/success.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s43/attempt-001/environment.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s43/attempt-001/metrics.jsonl",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s43/attempt-001/resolved.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s43/attempt-001/result.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s43/attempt-001/run.log",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s43/attempt-001/success.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s44/attempt-001/environment.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s44/attempt-001/metrics.jsonl",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s44/attempt-001/resolved.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s44/attempt-001/result.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s44/attempt-001/run.log",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s44/attempt-001/success.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s42/attempt-001/environment.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s42/attempt-001/metrics.jsonl",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s42/attempt-001/resolved.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s42/attempt-001/result.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s42/attempt-001/run.log",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s42/attempt-001/success.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s43/attempt-001/environment.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s43/attempt-001/metrics.jsonl",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s43/attempt-001/resolved.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s43/attempt-001/result.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s43/attempt-001/run.log",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s43/attempt-001/success.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s44/attempt-001/environment.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s44/attempt-001/metrics.jsonl",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s44/attempt-001/resolved.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s44/attempt-001/result.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s44/attempt-001/run.log",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s44/attempt-001/success.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s42/attempt-001/environment.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s42/attempt-001/metrics.jsonl",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s42/attempt-001/resolved.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s42/attempt-001/result.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s42/attempt-001/run.log",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s42/attempt-001/success.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s43/attempt-001/environment.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s43/attempt-001/metrics.jsonl",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s43/attempt-001/resolved.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s43/attempt-001/result.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s43/attempt-001/run.log",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s43/attempt-001/success.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s44/attempt-001/environment.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s44/attempt-001/metrics.jsonl",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s44/attempt-001/resolved.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s44/attempt-001/result.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s44/attempt-001/run.log",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s44/attempt-001/success.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/job.sh",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/manifest.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/provenance/final-accounting.txt",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/reports/clipping-comparison.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/reports/runs.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/reports/slurm-accounting.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/reports/validation.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/audit_clipping.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/campaign.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/campaign_base.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/configs/20m.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/configs/cosine.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/pyproject.toml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/__init__.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/__main__.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/analysis/__init__.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/analysis/core.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/analysis/plot.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/analysis/slurm.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/benchmark.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/checkpoints.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/cli.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/config.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/data.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/experiments.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/model.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/packed.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/packed_benchmark.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/packed_optimizer.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/runtime.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/state.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/train.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/test_campaign.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/uv.lock",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/submissions/3b3dfb823eac45b09dae76db85b989c5.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/submissions/3b3dfb823eac45b09dae76db85b989c5.selection.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/manifest.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/provenance/imports.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/provenance/screening-selection.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/reports/matched-replicated.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/reports/matched-screening.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/reports/performance-summary.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/reports/replicated.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/reports/runs.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/reports/screening.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/reports/selected-recipes.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/reports/supplemental-imports.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/reports/synchronous-selected.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/reports/validation.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/campaign.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/campaign_base.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/configs/20m.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/configs/cosine.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/prepare_audit.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/pyproject.toml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/reporting.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/__init__.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/__main__.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/analysis/__init__.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/analysis/core.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/analysis/plot.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/analysis/slurm.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/benchmark.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/checkpoints.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/cli.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/config.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/data.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/experiments.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/model.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/packed.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/packed_benchmark.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/packed_optimizer.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/runtime.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/state.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/train.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/test_campaign.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/test_watch.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/uv.lock",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/watch.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-unified/reports/input-evidence.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-unified/reports/performance-summary.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-unified/reports/replicated.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-unified/reports/runs.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-unified/reports/screening.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-unified/reports/selected-recipes.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-unified/reports/source-verification.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-unified/reports/unified-campaign.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch-unified/reports/validation.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/manifest.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/provenance/protocol.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/provenance/screening-selection.json",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/source/campaign.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/source/configs/20m.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/source/configs/cosine.yaml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/source/pyproject.toml",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/__init__.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/__main__.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/analysis/__init__.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/analysis/core.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/analysis/plot.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/analysis/slurm.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/benchmark.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/checkpoints.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/cli.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/config.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/data.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/experiments.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/model.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/packed.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/packed_benchmark.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/packed_optimizer.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/runtime.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/state.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/train.py",
+    "runs/packed4-awc-exponential-20m-c512-small-batch/source/uv.lock",
+    "runs/sync-20m-c512-small-batch/manifest.json",
+    "runs/sync-20m-c512-small-batch/reports/beta1-replicated.json",
+    "runs/sync-20m-c512-small-batch/reports/confirmation.json",
+    "runs/sync-20m-c512-small-batch/reports/runs.json",
+    "runs/sync-20m-c512-small-batch/reports/throughput-summary.json",
+    "runs/sync-20m-c512-small-batch/reports/validation.json",
+    "runs/sync-20m-c512-small-batch/source/batch_size_study.py",
+    "runs/sync-20m-c512-small-batch/source/configs/20m.yaml",
+    "runs/sync-20m-c512-small-batch/source/configs/cosine.yaml",
+    "runs/sync-20m-c512-small-batch/source/pyproject.toml",
+    "runs/sync-20m-c512-small-batch/source/src/tiny_llm/__init__.py",
+    "runs/sync-20m-c512-small-batch/source/src/tiny_llm/__main__.py",
+    "runs/sync-20m-c512-small-batch/source/src/tiny_llm/analysis/__init__.py",
+    "runs/sync-20m-c512-small-batch/source/src/tiny_llm/analysis/core.py",
+    "runs/sync-20m-c512-small-batch/source/src/tiny_llm/analysis/plot.py",
+    "runs/sync-20m-c512-small-batch/source/src/tiny_llm/analysis/slurm.py",
+    "runs/sync-20m-c512-small-batch/source/src/tiny_llm/benchmark.py",
+    "runs/sync-20m-c512-small-batch/source/src/tiny_llm/checkpoints.py",
+    "runs/sync-20m-c512-small-batch/source/src/tiny_llm/cli.py",
+    "runs/sync-20m-c512-small-batch/source/src/tiny_llm/config.py",
+    "runs/sync-20m-c512-small-batch/source/src/tiny_llm/data.py",
+    "runs/sync-20m-c512-small-batch/source/src/tiny_llm/experiments.py",
+    "runs/sync-20m-c512-small-batch/source/src/tiny_llm/model.py",
+    "runs/sync-20m-c512-small-batch/source/src/tiny_llm/packed.py",
+    "runs/sync-20m-c512-small-batch/source/src/tiny_llm/packed_benchmark.py",
+    "runs/sync-20m-c512-small-batch/source/src/tiny_llm/packed_optimizer.py",
+    "runs/sync-20m-c512-small-batch/source/src/tiny_llm/runtime.py",
+    "runs/sync-20m-c512-small-batch/source/src/tiny_llm/state.py",
+    "runs/sync-20m-c512-small-batch/source/src/tiny_llm/train.py",
+    "runs/sync-20m-c512-small-batch/source/uv.lock"
+  ],
+  "input_artifacts": [
+    {
+      "path": "doc/small-batchsize-investigation/assets/ablation.pdf",
+      "sha256": "718d221ffddd64f413af8add06f11137c9d8d4d2072f2ad2c705b5f331c8d600",
+      "sha256_after": "718d221ffddd64f413af8add06f11137c9d8d4d2072f2ad2c705b5f331c8d600"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/assets/ablation.svg",
+      "sha256": "218a37db4ff5770bd36d1f851c70edb74855835f16c4fb6ee9c58f35447e484b",
+      "sha256_after": "218a37db4ff5770bd36d1f851c70edb74855835f16c4fb6ee9c58f35447e484b"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/assets/beta1.pdf",
+      "sha256": "010f2ddac82db3ebd7cb7e9cbcc55fbf0d9f713a0356f6bbda3aa2cd99273c03",
+      "sha256_after": "010f2ddac82db3ebd7cb7e9cbcc55fbf0d9f713a0356f6bbda3aa2cd99273c03"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/assets/beta1.svg",
+      "sha256": "9879042ca6170d3b28ebf3bb6b2ae824a6e1fab602eca30eb7f5f3284843c2f1",
+      "sha256_after": "9879042ca6170d3b28ebf3bb6b2ae824a6e1fab602eca30eb7f5f3284843c2f1"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/assets/beta2.pdf",
+      "sha256": "cfe3ad1d8a64b4cce158e2244b8999cbb58006b8ecf1592a49faa062f686d46a",
+      "sha256_after": "cfe3ad1d8a64b4cce158e2244b8999cbb58006b8ecf1592a49faa062f686d46a"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/assets/beta2.svg",
+      "sha256": "7d48d6683dd79d62fe28cd99fd59ab0372b30eae7b8a051caea223b5f96e4b52",
+      "sha256_after": "7d48d6683dd79d62fe28cd99fd59ab0372b30eae7b8a051caea223b5f96e4b52"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/assets/clipping.pdf",
+      "sha256": "712c7bc5bca261e8a9be7c95779bfb2df2bd984fa88e24675743f62ff9948ef7",
+      "sha256_after": "712c7bc5bca261e8a9be7c95779bfb2df2bd984fa88e24675743f62ff9948ef7"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/assets/clipping.svg",
+      "sha256": "8f620fae772ce446efe1d94a67e4394380e9de1f3579427ca64eb1d108da6160",
+      "sha256_after": "8f620fae772ce446efe1d94a67e4394380e9de1f3579427ca64eb1d108da6160"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/assets/gap.pdf",
+      "sha256": "f0c5d8df155eb1d1f27314ef13658460c6d2d5108eaa534132c3d85dc552e221",
+      "sha256_after": "f0c5d8df155eb1d1f27314ef13658460c6d2d5108eaa534132c3d85dc552e221"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/assets/gap.svg",
+      "sha256": "4cec83d718410ac53877d30a8a3ed2042cadf672306a10233efc78c642a512d5",
+      "sha256_after": "4cec83d718410ac53877d30a8a3ed2042cadf672306a10233efc78c642a512d5"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/assets/matched-grid.pdf",
+      "sha256": "cc64b872e6ff0518002e73ad1951ee7e03fb7440579cb7b81897659edd9d834b",
+      "sha256_after": "cc64b872e6ff0518002e73ad1951ee7e03fb7440579cb7b81897659edd9d834b"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/assets/matched-grid.svg",
+      "sha256": "40a016585c483d96877bd5eba1d20c0bd03772c70a5e2be339c97c576e15cca2",
+      "sha256_after": "40a016585c483d96877bd5eba1d20c0bd03772c70a5e2be339c97c576e15cca2"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/assets/quality.pdf",
+      "sha256": "f792f3cc40516ec8a11d255704e201f6aa12a5987ffe5576de805547ddc91bc1",
+      "sha256_after": "f792f3cc40516ec8a11d255704e201f6aa12a5987ffe5576de805547ddc91bc1"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/assets/quality.svg",
+      "sha256": "8af4ff9d7039de532bac93aeb20847ec2b12248218c41042cb8bced6e0a86f10",
+      "sha256_after": "8af4ff9d7039de532bac93aeb20847ec2b12248218c41042cb8bced6e0a86f10"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/assets/replication.pdf",
+      "sha256": "26ec9917306898f6e291d546ba826b2038f0b4960caf95fad2e18241f126d21d",
+      "sha256_after": "26ec9917306898f6e291d546ba826b2038f0b4960caf95fad2e18241f126d21d"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/assets/replication.svg",
+      "sha256": "b1bbd276c2324cccb8baea368acf22bb3770c91d46368f90729a933b8e684088",
+      "sha256_after": "b1bbd276c2324cccb8baea368acf22bb3770c91d46368f90729a933b8e684088"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/assets/retuned.pdf",
+      "sha256": "a53020d613dd88666a536342b288fad766bb2b4ad86b44244e8bb802ba313b18",
+      "sha256_after": "a53020d613dd88666a536342b288fad766bb2b4ad86b44244e8bb802ba313b18"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/assets/retuned.svg",
+      "sha256": "6a6b1bf60636a42625d6a26aa61ed518e2f00e8bb6d39085e25570e3d958da43",
+      "sha256_after": "6a6b1bf60636a42625d6a26aa61ed518e2f00e8bb6d39085e25570e3d958da43"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/assets/throughput.pdf",
+      "sha256": "13358952b4a451ca40e4afec6d78e767f043ac47347ec82a1a25043b7e691c4e",
+      "sha256_after": "13358952b4a451ca40e4afec6d78e767f043ac47347ec82a1a25043b7e691c4e"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/assets/throughput.svg",
+      "sha256": "b72d16633f5c80b1d2ca3b384a1423aae98479381454e5a89526495740afd56e",
+      "sha256_after": "b72d16633f5c80b1d2ca3b384a1423aae98479381454e5a89526495740afd56e"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/audit-contract.json",
+      "sha256": "161fa3edf19fc4c3f947ab9d1c52b36bcb515d05f7c612278783959b89dbbd3d",
+      "sha256_after": "161fa3edf19fc4c3f947ab9d1c52b36bcb515d05f7c612278783959b89dbbd3d"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/build.sh",
+      "sha256": "78d59357dc7bd59f3b1cbdb83eaa00d5c951efdcb5cb24a25cb397c69e8d127f",
+      "sha256_after": "78d59357dc7bd59f3b1cbdb83eaa00d5c951efdcb5cb24a25cb397c69e8d127f"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/build_figures.py",
+      "sha256": "2adf1007c4281cd42dd25bea3e168e83983e7db9a5f4ee3ec61ef1a03d92b60c",
+      "sha256_after": "2adf1007c4281cd42dd25bea3e168e83983e7db9a5f4ee3ec61ef1a03d92b60c"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/ablation-comparison.json",
+      "sha256": "0e8799b42ef0eddba249c3eb1987715c1d0dc9fe57a68b933babf065b6a1965c",
+      "sha256_after": "0e8799b42ef0eddba249c3eb1987715c1d0dc9fe57a68b933babf065b6a1965c"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/ablation-manifest.json",
+      "sha256": "6aa6807e72f9e7bfbb6b54481a7e0c973619749afd80f97a0a5837109ba79b12",
+      "sha256_after": "6aa6807e72f9e7bfbb6b54481a7e0c973619749afd80f97a0a5837109ba79b12"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/ablation-runs.json",
+      "sha256": "d330191d61961071ab996a555160b3b7b6beb60332121cb4fcbbbec607b8942c",
+      "sha256_after": "d330191d61961071ab996a555160b3b7b6beb60332121cb4fcbbbec607b8942c"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/ablation-validation.json",
+      "sha256": "20ff161b0f59e0ed41821498ac54c97c92eeb5f8def7895d2ef203f6a791c850",
+      "sha256_after": "20ff161b0f59e0ed41821498ac54c97c92eeb5f8def7895d2ef203f6a791c850"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/ablation.csv",
+      "sha256": "f5c5d6d25b41305ff8da3190202a4ad443d311d5808c13c997529a2e09c59f78",
+      "sha256_after": "f5c5d6d25b41305ff8da3190202a4ad443d311d5808c13c997529a2e09c59f78"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/analysis.json",
+      "sha256": "a4d37371d9ad394c4f8a38b24c95f4e5d3430dc7e6658ea36597fd7d8f0f0d46",
+      "sha256_after": "a4d37371d9ad394c4f8a38b24c95f4e5d3430dc7e6658ea36597fd7d8f0f0d46"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/audit-clipping-runs.json",
+      "sha256": "96522453218759976d67326315e54d0fe50699ad815eb90f505e21515d77f166",
+      "sha256_after": "96522453218759976d67326315e54d0fe50699ad815eb90f505e21515d77f166"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/audit-input-evidence.json",
+      "sha256": "1dcd43237796179a8fd62ae3c7082c5f1653588a8275dacf4deeb364b7eb2c3b",
+      "sha256_after": "1dcd43237796179a8fd62ae3c7082c5f1653588a8275dacf4deeb364b7eb2c3b"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/audit-selected-clipping.json",
+      "sha256": "74de55dce13fad6060b65c8e6fff91b9bfdb2fcb066e2c83c9095acff14fa57c",
+      "sha256_after": "74de55dce13fad6060b65c8e6fff91b9bfdb2fcb066e2c83c9095acff14fa57c"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/audit-synchronous-screen-clipping.json",
+      "sha256": "07104f4a0727fdd2c0027231d533a647d1133ea8f4cb98a782ceea70d291e192",
+      "sha256_after": "07104f4a0727fdd2c0027231d533a647d1133ea8f4cb98a782ceea70d291e192"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/clipped-base-manifest.json",
+      "sha256": "6a3c6de375c43f1bde0b26eedb272181725fd5d22d8cf4cdedab83894be954b9",
+      "sha256_after": "6a3c6de375c43f1bde0b26eedb272181725fd5d22d8cf4cdedab83894be954b9"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/clipped-base-protocol.json",
+      "sha256": "6be49bfe3e4b8be09cd881861ed3c972f0813278886f66fbf3e976e22d62571a",
+      "sha256_after": "6be49bfe3e4b8be09cd881861ed3c972f0813278886f66fbf3e976e22d62571a"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/clipped-base-screening-selection.json",
+      "sha256": "ea7c44e5a03d6ca4ce8eedce4e3950aad1d886a4ff31ed05deaf707d8ac4af8e",
+      "sha256_after": "ea7c44e5a03d6ca4ce8eedce4e3950aad1d886a4ff31ed05deaf707d8ac4af8e"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/clipped-extension-manifest.json",
+      "sha256": "c52f0bcb383e2460e5a519d70dcb31769843553abbc1720eb84140d4e62a05c8",
+      "sha256_after": "c52f0bcb383e2460e5a519d70dcb31769843553abbc1720eb84140d4e62a05c8"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/clipped-extension-protocol.json",
+      "sha256": "b8138314ef2fcd4dc0669e3a3109469bf07999f513bde4f38023dfc9897a8451",
+      "sha256_after": "b8138314ef2fcd4dc0669e3a3109469bf07999f513bde4f38023dfc9897a8451"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/clipped-extension-screening-selection.json",
+      "sha256": "7240929d6acbddb039ac337f128b40240f587e0d1928501bf5756e2c4b44e3ae",
+      "sha256_after": "7240929d6acbddb039ac337f128b40240f587e0d1928501bf5756e2c4b44e3ae"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/clipped-input-evidence.json",
+      "sha256": "0fa7457dd3d62702cd16f3d1c308c4c6b3c15287b2c5741070d0f54a5f489061",
+      "sha256_after": "0fa7457dd3d62702cd16f3d1c308c4c6b3c15287b2c5741070d0f54a5f489061"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/clipped-performance-summary.json",
+      "sha256": "607a89992c67a70195c0391063b9800d3ff39cb9b4971c7da1e3c063f4c636e5",
+      "sha256_after": "607a89992c67a70195c0391063b9800d3ff39cb9b4971c7da1e3c063f4c636e5"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/clipped-protocol.json",
+      "sha256": "6163306b1429694a8ebfdc0ad823c0a6bd14a0220ffaa165accb0ad8c38adb1a",
+      "sha256_after": "6163306b1429694a8ebfdc0ad823c0a6bd14a0220ffaa165accb0ad8c38adb1a"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/clipped-replicated.json",
+      "sha256": "fd8b7e7f179baf50f35fda1774f35ab079007496ef9ba6716bac87935b3913d2",
+      "sha256_after": "fd8b7e7f179baf50f35fda1774f35ab079007496ef9ba6716bac87935b3913d2"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/clipped-runs.json",
+      "sha256": "e3b122546318edb63ea01d358ca43ec7ac0e757a744a1ed14a7e7021bb4ef286",
+      "sha256_after": "e3b122546318edb63ea01d358ca43ec7ac0e757a744a1ed14a7e7021bb4ef286"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/clipped-screening.json",
+      "sha256": "3ab67c25f87ea55ab916154cae6d2e42ae21f28f27f6b5617d0888544d4b8b32",
+      "sha256_after": "3ab67c25f87ea55ab916154cae6d2e42ae21f28f27f6b5617d0888544d4b8b32"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/clipped-selected-recipes.json",
+      "sha256": "7375988658f8b7174b05a1528755ec30c430fddc4536dd2391c749c63e4c47d7",
+      "sha256_after": "7375988658f8b7174b05a1528755ec30c430fddc4536dd2391c749c63e4c47d7"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/clipped-source-verification.json",
+      "sha256": "1ddb3b60594d38d6704b305305105ab2a65d9b510695747339a1ca7611c9764c",
+      "sha256_after": "1ddb3b60594d38d6704b305305105ab2a65d9b510695747339a1ca7611c9764c"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/clipped-validation.json",
+      "sha256": "c820801019537b66826d93763a6bbfaec2a2458288a5cc1435efde1c432da51c",
+      "sha256_after": "c820801019537b66826d93763a6bbfaec2a2458288a5cc1435efde1c432da51c"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/configuration-identities.json",
+      "sha256": "f72f1789eb359b6d92dbfd0bc68e669129a23c07819a3e0076ece586eb13e8a7",
+      "sha256_after": "f72f1789eb359b6d92dbfd0bc68e669129a23c07819a3e0076ece586eb13e8a7"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/gaps.csv",
+      "sha256": "df2c117c0c41947dc87f1bd8f25945929b5d7a683f7ef4b34f3ac53cf792546c",
+      "sha256_after": "df2c117c0c41947dc87f1bd8f25945929b5d7a683f7ef4b34f3ac53cf792546c"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/matched-replicated.json",
+      "sha256": "4fcf76ea30d61a52b07984b3dfe060d169eedf97344c26f520452a8f68164fc2",
+      "sha256_after": "4fcf76ea30d61a52b07984b3dfe060d169eedf97344c26f520452a8f68164fc2"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/matched-screening.csv",
+      "sha256": "7c6d073aeca6c84b61d6c496c9086af168c52941b3723d5f6e1a44d0921d4a76",
+      "sha256_after": "7c6d073aeca6c84b61d6c496c9086af168c52941b3723d5f6e1a44d0921d4a76"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/matched-screening.json",
+      "sha256": "78b5703e13b8a87d258b96f60831d306e6e8241b9ac151daac5bbb40c3fd3260",
+      "sha256_after": "78b5703e13b8a87d258b96f60831d306e6e8241b9ac151daac5bbb40c3fd3260"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/matched-summary.csv",
+      "sha256": "26ffe99f54cd2c51ff0e9ad8169a3f56f03ea5175b87ca53655482d9713189c7",
+      "sha256_after": "26ffe99f54cd2c51ff0e9ad8169a3f56f03ea5175b87ca53655482d9713189c7"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/performance.csv",
+      "sha256": "8175f4286029d7edebfd2246b6dc23ed7f51069955660bccbf0629635d7e0112",
+      "sha256_after": "8175f4286029d7edebfd2246b6dc23ed7f51069955660bccbf0629635d7e0112"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/replicated-clipped.csv",
+      "sha256": "d132fbaee819c6e66e37e409ac5faad1115e2ebc9db7f93cd1af48d8bf6710b5",
+      "sha256_after": "d132fbaee819c6e66e37e409ac5faad1115e2ebc9db7f93cd1af48d8bf6710b5"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/replicated-sync.csv",
+      "sha256": "db1d23369ffc1c5aaf2f4fdfdb218328922921186f7e5bca2cbc247b2ffd34d3",
+      "sha256_after": "db1d23369ffc1c5aaf2f4fdfdb218328922921186f7e5bca2cbc247b2ffd34d3"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/replicated-unclipped.csv",
+      "sha256": "f9e8101994f542516b35f4b000b5845051af32c2b34f658c358f8ee78d396e39",
+      "sha256_after": "f9e8101994f542516b35f4b000b5845051af32c2b34f658c358f8ee78d396e39"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/sync-beta1-replicated.json",
+      "sha256": "26bdbf671d435d32e284bbb000eb883268ca4b3c1f7a3d130f3bab8144536d9b",
+      "sha256_after": "26bdbf671d435d32e284bbb000eb883268ca4b3c1f7a3d130f3bab8144536d9b"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/sync-confirmation.json",
+      "sha256": "89c301adc4c8f060395190702a6ae4dc5f9fdbb25ea64a2fafa1bd875700b659",
+      "sha256_after": "89c301adc4c8f060395190702a6ae4dc5f9fdbb25ea64a2fafa1bd875700b659"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/sync-manifest.json",
+      "sha256": "a3d5379962d5adfd1f2d01d7c994e4fa5b693a673b5975b8da3fd510c49750fe",
+      "sha256_after": "a3d5379962d5adfd1f2d01d7c994e4fa5b693a673b5975b8da3fd510c49750fe"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/sync-runs.json",
+      "sha256": "6fe0f06aa2646c1785b09a2b1c8e9db6e4bc03a6b77b3cc0181498e57d0f90a8",
+      "sha256_after": "6fe0f06aa2646c1785b09a2b1c8e9db6e4bc03a6b77b3cc0181498e57d0f90a8"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/sync-throughput-summary.json",
+      "sha256": "08b7b7c9668716502ccaded2fb16a34dc4359d03402ad66d553905c496681189",
+      "sha256_after": "08b7b7c9668716502ccaded2fb16a34dc4359d03402ad66d553905c496681189"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/sync-validation.json",
+      "sha256": "3ab7e92c8b8b7b1161974af15b953d24bd21ae5166b8c81a682467b4061bc194",
+      "sha256_after": "3ab7e92c8b8b7b1161974af15b953d24bd21ae5166b8c81a682467b4061bc194"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/synchronous-selected.json",
+      "sha256": "eae5dae4b1b73fc3c429ff251c20f2785eaa9886209fc7c53c9b45c8db659dd2",
+      "sha256_after": "eae5dae4b1b73fc3c429ff251c20f2785eaa9886209fc7c53c9b45c8db659dd2"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/unclipped-imports.json",
+      "sha256": "0619583136f6fdff8d3c9b85fe6fc008099688482ad19d793bfc6e19bbb88be6",
+      "sha256_after": "0619583136f6fdff8d3c9b85fe6fc008099688482ad19d793bfc6e19bbb88be6"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/unclipped-manifest.json",
+      "sha256": "a248c5745603a975cd27dd03866276e943f1ad2e3bc40468f76070da530bc4c0",
+      "sha256_after": "a248c5745603a975cd27dd03866276e943f1ad2e3bc40468f76070da530bc4c0"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/unclipped-performance-summary.json",
+      "sha256": "ea5116c9fca94882b6e65fc48bb2e372cfc62df9ecfbfce87486fb9b4a41464d",
+      "sha256_after": "ea5116c9fca94882b6e65fc48bb2e372cfc62df9ecfbfce87486fb9b4a41464d"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/unclipped-replicated.json",
+      "sha256": "5839b9e3667527790b44f067d98d89fccb526351ce446a11b9ccf5067a261791",
+      "sha256_after": "5839b9e3667527790b44f067d98d89fccb526351ce446a11b9ccf5067a261791"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/unclipped-runs.json",
+      "sha256": "54ff2ab342e68e3cb50f15a0a8d477375aec0e59014225552556302ca5c35beb",
+      "sha256_after": "54ff2ab342e68e3cb50f15a0a8d477375aec0e59014225552556302ca5c35beb"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/unclipped-screening.json",
+      "sha256": "283a72efac1acc71070454d07e01ba926bd39b5160a78d00ae27fcaf0bff2f2b",
+      "sha256_after": "283a72efac1acc71070454d07e01ba926bd39b5160a78d00ae27fcaf0bff2f2b"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/unclipped-selected-recipes.json",
+      "sha256": "9d7b60e9e5a5d48e18aaf367f37e6f75f7967fcb7ed4cee10d2f18efddf8b7f2",
+      "sha256_after": "9d7b60e9e5a5d48e18aaf367f37e6f75f7967fcb7ed4cee10d2f18efddf8b7f2"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/unclipped-selection.json",
+      "sha256": "bfcb8d5b44e3e1eb78d2522e63fc7456ae2dbc91072fb48bb49b902e04640747",
+      "sha256_after": "bfcb8d5b44e3e1eb78d2522e63fc7456ae2dbc91072fb48bb49b902e04640747"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/unclipped-supplemental.json",
+      "sha256": "c7ce76fcd06a58335a9f05522d15b95644cd1f24dd6b6587c740d1f4a1e7b67f",
+      "sha256_after": "c7ce76fcd06a58335a9f05522d15b95644cd1f24dd6b6587c740d1f4a1e7b67f"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/data/unclipped-validation.json",
+      "sha256": "7c7aacf653d6a787c2c5f61c75e25818f530549e5073a1fa99ae6166d78e6335",
+      "sha256_after": "7c7aacf653d6a787c2c5f61c75e25818f530549e5073a1fa99ae6166d78e6335"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/provenance.json",
+      "sha256": "385db0f8dd354611c5a855cc53968bedbb5453b86f49eb18feaeefd958c3f912",
+      "sha256_after": "385db0f8dd354611c5a855cc53968bedbb5453b86f49eb18feaeefd958c3f912"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/report.pdf",
+      "sha256": "4b9f1df8dea84970ef8cf2ffb11d0abe8c376357c207576ba6760cb5d972828c",
+      "sha256_after": "4b9f1df8dea84970ef8cf2ffb11d0abe8c376357c207576ba6760cb5d972828c"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/report.typ",
+      "sha256": "40f4903028e87bec137061a8173cf247ce390cd4768c70f679257d2cf50777f2",
+      "sha256_after": "40f4903028e87bec137061a8173cf247ce390cd4768c70f679257d2cf50777f2"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/slides.pdf",
+      "sha256": "8846cfca7d9ee834feaa9f7dc15402712dc693ff7e5daadf9a85d3f9156d689c",
+      "sha256_after": "8846cfca7d9ee834feaa9f7dc15402712dc693ff7e5daadf9a85d3f9156d689c"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/slides.typ",
+      "sha256": "df8197a1a1723690b6e09d4c0c9874b721fe97600c34bc027999a834dfe74d7e",
+      "sha256_after": "df8197a1a1723690b6e09d4c0c9874b721fe97600c34bc027999a834dfe74d7e"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/verify.py",
+      "sha256": "fbc54f4cdeb109b89cf2059c466a48d0ad832080cbc5571f6a7775678c2676a0",
+      "sha256_after": "fbc54f4cdeb109b89cf2059c466a48d0ad832080cbc5571f6a7775678c2676a0"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/manifest.json",
+      "sha256": "c52f0bcb383e2460e5a519d70dcb31769843553abbc1720eb84140d4e62a05c8",
+      "sha256_after": "c52f0bcb383e2460e5a519d70dcb31769843553abbc1720eb84140d4e62a05c8"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/provenance/protocol.json",
+      "sha256": "b8138314ef2fcd4dc0669e3a3109469bf07999f513bde4f38023dfc9897a8451",
+      "sha256_after": "b8138314ef2fcd4dc0669e3a3109469bf07999f513bde4f38023dfc9897a8451"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/provenance/screening-selection.json",
+      "sha256": "7240929d6acbddb039ac337f128b40240f587e0d1928501bf5756e2c4b44e3ae",
+      "sha256_after": "7240929d6acbddb039ac337f128b40240f587e0d1928501bf5756e2c4b44e3ae"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/campaign.py",
+      "sha256": "d3c678562605e20f757a2c5c147fa51688613a795863326ee078cad9e2c9ac01",
+      "sha256_after": "d3c678562605e20f757a2c5c147fa51688613a795863326ee078cad9e2c9ac01"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/configs/20m.yaml",
+      "sha256": "19739a9bb22f20b2d3052d3df353156c29b42272e63f3d83e2b8b9bb52bfe880",
+      "sha256_after": "19739a9bb22f20b2d3052d3df353156c29b42272e63f3d83e2b8b9bb52bfe880"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/configs/cosine.yaml",
+      "sha256": "9c78a6e00b5532ec84dfb7d4b92e3e3736e8f64127569f38a29b9c2d849e0475",
+      "sha256_after": "9c78a6e00b5532ec84dfb7d4b92e3e3736e8f64127569f38a29b9c2d849e0475"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/pyproject.toml",
+      "sha256": "6194efd1e3b255670aa8a9ee57d9585a5aa5207ff68fe81c4d38615322c6309f",
+      "sha256_after": "6194efd1e3b255670aa8a9ee57d9585a5aa5207ff68fe81c4d38615322c6309f"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/__init__.py",
+      "sha256": "ee6eeb9fd0464c10d982f2ac3dd2677c5534f23eeb0f9adfd2d7435b88785e7d",
+      "sha256_after": "ee6eeb9fd0464c10d982f2ac3dd2677c5534f23eeb0f9adfd2d7435b88785e7d"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/__main__.py",
+      "sha256": "76687090399e394dd59f6e72bf11f99ca37184564e53a6f19a3c3be74ee96789",
+      "sha256_after": "76687090399e394dd59f6e72bf11f99ca37184564e53a6f19a3c3be74ee96789"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/analysis/__init__.py",
+      "sha256": "f7899324f928575b7c353c51b0c5e5b21b547e5effb8e045e1ac9e9ad68e1ca4",
+      "sha256_after": "f7899324f928575b7c353c51b0c5e5b21b547e5effb8e045e1ac9e9ad68e1ca4"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/analysis/core.py",
+      "sha256": "b0a902912c7e291f712f579cfdb3a85d7807571f2364c17b31ebe696ad6663ca",
+      "sha256_after": "b0a902912c7e291f712f579cfdb3a85d7807571f2364c17b31ebe696ad6663ca"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/analysis/plot.py",
+      "sha256": "7de80840117c68347c45647dc9a0fb52e482b25765f1c8ad701a7ad2fb867f3e",
+      "sha256_after": "7de80840117c68347c45647dc9a0fb52e482b25765f1c8ad701a7ad2fb867f3e"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/analysis/slurm.py",
+      "sha256": "906166aaa0f9c5d859fa7eb5d23831da27161bd58e3beb0fc46d629fd5a8986b",
+      "sha256_after": "906166aaa0f9c5d859fa7eb5d23831da27161bd58e3beb0fc46d629fd5a8986b"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/benchmark.py",
+      "sha256": "014acb615f768db6e84e9bd46c4b4263ee661a3847924427e1c3f0a7dda28a53",
+      "sha256_after": "014acb615f768db6e84e9bd46c4b4263ee661a3847924427e1c3f0a7dda28a53"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/checkpoints.py",
+      "sha256": "23e13cfbb1245f4018452722507d8ad626616e92abc051650442457abdb88bea",
+      "sha256_after": "23e13cfbb1245f4018452722507d8ad626616e92abc051650442457abdb88bea"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/cli.py",
+      "sha256": "a12171058f83879d99990aaf7262ae8481a04adac48b37ab1c06d66b998c6e65",
+      "sha256_after": "a12171058f83879d99990aaf7262ae8481a04adac48b37ab1c06d66b998c6e65"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/config.py",
+      "sha256": "edd3e0d789346731b7dc316f16582d49cfcf445f7e93122efdf6a6af0e28dad1",
+      "sha256_after": "edd3e0d789346731b7dc316f16582d49cfcf445f7e93122efdf6a6af0e28dad1"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/data.py",
+      "sha256": "d99d048e53681330963641aeeb536315a877aa30c32fc84a9e162d72ffe7dba2",
+      "sha256_after": "d99d048e53681330963641aeeb536315a877aa30c32fc84a9e162d72ffe7dba2"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/experiments.py",
+      "sha256": "f32be02988dba93b169d0b4cb88aed7dc1e7a71df25216d2b1eb625d00c59745",
+      "sha256_after": "f32be02988dba93b169d0b4cb88aed7dc1e7a71df25216d2b1eb625d00c59745"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/model.py",
+      "sha256": "a6af3f75f6d4234eb52da5fe7a70635cf6b88a838b130e870642809eb860ecf8",
+      "sha256_after": "a6af3f75f6d4234eb52da5fe7a70635cf6b88a838b130e870642809eb860ecf8"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/packed.py",
+      "sha256": "808335d28d7f4314236e9e3b2e81da95961409df33c7314e5dcb5cd49d3bd145",
+      "sha256_after": "808335d28d7f4314236e9e3b2e81da95961409df33c7314e5dcb5cd49d3bd145"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/packed_benchmark.py",
+      "sha256": "b488e1c02070278eed55dc0e2780afb9ec5b0375dad81a07d6d4159c7d002d46",
+      "sha256_after": "b488e1c02070278eed55dc0e2780afb9ec5b0375dad81a07d6d4159c7d002d46"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/packed_optimizer.py",
+      "sha256": "7c6366461ffbea5b8ff51e8c92a3dfb4e377d654d1886ff215d1a8d216f0c726",
+      "sha256_after": "7c6366461ffbea5b8ff51e8c92a3dfb4e377d654d1886ff215d1a8d216f0c726"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/runtime.py",
+      "sha256": "fb932b11b7859e3cbc277f19c5bcd744e0c6811f622f7f8ce692c2a282c7f960",
+      "sha256_after": "fb932b11b7859e3cbc277f19c5bcd744e0c6811f622f7f8ce692c2a282c7f960"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/state.py",
+      "sha256": "46ba4ccf0681120bb09d6e852ffa4239e018788d1e1197ac308ee28209393466",
+      "sha256_after": "46ba4ccf0681120bb09d6e852ffa4239e018788d1e1197ac308ee28209393466"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/src/tiny_llm/train.py",
+      "sha256": "5cf70d8f5cf4cf463b453ef3e5f35979db416c49d5d139af255384a8b9e9b967",
+      "sha256_after": "5cf70d8f5cf4cf463b453ef3e5f35979db416c49d5d139af255384a8b9e9b967"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/uv.lock",
+      "sha256": "11fe47e1e133585bfc4fc83fd2498320dfcb349655e565a166489c668447cb6f",
+      "sha256_after": "11fe47e1e133585bfc4fc83fd2498320dfcb349655e565a166489c668447cb6f"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension/source/watch.py",
+      "sha256": "1f0f1c106eddcca926866aac03b58f841608eed931472fd719e413cf6cc36242",
+      "sha256_after": "1f0f1c106eddcca926866aac03b58f841608eed931472fd719e413cf6cc36242"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/clipping-audit/clipping-runs.json",
+      "sha256": "96522453218759976d67326315e54d0fe50699ad815eb90f505e21515d77f166",
+      "sha256_after": "96522453218759976d67326315e54d0fe50699ad815eb90f505e21515d77f166"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/clipping-audit/input-evidence.json",
+      "sha256": "1dcd43237796179a8fd62ae3c7082c5f1653588a8275dacf4deeb364b7eb2c3b",
+      "sha256_after": "1dcd43237796179a8fd62ae3c7082c5f1653588a8275dacf4deeb364b7eb2c3b"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/clipping-audit/selected-clipping.json",
+      "sha256": "74de55dce13fad6060b65c8e6fff91b9bfdb2fcb066e2c83c9095acff14fa57c",
+      "sha256_after": "74de55dce13fad6060b65c8e6fff91b9bfdb2fcb066e2c83c9095acff14fa57c"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/clipping-audit/synchronous-screen-clipping.json",
+      "sha256": "07104f4a0727fdd2c0027231d533a647d1133ea8f4cb98a782ceea70d291e192",
+      "sha256_after": "07104f4a0727fdd2c0027231d533a647d1133ea8f4cb98a782ceea70d291e192"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/configs/4f89a0e069c0bcd94efb-s42.yaml",
+      "sha256": "c03fbb8497b78e779c3918053960afe0c51fd30fdb85ee6a6ec643b3b23b01b0",
+      "sha256_after": "c03fbb8497b78e779c3918053960afe0c51fd30fdb85ee6a6ec643b3b23b01b0"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/configs/4f89a0e069c0bcd94efb-s43.yaml",
+      "sha256": "6c06157e00228046f93a5c96fbe2506abada4f55df7ef0b0db7e76eb8dfeea1c",
+      "sha256_after": "6c06157e00228046f93a5c96fbe2506abada4f55df7ef0b0db7e76eb8dfeea1c"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/configs/4f89a0e069c0bcd94efb-s44.yaml",
+      "sha256": "7df33300ae55799219a2ede76477255d9128dc0847b27a4a0054d7bd5330d174",
+      "sha256_after": "7df33300ae55799219a2ede76477255d9128dc0847b27a4a0054d7bd5330d174"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/configs/c352ddd312366e4e4b7c-s42.yaml",
+      "sha256": "d5263b6e840c5f6d6d01a49953472cb8209da4cee827d9d8d3f40ff2e920b538",
+      "sha256_after": "d5263b6e840c5f6d6d01a49953472cb8209da4cee827d9d8d3f40ff2e920b538"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/configs/c352ddd312366e4e4b7c-s43.yaml",
+      "sha256": "1d8b75097d5c98ed660d7ce634832b7fe589762e8c3ec3210a6eea3ba42e277a",
+      "sha256_after": "1d8b75097d5c98ed660d7ce634832b7fe589762e8c3ec3210a6eea3ba42e277a"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/configs/c352ddd312366e4e4b7c-s44.yaml",
+      "sha256": "a4f5d9db79f4c504904a330de46960fe9b419c993113405e1069837135f11c63",
+      "sha256_after": "a4f5d9db79f4c504904a330de46960fe9b419c993113405e1069837135f11c63"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/configs/d4ae9345d30625e06017-s42.yaml",
+      "sha256": "c29313897318ac1045bbdc6ad6e756006c13a0537319faa24c7708af5bb465a5",
+      "sha256_after": "c29313897318ac1045bbdc6ad6e756006c13a0537319faa24c7708af5bb465a5"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/configs/d4ae9345d30625e06017-s43.yaml",
+      "sha256": "f9fc490dc9bdb4c14b2493d2b5ec7a7f720daf331202b3cd7b0eb813ce0b425b",
+      "sha256_after": "f9fc490dc9bdb4c14b2493d2b5ec7a7f720daf331202b3cd7b0eb813ce0b425b"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/configs/d4ae9345d30625e06017-s44.yaml",
+      "sha256": "9da4e689a8a1c4834cad24f440af2ebaf117a8f44704d004596e6e81691f51bc",
+      "sha256_after": "9da4e689a8a1c4834cad24f440af2ebaf117a8f44704d004596e6e81691f51bc"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/configs/e3fbe27da09d02fa5f59-s42.yaml",
+      "sha256": "a0dacaf520d8053dd058f40e7a9e8c506051307c28b824dcca60c64c79f81229",
+      "sha256_after": "a0dacaf520d8053dd058f40e7a9e8c506051307c28b824dcca60c64c79f81229"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/configs/e3fbe27da09d02fa5f59-s43.yaml",
+      "sha256": "6f0fe81ca09c657ee296f59059b2f25ae7bfe84f616faf42cd5d01a08d7f5b9d",
+      "sha256_after": "6f0fe81ca09c657ee296f59059b2f25ae7bfe84f616faf42cd5d01a08d7f5b9d"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/configs/e3fbe27da09d02fa5f59-s44.yaml",
+      "sha256": "914de4b60ccd5e54c88d32b975a10334f64812b7823600a857d90abd69aa9a39",
+      "sha256_after": "914de4b60ccd5e54c88d32b975a10334f64812b7823600a857d90abd69aa9a39"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s42/attempt-001/environment.json",
+      "sha256": "8870bb514ad33dbf4e0cd602bf043c26ab5426c68f29549130797ca56820ef15",
+      "sha256_after": "8870bb514ad33dbf4e0cd602bf043c26ab5426c68f29549130797ca56820ef15"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s42/attempt-001/metrics.jsonl",
+      "sha256": "22807c393cdae338135ac3ba836e94fdf30a9ca6e7eeb99c7380513ae49ef945",
+      "sha256_after": "22807c393cdae338135ac3ba836e94fdf30a9ca6e7eeb99c7380513ae49ef945"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s42/attempt-001/resolved.yaml",
+      "sha256": "c03fbb8497b78e779c3918053960afe0c51fd30fdb85ee6a6ec643b3b23b01b0",
+      "sha256_after": "c03fbb8497b78e779c3918053960afe0c51fd30fdb85ee6a6ec643b3b23b01b0"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s42/attempt-001/result.json",
+      "sha256": "907d2aa72221bdb253321c02daddd83cdeb83e02ff296ded1d1c2f02f793bb55",
+      "sha256_after": "907d2aa72221bdb253321c02daddd83cdeb83e02ff296ded1d1c2f02f793bb55"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s42/attempt-001/run.log",
+      "sha256": "6855a8fd8ee61863ec651bee99f463bcf83fdb9e1c0cf47e408c0e34e99e4398",
+      "sha256_after": "6855a8fd8ee61863ec651bee99f463bcf83fdb9e1c0cf47e408c0e34e99e4398"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s42/attempt-001/success.json",
+      "sha256": "f6696b6aac6ce5f80a17fbadcfd51f12f5ee4597208e61aa530dc6a6d3e4e022",
+      "sha256_after": "f6696b6aac6ce5f80a17fbadcfd51f12f5ee4597208e61aa530dc6a6d3e4e022"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s43/attempt-001/environment.json",
+      "sha256": "e17fe17c8172c3eec6db629c7e559bd749005842a715c5884ec98712594432a4",
+      "sha256_after": "e17fe17c8172c3eec6db629c7e559bd749005842a715c5884ec98712594432a4"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s43/attempt-001/metrics.jsonl",
+      "sha256": "101088225061d6638231ea2b6a4defdc6cb2e0d6afd85775b227b0e220ea9aa0",
+      "sha256_after": "101088225061d6638231ea2b6a4defdc6cb2e0d6afd85775b227b0e220ea9aa0"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s43/attempt-001/resolved.yaml",
+      "sha256": "6c06157e00228046f93a5c96fbe2506abada4f55df7ef0b0db7e76eb8dfeea1c",
+      "sha256_after": "6c06157e00228046f93a5c96fbe2506abada4f55df7ef0b0db7e76eb8dfeea1c"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s43/attempt-001/result.json",
+      "sha256": "abf748881078fd19f25b0086e77e5e8f1f08fd71d9a64c389a0f0b0ef47b41ce",
+      "sha256_after": "abf748881078fd19f25b0086e77e5e8f1f08fd71d9a64c389a0f0b0ef47b41ce"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s43/attempt-001/run.log",
+      "sha256": "d6cc7e025615a1a027cb4ea63e82bdf7e7a1771cd90ac3efcee9a080d2b5da04",
+      "sha256_after": "d6cc7e025615a1a027cb4ea63e82bdf7e7a1771cd90ac3efcee9a080d2b5da04"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s43/attempt-001/success.json",
+      "sha256": "2c517494e631c6374bfc45ee56e2c5f9a37a3b28a9dd78e08049d49096283f90",
+      "sha256_after": "2c517494e631c6374bfc45ee56e2c5f9a37a3b28a9dd78e08049d49096283f90"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s44/attempt-001/environment.json",
+      "sha256": "7c6123c008ebc8401cc75f9e381afa92318e0a59c9d435774c38fa5fc5c05996",
+      "sha256_after": "7c6123c008ebc8401cc75f9e381afa92318e0a59c9d435774c38fa5fc5c05996"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s44/attempt-001/metrics.jsonl",
+      "sha256": "9c02793e8bf70b283ed118947823b72bda5ba1cfb1bac14e153459098c0c2a33",
+      "sha256_after": "9c02793e8bf70b283ed118947823b72bda5ba1cfb1bac14e153459098c0c2a33"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s44/attempt-001/resolved.yaml",
+      "sha256": "7df33300ae55799219a2ede76477255d9128dc0847b27a4a0054d7bd5330d174",
+      "sha256_after": "7df33300ae55799219a2ede76477255d9128dc0847b27a4a0054d7bd5330d174"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s44/attempt-001/result.json",
+      "sha256": "c9b39a7e1539a0a02b26e65089472c383d19baf578668542a705f9f259186ec3",
+      "sha256_after": "c9b39a7e1539a0a02b26e65089472c383d19baf578668542a705f9f259186ec3"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s44/attempt-001/run.log",
+      "sha256": "94b9473fe198020041851bf0cc2b73352820555b17a5cab4e545c30e506cbe7d",
+      "sha256_after": "94b9473fe198020041851bf0cc2b73352820555b17a5cab4e545c30e506cbe7d"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s44/attempt-001/success.json",
+      "sha256": "cd08fa789ee85c1d6481cdb76a6a980a610e9b8da607ec56e3b7305bdb8d4d59",
+      "sha256_after": "cd08fa789ee85c1d6481cdb76a6a980a610e9b8da607ec56e3b7305bdb8d4d59"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s42/attempt-001/environment.json",
+      "sha256": "74e8f5f54e34e6f29c5bd4d634ca215ed5a7e31ae7a1ebe843c9df01d2b8c420",
+      "sha256_after": "74e8f5f54e34e6f29c5bd4d634ca215ed5a7e31ae7a1ebe843c9df01d2b8c420"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s42/attempt-001/metrics.jsonl",
+      "sha256": "0bf0dac8364fa04c72718263dcf5c25bd16c257e818eb60152c79c67fe467f7a",
+      "sha256_after": "0bf0dac8364fa04c72718263dcf5c25bd16c257e818eb60152c79c67fe467f7a"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s42/attempt-001/resolved.yaml",
+      "sha256": "d5263b6e840c5f6d6d01a49953472cb8209da4cee827d9d8d3f40ff2e920b538",
+      "sha256_after": "d5263b6e840c5f6d6d01a49953472cb8209da4cee827d9d8d3f40ff2e920b538"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s42/attempt-001/result.json",
+      "sha256": "56916df438b75b642783c4b92a3db61324bccc804e0b28845e8ee19aa2fbfc43",
+      "sha256_after": "56916df438b75b642783c4b92a3db61324bccc804e0b28845e8ee19aa2fbfc43"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s42/attempt-001/run.log",
+      "sha256": "3226f9fbdac499fac7d30064bd92f94630aff5b4ca7c7a3e50e88ec20313fec1",
+      "sha256_after": "3226f9fbdac499fac7d30064bd92f94630aff5b4ca7c7a3e50e88ec20313fec1"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s42/attempt-001/success.json",
+      "sha256": "2fc4388f294dc103cb247db5a72ee9deab3fcfcd0d4ebbfbc2a07dde6b87520d",
+      "sha256_after": "2fc4388f294dc103cb247db5a72ee9deab3fcfcd0d4ebbfbc2a07dde6b87520d"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s43/attempt-001/environment.json",
+      "sha256": "824e083f60b2e5f18b7a6ba22426e98d0c16f008943ced79c46ff1f23a7acfc1",
+      "sha256_after": "824e083f60b2e5f18b7a6ba22426e98d0c16f008943ced79c46ff1f23a7acfc1"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s43/attempt-001/metrics.jsonl",
+      "sha256": "9467cd660ac61a41ca068de52359bb70170c19f5dd2f475455c6647f143d03ad",
+      "sha256_after": "9467cd660ac61a41ca068de52359bb70170c19f5dd2f475455c6647f143d03ad"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s43/attempt-001/resolved.yaml",
+      "sha256": "1d8b75097d5c98ed660d7ce634832b7fe589762e8c3ec3210a6eea3ba42e277a",
+      "sha256_after": "1d8b75097d5c98ed660d7ce634832b7fe589762e8c3ec3210a6eea3ba42e277a"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s43/attempt-001/result.json",
+      "sha256": "8dc869c34145ace8c45ada9b038d87aad5892def514945a41875efb14747f88b",
+      "sha256_after": "8dc869c34145ace8c45ada9b038d87aad5892def514945a41875efb14747f88b"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s43/attempt-001/run.log",
+      "sha256": "e08400248d2855584f0f88040fc4f9c974e36267ccd6f673c1fac710490a693c",
+      "sha256_after": "e08400248d2855584f0f88040fc4f9c974e36267ccd6f673c1fac710490a693c"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s43/attempt-001/success.json",
+      "sha256": "4495fcef136a6b9ddb5a636c2a569f34665e2d216f103db45f9e5bf69b49725a",
+      "sha256_after": "4495fcef136a6b9ddb5a636c2a569f34665e2d216f103db45f9e5bf69b49725a"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s44/attempt-001/environment.json",
+      "sha256": "7e339fac2e4143af04a7edfd208a98549d9767a3baa34b6b781f841bac856190",
+      "sha256_after": "7e339fac2e4143af04a7edfd208a98549d9767a3baa34b6b781f841bac856190"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s44/attempt-001/metrics.jsonl",
+      "sha256": "254736eb8d9479bb244f558585ec1138a9eff8fcb80ef8292bad9d0fd88d1806",
+      "sha256_after": "254736eb8d9479bb244f558585ec1138a9eff8fcb80ef8292bad9d0fd88d1806"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s44/attempt-001/resolved.yaml",
+      "sha256": "a4f5d9db79f4c504904a330de46960fe9b419c993113405e1069837135f11c63",
+      "sha256_after": "a4f5d9db79f4c504904a330de46960fe9b419c993113405e1069837135f11c63"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s44/attempt-001/result.json",
+      "sha256": "9cabff4f0a65dc781fde991ae059b022b73a3fedff971fce3a5cf80517795339",
+      "sha256_after": "9cabff4f0a65dc781fde991ae059b022b73a3fedff971fce3a5cf80517795339"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s44/attempt-001/run.log",
+      "sha256": "cc55947c93fbd482b5ad279d3460b10f2cd22e4e6d558e9fc7c40a9627d6e47e",
+      "sha256_after": "cc55947c93fbd482b5ad279d3460b10f2cd22e4e6d558e9fc7c40a9627d6e47e"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s44/attempt-001/success.json",
+      "sha256": "1d9b30b5349e15c56b165b898b58a6d75f61c925641846532d3dc8465618efac",
+      "sha256_after": "1d9b30b5349e15c56b165b898b58a6d75f61c925641846532d3dc8465618efac"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s42/attempt-001/environment.json",
+      "sha256": "26d376f3ac610ba2444677642d4de35da67c6b7745874e7492d57558135cf046",
+      "sha256_after": "26d376f3ac610ba2444677642d4de35da67c6b7745874e7492d57558135cf046"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s42/attempt-001/metrics.jsonl",
+      "sha256": "b64037c704ce3d088f33a6264f339ca5091968e7e4e44a976083a84cc3c60144",
+      "sha256_after": "b64037c704ce3d088f33a6264f339ca5091968e7e4e44a976083a84cc3c60144"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s42/attempt-001/resolved.yaml",
+      "sha256": "c29313897318ac1045bbdc6ad6e756006c13a0537319faa24c7708af5bb465a5",
+      "sha256_after": "c29313897318ac1045bbdc6ad6e756006c13a0537319faa24c7708af5bb465a5"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s42/attempt-001/result.json",
+      "sha256": "5913f3589fe74a05c1531fbd522c2d6051408925e60e18f365a77785997f5795",
+      "sha256_after": "5913f3589fe74a05c1531fbd522c2d6051408925e60e18f365a77785997f5795"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s42/attempt-001/run.log",
+      "sha256": "79d9660c3469fbcf70ce42d4068f1fd916930ecb5ea16de05029b9ffccf713d9",
+      "sha256_after": "79d9660c3469fbcf70ce42d4068f1fd916930ecb5ea16de05029b9ffccf713d9"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s42/attempt-001/success.json",
+      "sha256": "fc4aebd466643056a62ef4318efae2bf0e3ab3c96f28e8e9751a31543c76ff58",
+      "sha256_after": "fc4aebd466643056a62ef4318efae2bf0e3ab3c96f28e8e9751a31543c76ff58"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s43/attempt-001/environment.json",
+      "sha256": "5d529eac5c661cac3934136c59a31f9aedb2055e50eb18151d0ffb7857e4be1c",
+      "sha256_after": "5d529eac5c661cac3934136c59a31f9aedb2055e50eb18151d0ffb7857e4be1c"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s43/attempt-001/metrics.jsonl",
+      "sha256": "cd0934782c35a24471654aa2e89d7d16dd5bf8eed5ff3e456018264d1f198541",
+      "sha256_after": "cd0934782c35a24471654aa2e89d7d16dd5bf8eed5ff3e456018264d1f198541"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s43/attempt-001/resolved.yaml",
+      "sha256": "f9fc490dc9bdb4c14b2493d2b5ec7a7f720daf331202b3cd7b0eb813ce0b425b",
+      "sha256_after": "f9fc490dc9bdb4c14b2493d2b5ec7a7f720daf331202b3cd7b0eb813ce0b425b"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s43/attempt-001/result.json",
+      "sha256": "22a4ec80e31c1df6d390f9e77f11b8f083b9485cdc82af5c689306c7dd6bec65",
+      "sha256_after": "22a4ec80e31c1df6d390f9e77f11b8f083b9485cdc82af5c689306c7dd6bec65"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s43/attempt-001/run.log",
+      "sha256": "385abb34c35aa5e8580d2c3e0006f4faa9ea0074ae768c7d9627aa9217c55d5d",
+      "sha256_after": "385abb34c35aa5e8580d2c3e0006f4faa9ea0074ae768c7d9627aa9217c55d5d"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s43/attempt-001/success.json",
+      "sha256": "6bfb12ef467af7bb76b58e66e79aa6585f3f35bdb929ef2c96a7540822565eb0",
+      "sha256_after": "6bfb12ef467af7bb76b58e66e79aa6585f3f35bdb929ef2c96a7540822565eb0"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s44/attempt-001/environment.json",
+      "sha256": "adf0aeb09ba87c0b813ced12642192f5f7c23e1904c06917f22d213359c85653",
+      "sha256_after": "adf0aeb09ba87c0b813ced12642192f5f7c23e1904c06917f22d213359c85653"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s44/attempt-001/metrics.jsonl",
+      "sha256": "3348b767f01cfbe159474d40783bd02632a826e3ecff243720898ea134f8873b",
+      "sha256_after": "3348b767f01cfbe159474d40783bd02632a826e3ecff243720898ea134f8873b"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s44/attempt-001/resolved.yaml",
+      "sha256": "9da4e689a8a1c4834cad24f440af2ebaf117a8f44704d004596e6e81691f51bc",
+      "sha256_after": "9da4e689a8a1c4834cad24f440af2ebaf117a8f44704d004596e6e81691f51bc"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s44/attempt-001/result.json",
+      "sha256": "ddcdc590ac09644691028539d8f5baa724741e80e7b6c2d577b99bc81933c86e",
+      "sha256_after": "ddcdc590ac09644691028539d8f5baa724741e80e7b6c2d577b99bc81933c86e"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s44/attempt-001/run.log",
+      "sha256": "6e4529e6cc629393180de42c161b925ef684088acd056615e850a7f5ec221a66",
+      "sha256_after": "6e4529e6cc629393180de42c161b925ef684088acd056615e850a7f5ec221a66"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s44/attempt-001/success.json",
+      "sha256": "bf3a770620714a2510aeeea19928309fc33b842dc01414d7490594a53796d3ed",
+      "sha256_after": "bf3a770620714a2510aeeea19928309fc33b842dc01414d7490594a53796d3ed"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s42/attempt-001/environment.json",
+      "sha256": "d52ce12403b4d976e1d3c3909fae8d600c02b6d258ad63e72d88a7a34dd6ed15",
+      "sha256_after": "d52ce12403b4d976e1d3c3909fae8d600c02b6d258ad63e72d88a7a34dd6ed15"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s42/attempt-001/metrics.jsonl",
+      "sha256": "caefacb7e56a9615f588af081a59914b9389b7ab3c23ea23f51aa471de87518d",
+      "sha256_after": "caefacb7e56a9615f588af081a59914b9389b7ab3c23ea23f51aa471de87518d"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s42/attempt-001/resolved.yaml",
+      "sha256": "a0dacaf520d8053dd058f40e7a9e8c506051307c28b824dcca60c64c79f81229",
+      "sha256_after": "a0dacaf520d8053dd058f40e7a9e8c506051307c28b824dcca60c64c79f81229"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s42/attempt-001/result.json",
+      "sha256": "a473c1737b4efb43ddf2014a35bc3ddf67f2b672ffb49ab99be0df811e7c0264",
+      "sha256_after": "a473c1737b4efb43ddf2014a35bc3ddf67f2b672ffb49ab99be0df811e7c0264"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s42/attempt-001/run.log",
+      "sha256": "3f2fc0340acc6eaee566929084f0d347225cf4e1e72a14edcc921a89a1432f50",
+      "sha256_after": "3f2fc0340acc6eaee566929084f0d347225cf4e1e72a14edcc921a89a1432f50"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s42/attempt-001/success.json",
+      "sha256": "a9abad2a61ac3c3b85b251dd9a2449d3f370c0e114c6d755cdea5238681a81f2",
+      "sha256_after": "a9abad2a61ac3c3b85b251dd9a2449d3f370c0e114c6d755cdea5238681a81f2"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s43/attempt-001/environment.json",
+      "sha256": "4bdce64eb15b99bb84162c68361191f681ebce9c4f89042bd42ef6028643240e",
+      "sha256_after": "4bdce64eb15b99bb84162c68361191f681ebce9c4f89042bd42ef6028643240e"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s43/attempt-001/metrics.jsonl",
+      "sha256": "b7663451755498098f3da1a7d36ba37080866e995e3f75f155ce41c06976e68a",
+      "sha256_after": "b7663451755498098f3da1a7d36ba37080866e995e3f75f155ce41c06976e68a"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s43/attempt-001/resolved.yaml",
+      "sha256": "6f0fe81ca09c657ee296f59059b2f25ae7bfe84f616faf42cd5d01a08d7f5b9d",
+      "sha256_after": "6f0fe81ca09c657ee296f59059b2f25ae7bfe84f616faf42cd5d01a08d7f5b9d"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s43/attempt-001/result.json",
+      "sha256": "0da41ee2f71e95036c8b1653cae6146529d73d57c7a189582689f5cf0ae9e06a",
+      "sha256_after": "0da41ee2f71e95036c8b1653cae6146529d73d57c7a189582689f5cf0ae9e06a"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s43/attempt-001/run.log",
+      "sha256": "5e4386c38d37c7b6c1f36148497bbdb29d03358504444b3e6c853ae8158ae29c",
+      "sha256_after": "5e4386c38d37c7b6c1f36148497bbdb29d03358504444b3e6c853ae8158ae29c"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s43/attempt-001/success.json",
+      "sha256": "c35cb6d166ad02dbdeeff3e5aabf93613f0b776f6dd65d16dd0aeb2113d026ec",
+      "sha256_after": "c35cb6d166ad02dbdeeff3e5aabf93613f0b776f6dd65d16dd0aeb2113d026ec"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s44/attempt-001/environment.json",
+      "sha256": "ca6b06c04491fcaca55618a3013cc2091a196b06b916d830b373ac0599e6dff9",
+      "sha256_after": "ca6b06c04491fcaca55618a3013cc2091a196b06b916d830b373ac0599e6dff9"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s44/attempt-001/metrics.jsonl",
+      "sha256": "1aba2999bc9d84eb97edeea2298c0da26901fbd1fd1463329996ae0b958090d7",
+      "sha256_after": "1aba2999bc9d84eb97edeea2298c0da26901fbd1fd1463329996ae0b958090d7"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s44/attempt-001/resolved.yaml",
+      "sha256": "914de4b60ccd5e54c88d32b975a10334f64812b7823600a857d90abd69aa9a39",
+      "sha256_after": "914de4b60ccd5e54c88d32b975a10334f64812b7823600a857d90abd69aa9a39"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s44/attempt-001/result.json",
+      "sha256": "0e9a55005d488691123e558446881a14aa8a45203c6d111df57f4ad438974768",
+      "sha256_after": "0e9a55005d488691123e558446881a14aa8a45203c6d111df57f4ad438974768"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s44/attempt-001/run.log",
+      "sha256": "5ee686ab61ade9782d27345a1827251363cd7ac161c691144188dcfe8df55ab8",
+      "sha256_after": "5ee686ab61ade9782d27345a1827251363cd7ac161c691144188dcfe8df55ab8"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s44/attempt-001/success.json",
+      "sha256": "6c8ada3c622382068aedbd8cf9863646037b009c0a94dba3bab13bb4a3ab4b26",
+      "sha256_after": "6c8ada3c622382068aedbd8cf9863646037b009c0a94dba3bab13bb4a3ab4b26"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/job.sh",
+      "sha256": "666d0a915ea3daa13c342fa60583567df1a6d5922f53140abb756db9bb7a99b5",
+      "sha256_after": "666d0a915ea3daa13c342fa60583567df1a6d5922f53140abb756db9bb7a99b5"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/manifest.json",
+      "sha256": "6aa6807e72f9e7bfbb6b54481a7e0c973619749afd80f97a0a5837109ba79b12",
+      "sha256_after": "6aa6807e72f9e7bfbb6b54481a7e0c973619749afd80f97a0a5837109ba79b12"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/provenance/final-accounting.txt",
+      "sha256": "263621cf80881d174092613e22a20716461d728a71f73f4f7a814fef134a5475",
+      "sha256_after": "263621cf80881d174092613e22a20716461d728a71f73f4f7a814fef134a5475"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/reports/clipping-comparison.json",
+      "sha256": "0e8799b42ef0eddba249c3eb1987715c1d0dc9fe57a68b933babf065b6a1965c",
+      "sha256_after": "0e8799b42ef0eddba249c3eb1987715c1d0dc9fe57a68b933babf065b6a1965c"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/reports/runs.json",
+      "sha256": "d330191d61961071ab996a555160b3b7b6beb60332121cb4fcbbbec607b8942c",
+      "sha256_after": "d330191d61961071ab996a555160b3b7b6beb60332121cb4fcbbbec607b8942c"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/reports/slurm-accounting.json",
+      "sha256": "5a3080a383af6b7e15b999783051964a87eaff116727b1e5f8e66a4d02a9e20e",
+      "sha256_after": "5a3080a383af6b7e15b999783051964a87eaff116727b1e5f8e66a4d02a9e20e"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/reports/validation.json",
+      "sha256": "20ff161b0f59e0ed41821498ac54c97c92eeb5f8def7895d2ef203f6a791c850",
+      "sha256_after": "20ff161b0f59e0ed41821498ac54c97c92eeb5f8def7895d2ef203f6a791c850"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/audit_clipping.py",
+      "sha256": "a33f33384339ec51ce44d16152eb11b468e60b909870df69ede7f90f8eb8a2f7",
+      "sha256_after": "a33f33384339ec51ce44d16152eb11b468e60b909870df69ede7f90f8eb8a2f7"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/campaign.py",
+      "sha256": "8f28e99b8a3c7a2ddd4676ad0048e433e37043c84acb026454f7fbaa2a612010",
+      "sha256_after": "8f28e99b8a3c7a2ddd4676ad0048e433e37043c84acb026454f7fbaa2a612010"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/campaign_base.py",
+      "sha256": "d3c678562605e20f757a2c5c147fa51688613a795863326ee078cad9e2c9ac01",
+      "sha256_after": "d3c678562605e20f757a2c5c147fa51688613a795863326ee078cad9e2c9ac01"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/configs/20m.yaml",
+      "sha256": "19739a9bb22f20b2d3052d3df353156c29b42272e63f3d83e2b8b9bb52bfe880",
+      "sha256_after": "19739a9bb22f20b2d3052d3df353156c29b42272e63f3d83e2b8b9bb52bfe880"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/configs/cosine.yaml",
+      "sha256": "9c78a6e00b5532ec84dfb7d4b92e3e3736e8f64127569f38a29b9c2d849e0475",
+      "sha256_after": "9c78a6e00b5532ec84dfb7d4b92e3e3736e8f64127569f38a29b9c2d849e0475"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/pyproject.toml",
+      "sha256": "6194efd1e3b255670aa8a9ee57d9585a5aa5207ff68fe81c4d38615322c6309f",
+      "sha256_after": "6194efd1e3b255670aa8a9ee57d9585a5aa5207ff68fe81c4d38615322c6309f"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/__init__.py",
+      "sha256": "ee6eeb9fd0464c10d982f2ac3dd2677c5534f23eeb0f9adfd2d7435b88785e7d",
+      "sha256_after": "ee6eeb9fd0464c10d982f2ac3dd2677c5534f23eeb0f9adfd2d7435b88785e7d"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/__main__.py",
+      "sha256": "76687090399e394dd59f6e72bf11f99ca37184564e53a6f19a3c3be74ee96789",
+      "sha256_after": "76687090399e394dd59f6e72bf11f99ca37184564e53a6f19a3c3be74ee96789"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/analysis/__init__.py",
+      "sha256": "f7899324f928575b7c353c51b0c5e5b21b547e5effb8e045e1ac9e9ad68e1ca4",
+      "sha256_after": "f7899324f928575b7c353c51b0c5e5b21b547e5effb8e045e1ac9e9ad68e1ca4"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/analysis/core.py",
+      "sha256": "b0a902912c7e291f712f579cfdb3a85d7807571f2364c17b31ebe696ad6663ca",
+      "sha256_after": "b0a902912c7e291f712f579cfdb3a85d7807571f2364c17b31ebe696ad6663ca"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/analysis/plot.py",
+      "sha256": "7de80840117c68347c45647dc9a0fb52e482b25765f1c8ad701a7ad2fb867f3e",
+      "sha256_after": "7de80840117c68347c45647dc9a0fb52e482b25765f1c8ad701a7ad2fb867f3e"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/analysis/slurm.py",
+      "sha256": "906166aaa0f9c5d859fa7eb5d23831da27161bd58e3beb0fc46d629fd5a8986b",
+      "sha256_after": "906166aaa0f9c5d859fa7eb5d23831da27161bd58e3beb0fc46d629fd5a8986b"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/benchmark.py",
+      "sha256": "014acb615f768db6e84e9bd46c4b4263ee661a3847924427e1c3f0a7dda28a53",
+      "sha256_after": "014acb615f768db6e84e9bd46c4b4263ee661a3847924427e1c3f0a7dda28a53"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/checkpoints.py",
+      "sha256": "23e13cfbb1245f4018452722507d8ad626616e92abc051650442457abdb88bea",
+      "sha256_after": "23e13cfbb1245f4018452722507d8ad626616e92abc051650442457abdb88bea"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/cli.py",
+      "sha256": "a12171058f83879d99990aaf7262ae8481a04adac48b37ab1c06d66b998c6e65",
+      "sha256_after": "a12171058f83879d99990aaf7262ae8481a04adac48b37ab1c06d66b998c6e65"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/config.py",
+      "sha256": "edd3e0d789346731b7dc316f16582d49cfcf445f7e93122efdf6a6af0e28dad1",
+      "sha256_after": "edd3e0d789346731b7dc316f16582d49cfcf445f7e93122efdf6a6af0e28dad1"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/data.py",
+      "sha256": "d99d048e53681330963641aeeb536315a877aa30c32fc84a9e162d72ffe7dba2",
+      "sha256_after": "d99d048e53681330963641aeeb536315a877aa30c32fc84a9e162d72ffe7dba2"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/experiments.py",
+      "sha256": "f32be02988dba93b169d0b4cb88aed7dc1e7a71df25216d2b1eb625d00c59745",
+      "sha256_after": "f32be02988dba93b169d0b4cb88aed7dc1e7a71df25216d2b1eb625d00c59745"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/model.py",
+      "sha256": "a6af3f75f6d4234eb52da5fe7a70635cf6b88a838b130e870642809eb860ecf8",
+      "sha256_after": "a6af3f75f6d4234eb52da5fe7a70635cf6b88a838b130e870642809eb860ecf8"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/packed.py",
+      "sha256": "808335d28d7f4314236e9e3b2e81da95961409df33c7314e5dcb5cd49d3bd145",
+      "sha256_after": "808335d28d7f4314236e9e3b2e81da95961409df33c7314e5dcb5cd49d3bd145"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/packed_benchmark.py",
+      "sha256": "b488e1c02070278eed55dc0e2780afb9ec5b0375dad81a07d6d4159c7d002d46",
+      "sha256_after": "b488e1c02070278eed55dc0e2780afb9ec5b0375dad81a07d6d4159c7d002d46"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/packed_optimizer.py",
+      "sha256": "7c6366461ffbea5b8ff51e8c92a3dfb4e377d654d1886ff215d1a8d216f0c726",
+      "sha256_after": "7c6366461ffbea5b8ff51e8c92a3dfb4e377d654d1886ff215d1a8d216f0c726"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/runtime.py",
+      "sha256": "fb932b11b7859e3cbc277f19c5bcd744e0c6811f622f7f8ce692c2a282c7f960",
+      "sha256_after": "fb932b11b7859e3cbc277f19c5bcd744e0c6811f622f7f8ce692c2a282c7f960"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/state.py",
+      "sha256": "46ba4ccf0681120bb09d6e852ffa4239e018788d1e1197ac308ee28209393466",
+      "sha256_after": "46ba4ccf0681120bb09d6e852ffa4239e018788d1e1197ac308ee28209393466"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/src/tiny_llm/train.py",
+      "sha256": "5cf70d8f5cf4cf463b453ef3e5f35979db416c49d5d139af255384a8b9e9b967",
+      "sha256_after": "5cf70d8f5cf4cf463b453ef3e5f35979db416c49d5d139af255384a8b9e9b967"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/test_campaign.py",
+      "sha256": "447f8832d0ea21bd1c231c21453156ecfa393bbf71b5e2202f58a401e114a7d8",
+      "sha256_after": "447f8832d0ea21bd1c231c21453156ecfa393bbf71b5e2202f58a401e114a7d8"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/source/uv.lock",
+      "sha256": "11fe47e1e133585bfc4fc83fd2498320dfcb349655e565a166489c668447cb6f",
+      "sha256_after": "11fe47e1e133585bfc4fc83fd2498320dfcb349655e565a166489c668447cb6f"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/submissions/3b3dfb823eac45b09dae76db85b989c5.json",
+      "sha256": "845ca4317f5d8caade6d1e500264a7b33db8d9ef0a4621b745523dfe4fc2b35c",
+      "sha256_after": "845ca4317f5d8caade6d1e500264a7b33db8d9ef0a4621b745523dfe4fc2b35c"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-clipping/submissions/3b3dfb823eac45b09dae76db85b989c5.selection.json",
+      "sha256": "97385a4c98e2fd9a11b87c62b8fd9645862734c177317120d0c91eb5d881967f",
+      "sha256_after": "97385a4c98e2fd9a11b87c62b8fd9645862734c177317120d0c91eb5d881967f"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/manifest.json",
+      "sha256": "a248c5745603a975cd27dd03866276e943f1ad2e3bc40468f76070da530bc4c0",
+      "sha256_after": "a248c5745603a975cd27dd03866276e943f1ad2e3bc40468f76070da530bc4c0"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/provenance/imports.json",
+      "sha256": "0619583136f6fdff8d3c9b85fe6fc008099688482ad19d793bfc6e19bbb88be6",
+      "sha256_after": "0619583136f6fdff8d3c9b85fe6fc008099688482ad19d793bfc6e19bbb88be6"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/provenance/screening-selection.json",
+      "sha256": "bfcb8d5b44e3e1eb78d2522e63fc7456ae2dbc91072fb48bb49b902e04640747",
+      "sha256_after": "bfcb8d5b44e3e1eb78d2522e63fc7456ae2dbc91072fb48bb49b902e04640747"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/reports/matched-replicated.json",
+      "sha256": "4fcf76ea30d61a52b07984b3dfe060d169eedf97344c26f520452a8f68164fc2",
+      "sha256_after": "4fcf76ea30d61a52b07984b3dfe060d169eedf97344c26f520452a8f68164fc2"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/reports/matched-screening.json",
+      "sha256": "78b5703e13b8a87d258b96f60831d306e6e8241b9ac151daac5bbb40c3fd3260",
+      "sha256_after": "78b5703e13b8a87d258b96f60831d306e6e8241b9ac151daac5bbb40c3fd3260"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/reports/performance-summary.json",
+      "sha256": "ea5116c9fca94882b6e65fc48bb2e372cfc62df9ecfbfce87486fb9b4a41464d",
+      "sha256_after": "ea5116c9fca94882b6e65fc48bb2e372cfc62df9ecfbfce87486fb9b4a41464d"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/reports/replicated.json",
+      "sha256": "5839b9e3667527790b44f067d98d89fccb526351ce446a11b9ccf5067a261791",
+      "sha256_after": "5839b9e3667527790b44f067d98d89fccb526351ce446a11b9ccf5067a261791"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/reports/runs.json",
+      "sha256": "54ff2ab342e68e3cb50f15a0a8d477375aec0e59014225552556302ca5c35beb",
+      "sha256_after": "54ff2ab342e68e3cb50f15a0a8d477375aec0e59014225552556302ca5c35beb"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/reports/screening.json",
+      "sha256": "283a72efac1acc71070454d07e01ba926bd39b5160a78d00ae27fcaf0bff2f2b",
+      "sha256_after": "283a72efac1acc71070454d07e01ba926bd39b5160a78d00ae27fcaf0bff2f2b"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/reports/selected-recipes.json",
+      "sha256": "9d7b60e9e5a5d48e18aaf367f37e6f75f7967fcb7ed4cee10d2f18efddf8b7f2",
+      "sha256_after": "9d7b60e9e5a5d48e18aaf367f37e6f75f7967fcb7ed4cee10d2f18efddf8b7f2"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/reports/supplemental-imports.json",
+      "sha256": "c7ce76fcd06a58335a9f05522d15b95644cd1f24dd6b6587c740d1f4a1e7b67f",
+      "sha256_after": "c7ce76fcd06a58335a9f05522d15b95644cd1f24dd6b6587c740d1f4a1e7b67f"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/reports/synchronous-selected.json",
+      "sha256": "eae5dae4b1b73fc3c429ff251c20f2785eaa9886209fc7c53c9b45c8db659dd2",
+      "sha256_after": "eae5dae4b1b73fc3c429ff251c20f2785eaa9886209fc7c53c9b45c8db659dd2"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/reports/validation.json",
+      "sha256": "7c7aacf653d6a787c2c5f61c75e25818f530549e5073a1fa99ae6166d78e6335",
+      "sha256_after": "7c7aacf653d6a787c2c5f61c75e25818f530549e5073a1fa99ae6166d78e6335"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/campaign.py",
+      "sha256": "59448b5b181e708d86678366a779b3d96bb79d4b4ce24cf0aa917573b87347b6",
+      "sha256_after": "59448b5b181e708d86678366a779b3d96bb79d4b4ce24cf0aa917573b87347b6"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/campaign_base.py",
+      "sha256": "d3c678562605e20f757a2c5c147fa51688613a795863326ee078cad9e2c9ac01",
+      "sha256_after": "d3c678562605e20f757a2c5c147fa51688613a795863326ee078cad9e2c9ac01"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/configs/20m.yaml",
+      "sha256": "19739a9bb22f20b2d3052d3df353156c29b42272e63f3d83e2b8b9bb52bfe880",
+      "sha256_after": "19739a9bb22f20b2d3052d3df353156c29b42272e63f3d83e2b8b9bb52bfe880"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/configs/cosine.yaml",
+      "sha256": "9c78a6e00b5532ec84dfb7d4b92e3e3736e8f64127569f38a29b9c2d849e0475",
+      "sha256_after": "9c78a6e00b5532ec84dfb7d4b92e3e3736e8f64127569f38a29b9c2d849e0475"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/prepare_audit.py",
+      "sha256": "5815f708f726d4ba81cfe74eb7f5b65cbe2e3188d04486bf1e024294865bd055",
+      "sha256_after": "5815f708f726d4ba81cfe74eb7f5b65cbe2e3188d04486bf1e024294865bd055"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/pyproject.toml",
+      "sha256": "6194efd1e3b255670aa8a9ee57d9585a5aa5207ff68fe81c4d38615322c6309f",
+      "sha256_after": "6194efd1e3b255670aa8a9ee57d9585a5aa5207ff68fe81c4d38615322c6309f"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/reporting.py",
+      "sha256": "9ea3132042dd96ae0e04ed30275086561833a68eba65b15f682f6d4a63f3e53e",
+      "sha256_after": "9ea3132042dd96ae0e04ed30275086561833a68eba65b15f682f6d4a63f3e53e"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/__init__.py",
+      "sha256": "ee6eeb9fd0464c10d982f2ac3dd2677c5534f23eeb0f9adfd2d7435b88785e7d",
+      "sha256_after": "ee6eeb9fd0464c10d982f2ac3dd2677c5534f23eeb0f9adfd2d7435b88785e7d"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/__main__.py",
+      "sha256": "76687090399e394dd59f6e72bf11f99ca37184564e53a6f19a3c3be74ee96789",
+      "sha256_after": "76687090399e394dd59f6e72bf11f99ca37184564e53a6f19a3c3be74ee96789"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/analysis/__init__.py",
+      "sha256": "f7899324f928575b7c353c51b0c5e5b21b547e5effb8e045e1ac9e9ad68e1ca4",
+      "sha256_after": "f7899324f928575b7c353c51b0c5e5b21b547e5effb8e045e1ac9e9ad68e1ca4"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/analysis/core.py",
+      "sha256": "b0a902912c7e291f712f579cfdb3a85d7807571f2364c17b31ebe696ad6663ca",
+      "sha256_after": "b0a902912c7e291f712f579cfdb3a85d7807571f2364c17b31ebe696ad6663ca"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/analysis/plot.py",
+      "sha256": "7de80840117c68347c45647dc9a0fb52e482b25765f1c8ad701a7ad2fb867f3e",
+      "sha256_after": "7de80840117c68347c45647dc9a0fb52e482b25765f1c8ad701a7ad2fb867f3e"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/analysis/slurm.py",
+      "sha256": "906166aaa0f9c5d859fa7eb5d23831da27161bd58e3beb0fc46d629fd5a8986b",
+      "sha256_after": "906166aaa0f9c5d859fa7eb5d23831da27161bd58e3beb0fc46d629fd5a8986b"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/benchmark.py",
+      "sha256": "014acb615f768db6e84e9bd46c4b4263ee661a3847924427e1c3f0a7dda28a53",
+      "sha256_after": "014acb615f768db6e84e9bd46c4b4263ee661a3847924427e1c3f0a7dda28a53"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/checkpoints.py",
+      "sha256": "23e13cfbb1245f4018452722507d8ad626616e92abc051650442457abdb88bea",
+      "sha256_after": "23e13cfbb1245f4018452722507d8ad626616e92abc051650442457abdb88bea"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/cli.py",
+      "sha256": "a12171058f83879d99990aaf7262ae8481a04adac48b37ab1c06d66b998c6e65",
+      "sha256_after": "a12171058f83879d99990aaf7262ae8481a04adac48b37ab1c06d66b998c6e65"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/config.py",
+      "sha256": "edd3e0d789346731b7dc316f16582d49cfcf445f7e93122efdf6a6af0e28dad1",
+      "sha256_after": "edd3e0d789346731b7dc316f16582d49cfcf445f7e93122efdf6a6af0e28dad1"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/data.py",
+      "sha256": "d99d048e53681330963641aeeb536315a877aa30c32fc84a9e162d72ffe7dba2",
+      "sha256_after": "d99d048e53681330963641aeeb536315a877aa30c32fc84a9e162d72ffe7dba2"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/experiments.py",
+      "sha256": "f32be02988dba93b169d0b4cb88aed7dc1e7a71df25216d2b1eb625d00c59745",
+      "sha256_after": "f32be02988dba93b169d0b4cb88aed7dc1e7a71df25216d2b1eb625d00c59745"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/model.py",
+      "sha256": "a6af3f75f6d4234eb52da5fe7a70635cf6b88a838b130e870642809eb860ecf8",
+      "sha256_after": "a6af3f75f6d4234eb52da5fe7a70635cf6b88a838b130e870642809eb860ecf8"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/packed.py",
+      "sha256": "808335d28d7f4314236e9e3b2e81da95961409df33c7314e5dcb5cd49d3bd145",
+      "sha256_after": "808335d28d7f4314236e9e3b2e81da95961409df33c7314e5dcb5cd49d3bd145"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/packed_benchmark.py",
+      "sha256": "b488e1c02070278eed55dc0e2780afb9ec5b0375dad81a07d6d4159c7d002d46",
+      "sha256_after": "b488e1c02070278eed55dc0e2780afb9ec5b0375dad81a07d6d4159c7d002d46"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/packed_optimizer.py",
+      "sha256": "7c6366461ffbea5b8ff51e8c92a3dfb4e377d654d1886ff215d1a8d216f0c726",
+      "sha256_after": "7c6366461ffbea5b8ff51e8c92a3dfb4e377d654d1886ff215d1a8d216f0c726"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/runtime.py",
+      "sha256": "fb932b11b7859e3cbc277f19c5bcd744e0c6811f622f7f8ce692c2a282c7f960",
+      "sha256_after": "fb932b11b7859e3cbc277f19c5bcd744e0c6811f622f7f8ce692c2a282c7f960"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/state.py",
+      "sha256": "46ba4ccf0681120bb09d6e852ffa4239e018788d1e1197ac308ee28209393466",
+      "sha256_after": "46ba4ccf0681120bb09d6e852ffa4239e018788d1e1197ac308ee28209393466"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/src/tiny_llm/train.py",
+      "sha256": "5cf70d8f5cf4cf463b453ef3e5f35979db416c49d5d139af255384a8b9e9b967",
+      "sha256_after": "5cf70d8f5cf4cf463b453ef3e5f35979db416c49d5d139af255384a8b9e9b967"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/test_campaign.py",
+      "sha256": "44a9c0a4a1161d1a5bf8b8f95162ceaf0f163a98ff9b7484b118147b5b7ab4fb",
+      "sha256_after": "44a9c0a4a1161d1a5bf8b8f95162ceaf0f163a98ff9b7484b118147b5b7ab4fb"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/test_watch.py",
+      "sha256": "1d27ea9404b91b16601aae2da6a8dc92b2fb198eab308647b319e2bfcc825410",
+      "sha256_after": "1d27ea9404b91b16601aae2da6a8dc92b2fb198eab308647b319e2bfcc825410"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/uv.lock",
+      "sha256": "11fe47e1e133585bfc4fc83fd2498320dfcb349655e565a166489c668447cb6f",
+      "sha256_after": "11fe47e1e133585bfc4fc83fd2498320dfcb349655e565a166489c668447cb6f"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-no-clipping/source/watch.py",
+      "sha256": "02c3d21704ea9593178e8bc252f29fb385968cf95fb020a8c5665d5ab66e8ea0",
+      "sha256_after": "02c3d21704ea9593178e8bc252f29fb385968cf95fb020a8c5665d5ab66e8ea0"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-unified/reports/input-evidence.json",
+      "sha256": "0fa7457dd3d62702cd16f3d1c308c4c6b3c15287b2c5741070d0f54a5f489061",
+      "sha256_after": "0fa7457dd3d62702cd16f3d1c308c4c6b3c15287b2c5741070d0f54a5f489061"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-unified/reports/performance-summary.json",
+      "sha256": "607a89992c67a70195c0391063b9800d3ff39cb9b4971c7da1e3c063f4c636e5",
+      "sha256_after": "607a89992c67a70195c0391063b9800d3ff39cb9b4971c7da1e3c063f4c636e5"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-unified/reports/replicated.json",
+      "sha256": "fd8b7e7f179baf50f35fda1774f35ab079007496ef9ba6716bac87935b3913d2",
+      "sha256_after": "fd8b7e7f179baf50f35fda1774f35ab079007496ef9ba6716bac87935b3913d2"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-unified/reports/runs.json",
+      "sha256": "e3b122546318edb63ea01d358ca43ec7ac0e757a744a1ed14a7e7021bb4ef286",
+      "sha256_after": "e3b122546318edb63ea01d358ca43ec7ac0e757a744a1ed14a7e7021bb4ef286"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-unified/reports/screening.json",
+      "sha256": "3ab67c25f87ea55ab916154cae6d2e42ae21f28f27f6b5617d0888544d4b8b32",
+      "sha256_after": "3ab67c25f87ea55ab916154cae6d2e42ae21f28f27f6b5617d0888544d4b8b32"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-unified/reports/selected-recipes.json",
+      "sha256": "7375988658f8b7174b05a1528755ec30c430fddc4536dd2391c749c63e4c47d7",
+      "sha256_after": "7375988658f8b7174b05a1528755ec30c430fddc4536dd2391c749c63e4c47d7"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-unified/reports/source-verification.json",
+      "sha256": "1ddb3b60594d38d6704b305305105ab2a65d9b510695747339a1ca7611c9764c",
+      "sha256_after": "1ddb3b60594d38d6704b305305105ab2a65d9b510695747339a1ca7611c9764c"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-unified/reports/unified-campaign.json",
+      "sha256": "6163306b1429694a8ebfdc0ad823c0a6bd14a0220ffaa165accb0ad8c38adb1a",
+      "sha256_after": "6163306b1429694a8ebfdc0ad823c0a6bd14a0220ffaa165accb0ad8c38adb1a"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch-unified/reports/validation.json",
+      "sha256": "c820801019537b66826d93763a6bbfaec2a2458288a5cc1435efde1c432da51c",
+      "sha256_after": "c820801019537b66826d93763a6bbfaec2a2458288a5cc1435efde1c432da51c"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/manifest.json",
+      "sha256": "6a3c6de375c43f1bde0b26eedb272181725fd5d22d8cf4cdedab83894be954b9",
+      "sha256_after": "6a3c6de375c43f1bde0b26eedb272181725fd5d22d8cf4cdedab83894be954b9"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/provenance/protocol.json",
+      "sha256": "6be49bfe3e4b8be09cd881861ed3c972f0813278886f66fbf3e976e22d62571a",
+      "sha256_after": "6be49bfe3e4b8be09cd881861ed3c972f0813278886f66fbf3e976e22d62571a"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/provenance/screening-selection.json",
+      "sha256": "ea7c44e5a03d6ca4ce8eedce4e3950aad1d886a4ff31ed05deaf707d8ac4af8e",
+      "sha256_after": "ea7c44e5a03d6ca4ce8eedce4e3950aad1d886a4ff31ed05deaf707d8ac4af8e"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/source/campaign.py",
+      "sha256": "ae220c5bd7a51844da37138b629238c90bd971f47ae91b85d6378dd9eae35832",
+      "sha256_after": "ae220c5bd7a51844da37138b629238c90bd971f47ae91b85d6378dd9eae35832"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/source/configs/20m.yaml",
+      "sha256": "19739a9bb22f20b2d3052d3df353156c29b42272e63f3d83e2b8b9bb52bfe880",
+      "sha256_after": "19739a9bb22f20b2d3052d3df353156c29b42272e63f3d83e2b8b9bb52bfe880"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/source/configs/cosine.yaml",
+      "sha256": "9c78a6e00b5532ec84dfb7d4b92e3e3736e8f64127569f38a29b9c2d849e0475",
+      "sha256_after": "9c78a6e00b5532ec84dfb7d4b92e3e3736e8f64127569f38a29b9c2d849e0475"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/source/pyproject.toml",
+      "sha256": "6194efd1e3b255670aa8a9ee57d9585a5aa5207ff68fe81c4d38615322c6309f",
+      "sha256_after": "6194efd1e3b255670aa8a9ee57d9585a5aa5207ff68fe81c4d38615322c6309f"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/__init__.py",
+      "sha256": "ee6eeb9fd0464c10d982f2ac3dd2677c5534f23eeb0f9adfd2d7435b88785e7d",
+      "sha256_after": "ee6eeb9fd0464c10d982f2ac3dd2677c5534f23eeb0f9adfd2d7435b88785e7d"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/__main__.py",
+      "sha256": "76687090399e394dd59f6e72bf11f99ca37184564e53a6f19a3c3be74ee96789",
+      "sha256_after": "76687090399e394dd59f6e72bf11f99ca37184564e53a6f19a3c3be74ee96789"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/analysis/__init__.py",
+      "sha256": "f7899324f928575b7c353c51b0c5e5b21b547e5effb8e045e1ac9e9ad68e1ca4",
+      "sha256_after": "f7899324f928575b7c353c51b0c5e5b21b547e5effb8e045e1ac9e9ad68e1ca4"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/analysis/core.py",
+      "sha256": "b0a902912c7e291f712f579cfdb3a85d7807571f2364c17b31ebe696ad6663ca",
+      "sha256_after": "b0a902912c7e291f712f579cfdb3a85d7807571f2364c17b31ebe696ad6663ca"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/analysis/plot.py",
+      "sha256": "7de80840117c68347c45647dc9a0fb52e482b25765f1c8ad701a7ad2fb867f3e",
+      "sha256_after": "7de80840117c68347c45647dc9a0fb52e482b25765f1c8ad701a7ad2fb867f3e"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/analysis/slurm.py",
+      "sha256": "906166aaa0f9c5d859fa7eb5d23831da27161bd58e3beb0fc46d629fd5a8986b",
+      "sha256_after": "906166aaa0f9c5d859fa7eb5d23831da27161bd58e3beb0fc46d629fd5a8986b"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/benchmark.py",
+      "sha256": "014acb615f768db6e84e9bd46c4b4263ee661a3847924427e1c3f0a7dda28a53",
+      "sha256_after": "014acb615f768db6e84e9bd46c4b4263ee661a3847924427e1c3f0a7dda28a53"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/checkpoints.py",
+      "sha256": "23e13cfbb1245f4018452722507d8ad626616e92abc051650442457abdb88bea",
+      "sha256_after": "23e13cfbb1245f4018452722507d8ad626616e92abc051650442457abdb88bea"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/cli.py",
+      "sha256": "a12171058f83879d99990aaf7262ae8481a04adac48b37ab1c06d66b998c6e65",
+      "sha256_after": "a12171058f83879d99990aaf7262ae8481a04adac48b37ab1c06d66b998c6e65"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/config.py",
+      "sha256": "edd3e0d789346731b7dc316f16582d49cfcf445f7e93122efdf6a6af0e28dad1",
+      "sha256_after": "edd3e0d789346731b7dc316f16582d49cfcf445f7e93122efdf6a6af0e28dad1"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/data.py",
+      "sha256": "d99d048e53681330963641aeeb536315a877aa30c32fc84a9e162d72ffe7dba2",
+      "sha256_after": "d99d048e53681330963641aeeb536315a877aa30c32fc84a9e162d72ffe7dba2"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/experiments.py",
+      "sha256": "f32be02988dba93b169d0b4cb88aed7dc1e7a71df25216d2b1eb625d00c59745",
+      "sha256_after": "f32be02988dba93b169d0b4cb88aed7dc1e7a71df25216d2b1eb625d00c59745"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/model.py",
+      "sha256": "a6af3f75f6d4234eb52da5fe7a70635cf6b88a838b130e870642809eb860ecf8",
+      "sha256_after": "a6af3f75f6d4234eb52da5fe7a70635cf6b88a838b130e870642809eb860ecf8"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/packed.py",
+      "sha256": "808335d28d7f4314236e9e3b2e81da95961409df33c7314e5dcb5cd49d3bd145",
+      "sha256_after": "808335d28d7f4314236e9e3b2e81da95961409df33c7314e5dcb5cd49d3bd145"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/packed_benchmark.py",
+      "sha256": "b488e1c02070278eed55dc0e2780afb9ec5b0375dad81a07d6d4159c7d002d46",
+      "sha256_after": "b488e1c02070278eed55dc0e2780afb9ec5b0375dad81a07d6d4159c7d002d46"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/packed_optimizer.py",
+      "sha256": "7c6366461ffbea5b8ff51e8c92a3dfb4e377d654d1886ff215d1a8d216f0c726",
+      "sha256_after": "7c6366461ffbea5b8ff51e8c92a3dfb4e377d654d1886ff215d1a8d216f0c726"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/runtime.py",
+      "sha256": "fb932b11b7859e3cbc277f19c5bcd744e0c6811f622f7f8ce692c2a282c7f960",
+      "sha256_after": "fb932b11b7859e3cbc277f19c5bcd744e0c6811f622f7f8ce692c2a282c7f960"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/state.py",
+      "sha256": "46ba4ccf0681120bb09d6e852ffa4239e018788d1e1197ac308ee28209393466",
+      "sha256_after": "46ba4ccf0681120bb09d6e852ffa4239e018788d1e1197ac308ee28209393466"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/source/src/tiny_llm/train.py",
+      "sha256": "5cf70d8f5cf4cf463b453ef3e5f35979db416c49d5d139af255384a8b9e9b967",
+      "sha256_after": "5cf70d8f5cf4cf463b453ef3e5f35979db416c49d5d139af255384a8b9e9b967"
+    },
+    {
+      "path": "runs/packed4-awc-exponential-20m-c512-small-batch/source/uv.lock",
+      "sha256": "11fe47e1e133585bfc4fc83fd2498320dfcb349655e565a166489c668447cb6f",
+      "sha256_after": "11fe47e1e133585bfc4fc83fd2498320dfcb349655e565a166489c668447cb6f"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/manifest.json",
+      "sha256": "a3d5379962d5adfd1f2d01d7c994e4fa5b693a673b5975b8da3fd510c49750fe",
+      "sha256_after": "a3d5379962d5adfd1f2d01d7c994e4fa5b693a673b5975b8da3fd510c49750fe"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/reports/beta1-replicated.json",
+      "sha256": "26bdbf671d435d32e284bbb000eb883268ca4b3c1f7a3d130f3bab8144536d9b",
+      "sha256_after": "26bdbf671d435d32e284bbb000eb883268ca4b3c1f7a3d130f3bab8144536d9b"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/reports/confirmation.json",
+      "sha256": "89c301adc4c8f060395190702a6ae4dc5f9fdbb25ea64a2fafa1bd875700b659",
+      "sha256_after": "89c301adc4c8f060395190702a6ae4dc5f9fdbb25ea64a2fafa1bd875700b659"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/reports/runs.json",
+      "sha256": "6fe0f06aa2646c1785b09a2b1c8e9db6e4bc03a6b77b3cc0181498e57d0f90a8",
+      "sha256_after": "6fe0f06aa2646c1785b09a2b1c8e9db6e4bc03a6b77b3cc0181498e57d0f90a8"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/reports/throughput-summary.json",
+      "sha256": "08b7b7c9668716502ccaded2fb16a34dc4359d03402ad66d553905c496681189",
+      "sha256_after": "08b7b7c9668716502ccaded2fb16a34dc4359d03402ad66d553905c496681189"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/reports/validation.json",
+      "sha256": "3ab7e92c8b8b7b1161974af15b953d24bd21ae5166b8c81a682467b4061bc194",
+      "sha256_after": "3ab7e92c8b8b7b1161974af15b953d24bd21ae5166b8c81a682467b4061bc194"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/source/batch_size_study.py",
+      "sha256": "43d618910f3e38ea2b2de1ad12774da914b9c35ad530a680d46263783bb631f5",
+      "sha256_after": "43d618910f3e38ea2b2de1ad12774da914b9c35ad530a680d46263783bb631f5"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/source/configs/20m.yaml",
+      "sha256": "19739a9bb22f20b2d3052d3df353156c29b42272e63f3d83e2b8b9bb52bfe880",
+      "sha256_after": "19739a9bb22f20b2d3052d3df353156c29b42272e63f3d83e2b8b9bb52bfe880"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/source/configs/cosine.yaml",
+      "sha256": "9c78a6e00b5532ec84dfb7d4b92e3e3736e8f64127569f38a29b9c2d849e0475",
+      "sha256_after": "9c78a6e00b5532ec84dfb7d4b92e3e3736e8f64127569f38a29b9c2d849e0475"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/source/pyproject.toml",
+      "sha256": "6194efd1e3b255670aa8a9ee57d9585a5aa5207ff68fe81c4d38615322c6309f",
+      "sha256_after": "6194efd1e3b255670aa8a9ee57d9585a5aa5207ff68fe81c4d38615322c6309f"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/source/src/tiny_llm/__init__.py",
+      "sha256": "ee6eeb9fd0464c10d982f2ac3dd2677c5534f23eeb0f9adfd2d7435b88785e7d",
+      "sha256_after": "ee6eeb9fd0464c10d982f2ac3dd2677c5534f23eeb0f9adfd2d7435b88785e7d"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/source/src/tiny_llm/__main__.py",
+      "sha256": "76687090399e394dd59f6e72bf11f99ca37184564e53a6f19a3c3be74ee96789",
+      "sha256_after": "76687090399e394dd59f6e72bf11f99ca37184564e53a6f19a3c3be74ee96789"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/source/src/tiny_llm/analysis/__init__.py",
+      "sha256": "f7899324f928575b7c353c51b0c5e5b21b547e5effb8e045e1ac9e9ad68e1ca4",
+      "sha256_after": "f7899324f928575b7c353c51b0c5e5b21b547e5effb8e045e1ac9e9ad68e1ca4"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/source/src/tiny_llm/analysis/core.py",
+      "sha256": "b0a902912c7e291f712f579cfdb3a85d7807571f2364c17b31ebe696ad6663ca",
+      "sha256_after": "b0a902912c7e291f712f579cfdb3a85d7807571f2364c17b31ebe696ad6663ca"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/source/src/tiny_llm/analysis/plot.py",
+      "sha256": "7de80840117c68347c45647dc9a0fb52e482b25765f1c8ad701a7ad2fb867f3e",
+      "sha256_after": "7de80840117c68347c45647dc9a0fb52e482b25765f1c8ad701a7ad2fb867f3e"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/source/src/tiny_llm/analysis/slurm.py",
+      "sha256": "906166aaa0f9c5d859fa7eb5d23831da27161bd58e3beb0fc46d629fd5a8986b",
+      "sha256_after": "906166aaa0f9c5d859fa7eb5d23831da27161bd58e3beb0fc46d629fd5a8986b"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/source/src/tiny_llm/benchmark.py",
+      "sha256": "014acb615f768db6e84e9bd46c4b4263ee661a3847924427e1c3f0a7dda28a53",
+      "sha256_after": "014acb615f768db6e84e9bd46c4b4263ee661a3847924427e1c3f0a7dda28a53"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/source/src/tiny_llm/checkpoints.py",
+      "sha256": "23e13cfbb1245f4018452722507d8ad626616e92abc051650442457abdb88bea",
+      "sha256_after": "23e13cfbb1245f4018452722507d8ad626616e92abc051650442457abdb88bea"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/source/src/tiny_llm/cli.py",
+      "sha256": "a12171058f83879d99990aaf7262ae8481a04adac48b37ab1c06d66b998c6e65",
+      "sha256_after": "a12171058f83879d99990aaf7262ae8481a04adac48b37ab1c06d66b998c6e65"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/source/src/tiny_llm/config.py",
+      "sha256": "edd3e0d789346731b7dc316f16582d49cfcf445f7e93122efdf6a6af0e28dad1",
+      "sha256_after": "edd3e0d789346731b7dc316f16582d49cfcf445f7e93122efdf6a6af0e28dad1"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/source/src/tiny_llm/data.py",
+      "sha256": "d99d048e53681330963641aeeb536315a877aa30c32fc84a9e162d72ffe7dba2",
+      "sha256_after": "d99d048e53681330963641aeeb536315a877aa30c32fc84a9e162d72ffe7dba2"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/source/src/tiny_llm/experiments.py",
+      "sha256": "f32be02988dba93b169d0b4cb88aed7dc1e7a71df25216d2b1eb625d00c59745",
+      "sha256_after": "f32be02988dba93b169d0b4cb88aed7dc1e7a71df25216d2b1eb625d00c59745"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/source/src/tiny_llm/model.py",
+      "sha256": "a6af3f75f6d4234eb52da5fe7a70635cf6b88a838b130e870642809eb860ecf8",
+      "sha256_after": "a6af3f75f6d4234eb52da5fe7a70635cf6b88a838b130e870642809eb860ecf8"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/source/src/tiny_llm/packed.py",
+      "sha256": "808335d28d7f4314236e9e3b2e81da95961409df33c7314e5dcb5cd49d3bd145",
+      "sha256_after": "808335d28d7f4314236e9e3b2e81da95961409df33c7314e5dcb5cd49d3bd145"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/source/src/tiny_llm/packed_benchmark.py",
+      "sha256": "b488e1c02070278eed55dc0e2780afb9ec5b0375dad81a07d6d4159c7d002d46",
+      "sha256_after": "b488e1c02070278eed55dc0e2780afb9ec5b0375dad81a07d6d4159c7d002d46"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/source/src/tiny_llm/packed_optimizer.py",
+      "sha256": "7c6366461ffbea5b8ff51e8c92a3dfb4e377d654d1886ff215d1a8d216f0c726",
+      "sha256_after": "7c6366461ffbea5b8ff51e8c92a3dfb4e377d654d1886ff215d1a8d216f0c726"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/source/src/tiny_llm/runtime.py",
+      "sha256": "fb932b11b7859e3cbc277f19c5bcd744e0c6811f622f7f8ce692c2a282c7f960",
+      "sha256_after": "fb932b11b7859e3cbc277f19c5bcd744e0c6811f622f7f8ce692c2a282c7f960"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/source/src/tiny_llm/state.py",
+      "sha256": "46ba4ccf0681120bb09d6e852ffa4239e018788d1e1197ac308ee28209393466",
+      "sha256_after": "46ba4ccf0681120bb09d6e852ffa4239e018788d1e1197ac308ee28209393466"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/source/src/tiny_llm/train.py",
+      "sha256": "5cf70d8f5cf4cf463b453ef3e5f35979db416c49d5d139af255384a8b9e9b967",
+      "sha256_after": "5cf70d8f5cf4cf463b453ef3e5f35979db416c49d5d139af255384a8b9e9b967"
+    },
+    {
+      "path": "runs/sync-20m-c512-small-batch/source/uv.lock",
+      "sha256": "11fe47e1e133585bfc4fc83fd2498320dfcb349655e565a166489c668447cb6f",
+      "sha256_after": "11fe47e1e133585bfc4fc83fd2498320dfcb349655e565a166489c668447cb6f"
+    }
+  ],
+  "output_directory": "doc/small-batchsize-investigation/build-audit",
+  "declared_results": [
+    "doc/small-batchsize-investigation/build-audit/verification.json"
+  ],
+  "outputs": [
+    {
+      "path": "doc/small-batchsize-investigation/build-audit/stdout.txt",
+      "sha256": "e3652d33f0e7f7dda7701cda1c800f6674dbf023d2af2adf49d4f199fd5930a6",
+      "kind": "log"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/build-audit/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kind": "log"
+    },
+    {
+      "path": "doc/small-batchsize-investigation/build-audit/verification.json",
+      "sha256": "558dde74a8b6d158143e122887f2719a0c63dab123eea573af447b87fa493bfe",
+      "kind": "result"
+    }
+  ],
+  "checks": [
+    {
+      "check": "input hashes unchanged",
+      "passed": true
+    },
+    {
+      "check": "process exited successfully within enforced limits",
+      "passed": true
+    },
+    {
+      "check": "declared result files are present and regular",
+      "passed": true
+    }
+  ],
+  "result": "Run completed; mathematical assertion requires interpretation and review.",
+  "residual_risks": [
+    "Command success does not establish the mathematical interpretation.",
+    "Only listed input artifacts are pinned; external dependencies need recorded versions.",
+    "The thread cap uses conventional environment variables; a child program may ignore them.",
+    "The POSIX CPU-time limit is per process, not an aggregate descendant budget."
+  ]
+}

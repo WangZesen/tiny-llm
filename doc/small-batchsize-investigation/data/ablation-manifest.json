@@ -1,0 +1,1330 @@
+{
+  "base_config": {
+    "data": {
+      "cache_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/data/c4",
+      "dataset": "allenai/c4",
+      "prefetch": true,
+      "prepare_train_tokens": null,
+      "prepare_validation_tokens": null,
+      "prepare_workers": 8,
+      "revision": "1588ec454efa1a09f29cd18ddd04fe05fc8653a2",
+      "shard_tokens": 33554432,
+      "shuffle_buffer": 100000,
+      "shuffle_group_size": 2,
+      "shuffle_seed": 42,
+      "tokenize_batch_size": 256,
+      "tokenizer": "TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T",
+      "tokenizer_revision": "59f6f375b26bde864a6ca194a9a3044570490064"
+    },
+    "decentralized": null,
+    "evaluation": {
+      "batch_size": 128,
+      "seed": 12345,
+      "subset_blocks": 1024
+    },
+    "lr_schedule": {
+      "min_lr_ratio": 0.0,
+      "name": "cosine",
+      "warmup_steps": 312
+    },
+    "model": {
+      "context_length": 512,
+      "ffn_width": 896,
+      "heads": 5,
+      "init_std": 0.02,
+      "layers": 8,
+      "norm_eps": 1e-05,
+      "rope_theta": 10000.0,
+      "vocab_size": 32000,
+      "width": 320
+    },
+    "optimizer": {
+      "beta1": 0.9,
+      "beta2": 0.98,
+      "eps": 1e-08,
+      "grad_clip": 1.0,
+      "lr": 0.002,
+      "weight_decay": 0.1
+    },
+    "runtime": {
+      "amp": true,
+      "attention_backend": "sdpa",
+      "compile": true,
+      "compile_mode": "default",
+      "cpu_threads": 8,
+      "deterministic": false,
+      "device": "cuda:0",
+      "fused_optimizer": true,
+      "output_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/runs/sync-20m-cosine-tpp20-b65536-c512-m128-seeds42-44/experiments/lr0.002-b10.9-b20.98-seed42/attempt-1",
+      "sdpa_backend": "auto",
+      "seed": 42
+    },
+    "training": {
+      "batch_tokens": 65536,
+      "checkpoint_epochs": [
+        1
+      ],
+      "checkpoint_policy": "none",
+      "epoch_tokens_per_parameters": 0.5,
+      "log_every": 20,
+      "micro_batch_size": 128,
+      "save_epoch_training_state": false,
+      "tokens_per_parameters": 20.0
+    }
+  },
+  "cache_identity": "7618ae8749071f012cd3e3e27f96480ea18c5da5dca59cf90330f35beaa4da1c",
+  "concurrency": 12,
+  "created_utc": "2026-09-30T20:07:50.654462+00:00",
+  "expected": {
+    "parameters": 20403520,
+    "tokens": 408092672,
+    "validation_tokens": 197411295
+  },
+  "historical": [],
+  "job_sha256": "666d0a915ea3daa13c342fa60583567df1a6d5922f53140abb756db9bb7a99b5",
+  "phases": {
+    "replicate": {
+      "created_utc": "2026-09-30T20:07:50.654492+00:00",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    }
+  },
+  "protocol": {
+    "account": "naiss2026-4-1590-gpu",
+    "automatic_extension": false,
+    "baseline_grad_clip": 1.0,
+    "baseline_seeds": [
+      42,
+      43,
+      44
+    ],
+    "checkpoint_policy": "none",
+    "concurrency": 12,
+    "epochs": 40,
+    "expected_runs": 12,
+    "fresh_seed_confirmation": false,
+    "global_batches": [
+      16,
+      32
+    ],
+    "grad_clip": null,
+    "local_batches": [
+      4,
+      8
+    ],
+    "local_moments": true,
+    "max_attempts": 2,
+    "name": "four-worker small-batch clipping ablation",
+    "only_training_change": "optimizer.grad_clip: 1.0 -> null",
+    "save_epoch_training_state": false,
+    "scheme": "awc",
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "selection": "Top two complete three-seed means per batch in the frozen unified ranking; ties LR, beta1, beta2",
+    "tokens": 408092672,
+    "top_k": 2,
+    "topology": "one_peer_exponential",
+    "validation_tokens": 197411295,
+    "warmup_tokens": 20447232,
+    "workers": 4
+  },
+  "protocol_sha256": "a7583cea733c2df2c114fe49ba3b6448438784ef83a4b18c81ac5e423d9f4715",
+  "reference_files": {
+    "baseline-evidence.json": "28f9e3bdbfd3e366818ff7844f15e7f91961aec6f9edbc73f79a6e132ac3a221",
+    "baseline-runs.json": "8cdc41633e08778f05d483c92d90d0c11e422cb7bffbc7073c75c47a336039e6",
+    "clipping-audit-inputs.json": "21dc6c6b9dec2b16727a3a6165101974e99f99c388f1f5753fe36829a725a667",
+    "clipping-audit-summary.json": "2ff1b18b561d120b8bbb51e3e586e71cb9b30f9c857857069c4080270a907939",
+    "clipping-audit.md": "33959aedbd6f7899ca2e00c8b7e2b4be055ad9c80a649218af6a9ebd1eb413ca",
+    "selected-configurations.json": "9a6d3235061757133c514c1926d220d6ef6750e7ec05ddc4eaa2dd759f4cff0e"
+  },
+  "repository": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm",
+  "root": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/runs/packed4-awc-exponential-20m-c512-small-batch-clipping",
+  "runs": [
+    {
+      "batch": 16,
+      "beta1": 0.99,
+      "beta2": 0.9999,
+      "config": {
+        "data": {
+          "cache_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/data/c4",
+          "dataset": "allenai/c4",
+          "prefetch": true,
+          "prepare_train_tokens": null,
+          "prepare_validation_tokens": null,
+          "prepare_workers": 8,
+          "revision": "1588ec454efa1a09f29cd18ddd04fe05fc8653a2",
+          "shard_tokens": 33554432,
+          "shuffle_buffer": 100000,
+          "shuffle_group_size": 2,
+          "shuffle_seed": 42,
+          "tokenize_batch_size": 256,
+          "tokenizer": "TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T",
+          "tokenizer_revision": "59f6f375b26bde864a6ca194a9a3044570490064"
+        },
+        "decentralized": {
+          "adaptive_consensus": null,
+          "num_models": 4,
+          "scheme": "awc",
+          "topology": "one_peer_exponential"
+        },
+        "evaluation": {
+          "batch_size": 128,
+          "seed": 12345,
+          "subset_blocks": 1024
+        },
+        "lr_schedule": {
+          "min_lr_ratio": 0.0,
+          "name": "cosine",
+          "warmup_steps": 2496
+        },
+        "model": {
+          "context_length": 512,
+          "ffn_width": 896,
+          "heads": 5,
+          "init_std": 0.02,
+          "layers": 8,
+          "norm_eps": 1e-05,
+          "rope_theta": 10000.0,
+          "vocab_size": 32000,
+          "width": 320
+        },
+        "optimizer": {
+          "beta1": 0.99,
+          "beta2": 0.9999,
+          "eps": 1e-08,
+          "grad_clip": null,
+          "lr": 0.002,
+          "weight_decay": 0.1
+        },
+        "runtime": {
+          "amp": true,
+          "attention_backend": "sdpa",
+          "compile": true,
+          "compile_mode": "default",
+          "cpu_threads": 8,
+          "deterministic": false,
+          "device": "cuda:0",
+          "fused_optimizer": true,
+          "output_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s42/attempt-001",
+          "sdpa_backend": "auto",
+          "seed": 42
+        },
+        "training": {
+          "batch_tokens": 8192,
+          "checkpoint_epochs": [
+            1
+          ],
+          "checkpoint_policy": "none",
+          "epoch_tokens_per_parameters": 0.5000273,
+          "log_every": 160,
+          "micro_batch_size": 4,
+          "save_epoch_training_state": false,
+          "tokens_per_parameters": 20.001092
+        }
+      },
+      "config_file": "configs/c352ddd312366e4e4b7c-s42.yaml",
+      "config_sha256": "d5263b6e840c5f6d6d01a49953472cb8209da4cee827d9d8d3f40ff2e920b538",
+      "id": "c352ddd312366e4e4b7c-s42",
+      "index": 0,
+      "lr": 0.002,
+      "policies": [],
+      "recipe": "c352ddd312366e4e4b7c",
+      "recipe_identity": "6ea8957c7999c3a4086abaa51b142bfb28d057cb9cd8ed00c2c7d0921814958d",
+      "role": "candidate",
+      "seed": 42,
+      "stage": "replicate",
+      "weight_decay": 0.1
+    },
+    {
+      "batch": 16,
+      "beta1": 0.99,
+      "beta2": 0.9999,
+      "config": {
+        "data": {
+          "cache_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/data/c4",
+          "dataset": "allenai/c4",
+          "prefetch": true,
+          "prepare_train_tokens": null,
+          "prepare_validation_tokens": null,
+          "prepare_workers": 8,
+          "revision": "1588ec454efa1a09f29cd18ddd04fe05fc8653a2",
+          "shard_tokens": 33554432,
+          "shuffle_buffer": 100000,
+          "shuffle_group_size": 2,
+          "shuffle_seed": 42,
+          "tokenize_batch_size": 256,
+          "tokenizer": "TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T",
+          "tokenizer_revision": "59f6f375b26bde864a6ca194a9a3044570490064"
+        },
+        "decentralized": {
+          "adaptive_consensus": null,
+          "num_models": 4,
+          "scheme": "awc",
+          "topology": "one_peer_exponential"
+        },
+        "evaluation": {
+          "batch_size": 128,
+          "seed": 12345,
+          "subset_blocks": 1024
+        },
+        "lr_schedule": {
+          "min_lr_ratio": 0.0,
+          "name": "cosine",
+          "warmup_steps": 2496
+        },
+        "model": {
+          "context_length": 512,
+          "ffn_width": 896,
+          "heads": 5,
+          "init_std": 0.02,
+          "layers": 8,
+          "norm_eps": 1e-05,
+          "rope_theta": 10000.0,
+          "vocab_size": 32000,
+          "width": 320
+        },
+        "optimizer": {
+          "beta1": 0.99,
+          "beta2": 0.9999,
+          "eps": 1e-08,
+          "grad_clip": null,
+          "lr": 0.002,
+          "weight_decay": 0.1
+        },
+        "runtime": {
+          "amp": true,
+          "attention_backend": "sdpa",
+          "compile": true,
+          "compile_mode": "default",
+          "cpu_threads": 8,
+          "deterministic": false,
+          "device": "cuda:0",
+          "fused_optimizer": true,
+          "output_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s43/attempt-001",
+          "sdpa_backend": "auto",
+          "seed": 43
+        },
+        "training": {
+          "batch_tokens": 8192,
+          "checkpoint_epochs": [
+            1
+          ],
+          "checkpoint_policy": "none",
+          "epoch_tokens_per_parameters": 0.5000273,
+          "log_every": 160,
+          "micro_batch_size": 4,
+          "save_epoch_training_state": false,
+          "tokens_per_parameters": 20.001092
+        }
+      },
+      "config_file": "configs/c352ddd312366e4e4b7c-s43.yaml",
+      "config_sha256": "1d8b75097d5c98ed660d7ce634832b7fe589762e8c3ec3210a6eea3ba42e277a",
+      "id": "c352ddd312366e4e4b7c-s43",
+      "index": 1,
+      "lr": 0.002,
+      "policies": [],
+      "recipe": "c352ddd312366e4e4b7c",
+      "recipe_identity": "76b4f516d80a4961946288922836c18d756f677d3179db0005cceee43cd34942",
+      "role": "candidate",
+      "seed": 43,
+      "stage": "replicate",
+      "weight_decay": 0.1
+    },
+    {
+      "batch": 16,
+      "beta1": 0.99,
+      "beta2": 0.9999,
+      "config": {
+        "data": {
+          "cache_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/data/c4",
+          "dataset": "allenai/c4",
+          "prefetch": true,
+          "prepare_train_tokens": null,
+          "prepare_validation_tokens": null,
+          "prepare_workers": 8,
+          "revision": "1588ec454efa1a09f29cd18ddd04fe05fc8653a2",
+          "shard_tokens": 33554432,
+          "shuffle_buffer": 100000,
+          "shuffle_group_size": 2,
+          "shuffle_seed": 42,
+          "tokenize_batch_size": 256,
+          "tokenizer": "TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T",
+          "tokenizer_revision": "59f6f375b26bde864a6ca194a9a3044570490064"
+        },
+        "decentralized": {
+          "adaptive_consensus": null,
+          "num_models": 4,
+          "scheme": "awc",
+          "topology": "one_peer_exponential"
+        },
+        "evaluation": {
+          "batch_size": 128,
+          "seed": 12345,
+          "subset_blocks": 1024
+        },
+        "lr_schedule": {
+          "min_lr_ratio": 0.0,
+          "name": "cosine",
+          "warmup_steps": 2496
+        },
+        "model": {
+          "context_length": 512,
+          "ffn_width": 896,
+          "heads": 5,
+          "init_std": 0.02,
+          "layers": 8,
+          "norm_eps": 1e-05,
+          "rope_theta": 10000.0,
+          "vocab_size": 32000,
+          "width": 320
+        },
+        "optimizer": {
+          "beta1": 0.99,
+          "beta2": 0.9999,
+          "eps": 1e-08,
+          "grad_clip": null,
+          "lr": 0.002,
+          "weight_decay": 0.1
+        },
+        "runtime": {
+          "amp": true,
+          "attention_backend": "sdpa",
+          "compile": true,
+          "compile_mode": "default",
+          "cpu_threads": 8,
+          "deterministic": false,
+          "device": "cuda:0",
+          "fused_optimizer": true,
+          "output_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/c352ddd312366e4e4b7c-s44/attempt-001",
+          "sdpa_backend": "auto",
+          "seed": 44
+        },
+        "training": {
+          "batch_tokens": 8192,
+          "checkpoint_epochs": [
+            1
+          ],
+          "checkpoint_policy": "none",
+          "epoch_tokens_per_parameters": 0.5000273,
+          "log_every": 160,
+          "micro_batch_size": 4,
+          "save_epoch_training_state": false,
+          "tokens_per_parameters": 20.001092
+        }
+      },
+      "config_file": "configs/c352ddd312366e4e4b7c-s44.yaml",
+      "config_sha256": "a4f5d9db79f4c504904a330de46960fe9b419c993113405e1069837135f11c63",
+      "id": "c352ddd312366e4e4b7c-s44",
+      "index": 2,
+      "lr": 0.002,
+      "policies": [],
+      "recipe": "c352ddd312366e4e4b7c",
+      "recipe_identity": "1f15d4b4fe588787cffc7edc5e944a68f533b51a72859469c8e8080a1a089749",
+      "role": "candidate",
+      "seed": 44,
+      "stage": "replicate",
+      "weight_decay": 0.1
+    },
+    {
+      "batch": 16,
+      "beta1": 0.99,
+      "beta2": 0.99999,
+      "config": {
+        "data": {
+          "cache_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/data/c4",
+          "dataset": "allenai/c4",
+          "prefetch": true,
+          "prepare_train_tokens": null,
+          "prepare_validation_tokens": null,
+          "prepare_workers": 8,
+          "revision": "1588ec454efa1a09f29cd18ddd04fe05fc8653a2",
+          "shard_tokens": 33554432,
+          "shuffle_buffer": 100000,
+          "shuffle_group_size": 2,
+          "shuffle_seed": 42,
+          "tokenize_batch_size": 256,
+          "tokenizer": "TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T",
+          "tokenizer_revision": "59f6f375b26bde864a6ca194a9a3044570490064"
+        },
+        "decentralized": {
+          "adaptive_consensus": null,
+          "num_models": 4,
+          "scheme": "awc",
+          "topology": "one_peer_exponential"
+        },
+        "evaluation": {
+          "batch_size": 128,
+          "seed": 12345,
+          "subset_blocks": 1024
+        },
+        "lr_schedule": {
+          "min_lr_ratio": 0.0,
+          "name": "cosine",
+          "warmup_steps": 2496
+        },
+        "model": {
+          "context_length": 512,
+          "ffn_width": 896,
+          "heads": 5,
+          "init_std": 0.02,
+          "layers": 8,
+          "norm_eps": 1e-05,
+          "rope_theta": 10000.0,
+          "vocab_size": 32000,
+          "width": 320
+        },
+        "optimizer": {
+          "beta1": 0.99,
+          "beta2": 0.99999,
+          "eps": 1e-08,
+          "grad_clip": null,
+          "lr": 0.002,
+          "weight_decay": 0.1
+        },
+        "runtime": {
+          "amp": true,
+          "attention_backend": "sdpa",
+          "compile": true,
+          "compile_mode": "default",
+          "cpu_threads": 8,
+          "deterministic": false,
+          "device": "cuda:0",
+          "fused_optimizer": true,
+          "output_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s42/attempt-001",
+          "sdpa_backend": "auto",
+          "seed": 42
+        },
+        "training": {
+          "batch_tokens": 8192,
+          "checkpoint_epochs": [
+            1
+          ],
+          "checkpoint_policy": "none",
+          "epoch_tokens_per_parameters": 0.5000273,
+          "log_every": 160,
+          "micro_batch_size": 4,
+          "save_epoch_training_state": false,
+          "tokens_per_parameters": 20.001092
+        }
+      },
+      "config_file": "configs/d4ae9345d30625e06017-s42.yaml",
+      "config_sha256": "c29313897318ac1045bbdc6ad6e756006c13a0537319faa24c7708af5bb465a5",
+      "id": "d4ae9345d30625e06017-s42",
+      "index": 3,
+      "lr": 0.002,
+      "policies": [],
+      "recipe": "d4ae9345d30625e06017",
+      "recipe_identity": "ff79cf4faf9151a6aff1a2ce040ffa9317a3efc8b77aaf80c6e011e69fbaf48b",
+      "role": "candidate",
+      "seed": 42,
+      "stage": "replicate",
+      "weight_decay": 0.1
+    },
+    {
+      "batch": 16,
+      "beta1": 0.99,
+      "beta2": 0.99999,
+      "config": {
+        "data": {
+          "cache_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/data/c4",
+          "dataset": "allenai/c4",
+          "prefetch": true,
+          "prepare_train_tokens": null,
+          "prepare_validation_tokens": null,
+          "prepare_workers": 8,
+          "revision": "1588ec454efa1a09f29cd18ddd04fe05fc8653a2",
+          "shard_tokens": 33554432,
+          "shuffle_buffer": 100000,
+          "shuffle_group_size": 2,
+          "shuffle_seed": 42,
+          "tokenize_batch_size": 256,
+          "tokenizer": "TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T",
+          "tokenizer_revision": "59f6f375b26bde864a6ca194a9a3044570490064"
+        },
+        "decentralized": {
+          "adaptive_consensus": null,
+          "num_models": 4,
+          "scheme": "awc",
+          "topology": "one_peer_exponential"
+        },
+        "evaluation": {
+          "batch_size": 128,
+          "seed": 12345,
+          "subset_blocks": 1024
+        },
+        "lr_schedule": {
+          "min_lr_ratio": 0.0,
+          "name": "cosine",
+          "warmup_steps": 2496
+        },
+        "model": {
+          "context_length": 512,
+          "ffn_width": 896,
+          "heads": 5,
+          "init_std": 0.02,
+          "layers": 8,
+          "norm_eps": 1e-05,
+          "rope_theta": 10000.0,
+          "vocab_size": 32000,
+          "width": 320
+        },
+        "optimizer": {
+          "beta1": 0.99,
+          "beta2": 0.99999,
+          "eps": 1e-08,
+          "grad_clip": null,
+          "lr": 0.002,
+          "weight_decay": 0.1
+        },
+        "runtime": {
+          "amp": true,
+          "attention_backend": "sdpa",
+          "compile": true,
+          "compile_mode": "default",
+          "cpu_threads": 8,
+          "deterministic": false,
+          "device": "cuda:0",
+          "fused_optimizer": true,
+          "output_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s43/attempt-001",
+          "sdpa_backend": "auto",
+          "seed": 43
+        },
+        "training": {
+          "batch_tokens": 8192,
+          "checkpoint_epochs": [
+            1
+          ],
+          "checkpoint_policy": "none",
+          "epoch_tokens_per_parameters": 0.5000273,
+          "log_every": 160,
+          "micro_batch_size": 4,
+          "save_epoch_training_state": false,
+          "tokens_per_parameters": 20.001092
+        }
+      },
+      "config_file": "configs/d4ae9345d30625e06017-s43.yaml",
+      "config_sha256": "f9fc490dc9bdb4c14b2493d2b5ec7a7f720daf331202b3cd7b0eb813ce0b425b",
+      "id": "d4ae9345d30625e06017-s43",
+      "index": 4,
+      "lr": 0.002,
+      "policies": [],
+      "recipe": "d4ae9345d30625e06017",
+      "recipe_identity": "39cfdfe930365192888a40ac851243af1c403f9fe3c2dcd0d3727075b651ecd1",
+      "role": "candidate",
+      "seed": 43,
+      "stage": "replicate",
+      "weight_decay": 0.1
+    },
+    {
+      "batch": 16,
+      "beta1": 0.99,
+      "beta2": 0.99999,
+      "config": {
+        "data": {
+          "cache_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/data/c4",
+          "dataset": "allenai/c4",
+          "prefetch": true,
+          "prepare_train_tokens": null,
+          "prepare_validation_tokens": null,
+          "prepare_workers": 8,
+          "revision": "1588ec454efa1a09f29cd18ddd04fe05fc8653a2",
+          "shard_tokens": 33554432,
+          "shuffle_buffer": 100000,
+          "shuffle_group_size": 2,
+          "shuffle_seed": 42,
+          "tokenize_batch_size": 256,
+          "tokenizer": "TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T",
+          "tokenizer_revision": "59f6f375b26bde864a6ca194a9a3044570490064"
+        },
+        "decentralized": {
+          "adaptive_consensus": null,
+          "num_models": 4,
+          "scheme": "awc",
+          "topology": "one_peer_exponential"
+        },
+        "evaluation": {
+          "batch_size": 128,
+          "seed": 12345,
+          "subset_blocks": 1024
+        },
+        "lr_schedule": {
+          "min_lr_ratio": 0.0,
+          "name": "cosine",
+          "warmup_steps": 2496
+        },
+        "model": {
+          "context_length": 512,
+          "ffn_width": 896,
+          "heads": 5,
+          "init_std": 0.02,
+          "layers": 8,
+          "norm_eps": 1e-05,
+          "rope_theta": 10000.0,
+          "vocab_size": 32000,
+          "width": 320
+        },
+        "optimizer": {
+          "beta1": 0.99,
+          "beta2": 0.99999,
+          "eps": 1e-08,
+          "grad_clip": null,
+          "lr": 0.002,
+          "weight_decay": 0.1
+        },
+        "runtime": {
+          "amp": true,
+          "attention_backend": "sdpa",
+          "compile": true,
+          "compile_mode": "default",
+          "cpu_threads": 8,
+          "deterministic": false,
+          "device": "cuda:0",
+          "fused_optimizer": true,
+          "output_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/d4ae9345d30625e06017-s44/attempt-001",
+          "sdpa_backend": "auto",
+          "seed": 44
+        },
+        "training": {
+          "batch_tokens": 8192,
+          "checkpoint_epochs": [
+            1
+          ],
+          "checkpoint_policy": "none",
+          "epoch_tokens_per_parameters": 0.5000273,
+          "log_every": 160,
+          "micro_batch_size": 4,
+          "save_epoch_training_state": false,
+          "tokens_per_parameters": 20.001092
+        }
+      },
+      "config_file": "configs/d4ae9345d30625e06017-s44.yaml",
+      "config_sha256": "9da4e689a8a1c4834cad24f440af2ebaf117a8f44704d004596e6e81691f51bc",
+      "id": "d4ae9345d30625e06017-s44",
+      "index": 5,
+      "lr": 0.002,
+      "policies": [],
+      "recipe": "d4ae9345d30625e06017",
+      "recipe_identity": "3e8088c746014245c8c1fa0585d85939e5ca81e09c8bdcb3125ba6435bdc30c3",
+      "role": "candidate",
+      "seed": 44,
+      "stage": "replicate",
+      "weight_decay": 0.1
+    },
+    {
+      "batch": 32,
+      "beta1": 0.98,
+      "beta2": 0.999999,
+      "config": {
+        "data": {
+          "cache_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/data/c4",
+          "dataset": "allenai/c4",
+          "prefetch": true,
+          "prepare_train_tokens": null,
+          "prepare_validation_tokens": null,
+          "prepare_workers": 8,
+          "revision": "1588ec454efa1a09f29cd18ddd04fe05fc8653a2",
+          "shard_tokens": 33554432,
+          "shuffle_buffer": 100000,
+          "shuffle_group_size": 2,
+          "shuffle_seed": 42,
+          "tokenize_batch_size": 256,
+          "tokenizer": "TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T",
+          "tokenizer_revision": "59f6f375b26bde864a6ca194a9a3044570490064"
+        },
+        "decentralized": {
+          "adaptive_consensus": null,
+          "num_models": 4,
+          "scheme": "awc",
+          "topology": "one_peer_exponential"
+        },
+        "evaluation": {
+          "batch_size": 128,
+          "seed": 12345,
+          "subset_blocks": 1024
+        },
+        "lr_schedule": {
+          "min_lr_ratio": 0.0,
+          "name": "cosine",
+          "warmup_steps": 1248
+        },
+        "model": {
+          "context_length": 512,
+          "ffn_width": 896,
+          "heads": 5,
+          "init_std": 0.02,
+          "layers": 8,
+          "norm_eps": 1e-05,
+          "rope_theta": 10000.0,
+          "vocab_size": 32000,
+          "width": 320
+        },
+        "optimizer": {
+          "beta1": 0.98,
+          "beta2": 0.999999,
+          "eps": 1e-08,
+          "grad_clip": null,
+          "lr": 0.004,
+          "weight_decay": 0.1
+        },
+        "runtime": {
+          "amp": true,
+          "attention_backend": "sdpa",
+          "compile": true,
+          "compile_mode": "default",
+          "cpu_threads": 8,
+          "deterministic": false,
+          "device": "cuda:0",
+          "fused_optimizer": true,
+          "output_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s42/attempt-001",
+          "sdpa_backend": "auto",
+          "seed": 42
+        },
+        "training": {
+          "batch_tokens": 16384,
+          "checkpoint_epochs": [
+            1
+          ],
+          "checkpoint_policy": "none",
+          "epoch_tokens_per_parameters": 0.5000273,
+          "log_every": 80,
+          "micro_batch_size": 8,
+          "save_epoch_training_state": false,
+          "tokens_per_parameters": 20.001092
+        }
+      },
+      "config_file": "configs/e3fbe27da09d02fa5f59-s42.yaml",
+      "config_sha256": "a0dacaf520d8053dd058f40e7a9e8c506051307c28b824dcca60c64c79f81229",
+      "id": "e3fbe27da09d02fa5f59-s42",
+      "index": 6,
+      "lr": 0.004,
+      "policies": [],
+      "recipe": "e3fbe27da09d02fa5f59",
+      "recipe_identity": "1db9dfb87b1345d4fb28ab0edd1b1f7dd3b299fc6ac48cb082158562808a3299",
+      "role": "candidate",
+      "seed": 42,
+      "stage": "replicate",
+      "weight_decay": 0.1
+    },
+    {
+      "batch": 32,
+      "beta1": 0.98,
+      "beta2": 0.999999,
+      "config": {
+        "data": {
+          "cache_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/data/c4",
+          "dataset": "allenai/c4",
+          "prefetch": true,
+          "prepare_train_tokens": null,
+          "prepare_validation_tokens": null,
+          "prepare_workers": 8,
+          "revision": "1588ec454efa1a09f29cd18ddd04fe05fc8653a2",
+          "shard_tokens": 33554432,
+          "shuffle_buffer": 100000,
+          "shuffle_group_size": 2,
+          "shuffle_seed": 42,
+          "tokenize_batch_size": 256,
+          "tokenizer": "TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T",
+          "tokenizer_revision": "59f6f375b26bde864a6ca194a9a3044570490064"
+        },
+        "decentralized": {
+          "adaptive_consensus": null,
+          "num_models": 4,
+          "scheme": "awc",
+          "topology": "one_peer_exponential"
+        },
+        "evaluation": {
+          "batch_size": 128,
+          "seed": 12345,
+          "subset_blocks": 1024
+        },
+        "lr_schedule": {
+          "min_lr_ratio": 0.0,
+          "name": "cosine",
+          "warmup_steps": 1248
+        },
+        "model": {
+          "context_length": 512,
+          "ffn_width": 896,
+          "heads": 5,
+          "init_std": 0.02,
+          "layers": 8,
+          "norm_eps": 1e-05,
+          "rope_theta": 10000.0,
+          "vocab_size": 32000,
+          "width": 320
+        },
+        "optimizer": {
+          "beta1": 0.98,
+          "beta2": 0.999999,
+          "eps": 1e-08,
+          "grad_clip": null,
+          "lr": 0.004,
+          "weight_decay": 0.1
+        },
+        "runtime": {
+          "amp": true,
+          "attention_backend": "sdpa",
+          "compile": true,
+          "compile_mode": "default",
+          "cpu_threads": 8,
+          "deterministic": false,
+          "device": "cuda:0",
+          "fused_optimizer": true,
+          "output_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s43/attempt-001",
+          "sdpa_backend": "auto",
+          "seed": 43
+        },
+        "training": {
+          "batch_tokens": 16384,
+          "checkpoint_epochs": [
+            1
+          ],
+          "checkpoint_policy": "none",
+          "epoch_tokens_per_parameters": 0.5000273,
+          "log_every": 80,
+          "micro_batch_size": 8,
+          "save_epoch_training_state": false,
+          "tokens_per_parameters": 20.001092
+        }
+      },
+      "config_file": "configs/e3fbe27da09d02fa5f59-s43.yaml",
+      "config_sha256": "6f0fe81ca09c657ee296f59059b2f25ae7bfe84f616faf42cd5d01a08d7f5b9d",
+      "id": "e3fbe27da09d02fa5f59-s43",
+      "index": 7,
+      "lr": 0.004,
+      "policies": [],
+      "recipe": "e3fbe27da09d02fa5f59",
+      "recipe_identity": "bcf4f275429b0ef869d5a07c1e11ebe32dbff5702181d548c22d8768d0861e15",
+      "role": "candidate",
+      "seed": 43,
+      "stage": "replicate",
+      "weight_decay": 0.1
+    },
+    {
+      "batch": 32,
+      "beta1": 0.98,
+      "beta2": 0.999999,
+      "config": {
+        "data": {
+          "cache_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/data/c4",
+          "dataset": "allenai/c4",
+          "prefetch": true,
+          "prepare_train_tokens": null,
+          "prepare_validation_tokens": null,
+          "prepare_workers": 8,
+          "revision": "1588ec454efa1a09f29cd18ddd04fe05fc8653a2",
+          "shard_tokens": 33554432,
+          "shuffle_buffer": 100000,
+          "shuffle_group_size": 2,
+          "shuffle_seed": 42,
+          "tokenize_batch_size": 256,
+          "tokenizer": "TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T",
+          "tokenizer_revision": "59f6f375b26bde864a6ca194a9a3044570490064"
+        },
+        "decentralized": {
+          "adaptive_consensus": null,
+          "num_models": 4,
+          "scheme": "awc",
+          "topology": "one_peer_exponential"
+        },
+        "evaluation": {
+          "batch_size": 128,
+          "seed": 12345,
+          "subset_blocks": 1024
+        },
+        "lr_schedule": {
+          "min_lr_ratio": 0.0,
+          "name": "cosine",
+          "warmup_steps": 1248
+        },
+        "model": {
+          "context_length": 512,
+          "ffn_width": 896,
+          "heads": 5,
+          "init_std": 0.02,
+          "layers": 8,
+          "norm_eps": 1e-05,
+          "rope_theta": 10000.0,
+          "vocab_size": 32000,
+          "width": 320
+        },
+        "optimizer": {
+          "beta1": 0.98,
+          "beta2": 0.999999,
+          "eps": 1e-08,
+          "grad_clip": null,
+          "lr": 0.004,
+          "weight_decay": 0.1
+        },
+        "runtime": {
+          "amp": true,
+          "attention_backend": "sdpa",
+          "compile": true,
+          "compile_mode": "default",
+          "cpu_threads": 8,
+          "deterministic": false,
+          "device": "cuda:0",
+          "fused_optimizer": true,
+          "output_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/e3fbe27da09d02fa5f59-s44/attempt-001",
+          "sdpa_backend": "auto",
+          "seed": 44
+        },
+        "training": {
+          "batch_tokens": 16384,
+          "checkpoint_epochs": [
+            1
+          ],
+          "checkpoint_policy": "none",
+          "epoch_tokens_per_parameters": 0.5000273,
+          "log_every": 80,
+          "micro_batch_size": 8,
+          "save_epoch_training_state": false,
+          "tokens_per_parameters": 20.001092
+        }
+      },
+      "config_file": "configs/e3fbe27da09d02fa5f59-s44.yaml",
+      "config_sha256": "914de4b60ccd5e54c88d32b975a10334f64812b7823600a857d90abd69aa9a39",
+      "id": "e3fbe27da09d02fa5f59-s44",
+      "index": 8,
+      "lr": 0.004,
+      "policies": [],
+      "recipe": "e3fbe27da09d02fa5f59",
+      "recipe_identity": "a3116bc5d8f563b9dcb0972ac66ba9516832fe32db45ddcdb9ff7130675830a9",
+      "role": "candidate",
+      "seed": 44,
+      "stage": "replicate",
+      "weight_decay": 0.1
+    },
+    {
+      "batch": 32,
+      "beta1": 0.98,
+      "beta2": 0.9999,
+      "config": {
+        "data": {
+          "cache_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/data/c4",
+          "dataset": "allenai/c4",
+          "prefetch": true,
+          "prepare_train_tokens": null,
+          "prepare_validation_tokens": null,
+          "prepare_workers": 8,
+          "revision": "1588ec454efa1a09f29cd18ddd04fe05fc8653a2",
+          "shard_tokens": 33554432,
+          "shuffle_buffer": 100000,
+          "shuffle_group_size": 2,
+          "shuffle_seed": 42,
+          "tokenize_batch_size": 256,
+          "tokenizer": "TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T",
+          "tokenizer_revision": "59f6f375b26bde864a6ca194a9a3044570490064"
+        },
+        "decentralized": {
+          "adaptive_consensus": null,
+          "num_models": 4,
+          "scheme": "awc",
+          "topology": "one_peer_exponential"
+        },
+        "evaluation": {
+          "batch_size": 128,
+          "seed": 12345,
+          "subset_blocks": 1024
+        },
+        "lr_schedule": {
+          "min_lr_ratio": 0.0,
+          "name": "cosine",
+          "warmup_steps": 1248
+        },
+        "model": {
+          "context_length": 512,
+          "ffn_width": 896,
+          "heads": 5,
+          "init_std": 0.02,
+          "layers": 8,
+          "norm_eps": 1e-05,
+          "rope_theta": 10000.0,
+          "vocab_size": 32000,
+          "width": 320
+        },
+        "optimizer": {
+          "beta1": 0.98,
+          "beta2": 0.9999,
+          "eps": 1e-08,
+          "grad_clip": null,
+          "lr": 0.004,
+          "weight_decay": 0.1
+        },
+        "runtime": {
+          "amp": true,
+          "attention_backend": "sdpa",
+          "compile": true,
+          "compile_mode": "default",
+          "cpu_threads": 8,
+          "deterministic": false,
+          "device": "cuda:0",
+          "fused_optimizer": true,
+          "output_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s42/attempt-001",
+          "sdpa_backend": "auto",
+          "seed": 42
+        },
+        "training": {
+          "batch_tokens": 16384,
+          "checkpoint_epochs": [
+            1
+          ],
+          "checkpoint_policy": "none",
+          "epoch_tokens_per_parameters": 0.5000273,
+          "log_every": 80,
+          "micro_batch_size": 8,
+          "save_epoch_training_state": false,
+          "tokens_per_parameters": 20.001092
+        }
+      },
+      "config_file": "configs/4f89a0e069c0bcd94efb-s42.yaml",
+      "config_sha256": "c03fbb8497b78e779c3918053960afe0c51fd30fdb85ee6a6ec643b3b23b01b0",
+      "id": "4f89a0e069c0bcd94efb-s42",
+      "index": 9,
+      "lr": 0.004,
+      "policies": [],
+      "recipe": "4f89a0e069c0bcd94efb",
+      "recipe_identity": "d338849b2d5b3e219946b422961b0348624624ecf64fe1625f942e98cc3340f6",
+      "role": "candidate",
+      "seed": 42,
+      "stage": "replicate",
+      "weight_decay": 0.1
+    },
+    {
+      "batch": 32,
+      "beta1": 0.98,
+      "beta2": 0.9999,
+      "config": {
+        "data": {
+          "cache_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/data/c4",
+          "dataset": "allenai/c4",
+          "prefetch": true,
+          "prepare_train_tokens": null,
+          "prepare_validation_tokens": null,
+          "prepare_workers": 8,
+          "revision": "1588ec454efa1a09f29cd18ddd04fe05fc8653a2",
+          "shard_tokens": 33554432,
+          "shuffle_buffer": 100000,
+          "shuffle_group_size": 2,
+          "shuffle_seed": 42,
+          "tokenize_batch_size": 256,
+          "tokenizer": "TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T",
+          "tokenizer_revision": "59f6f375b26bde864a6ca194a9a3044570490064"
+        },
+        "decentralized": {
+          "adaptive_consensus": null,
+          "num_models": 4,
+          "scheme": "awc",
+          "topology": "one_peer_exponential"
+        },
+        "evaluation": {
+          "batch_size": 128,
+          "seed": 12345,
+          "subset_blocks": 1024
+        },
+        "lr_schedule": {
+          "min_lr_ratio": 0.0,
+          "name": "cosine",
+          "warmup_steps": 1248
+        },
+        "model": {
+          "context_length": 512,
+          "ffn_width": 896,
+          "heads": 5,
+          "init_std": 0.02,
+          "layers": 8,
+          "norm_eps": 1e-05,
+          "rope_theta": 10000.0,
+          "vocab_size": 32000,
+          "width": 320
+        },
+        "optimizer": {
+          "beta1": 0.98,
+          "beta2": 0.9999,
+          "eps": 1e-08,
+          "grad_clip": null,
+          "lr": 0.004,
+          "weight_decay": 0.1
+        },
+        "runtime": {
+          "amp": true,
+          "attention_backend": "sdpa",
+          "compile": true,
+          "compile_mode": "default",
+          "cpu_threads": 8,
+          "deterministic": false,
+          "device": "cuda:0",
+          "fused_optimizer": true,
+          "output_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s43/attempt-001",
+          "sdpa_backend": "auto",
+          "seed": 43
+        },
+        "training": {
+          "batch_tokens": 16384,
+          "checkpoint_epochs": [
+            1
+          ],
+          "checkpoint_policy": "none",
+          "epoch_tokens_per_parameters": 0.5000273,
+          "log_every": 80,
+          "micro_batch_size": 8,
+          "save_epoch_training_state": false,
+          "tokens_per_parameters": 20.001092
+        }
+      },
+      "config_file": "configs/4f89a0e069c0bcd94efb-s43.yaml",
+      "config_sha256": "6c06157e00228046f93a5c96fbe2506abada4f55df7ef0b0db7e76eb8dfeea1c",
+      "id": "4f89a0e069c0bcd94efb-s43",
+      "index": 10,
+      "lr": 0.004,
+      "policies": [],
+      "recipe": "4f89a0e069c0bcd94efb",
+      "recipe_identity": "85a88a5dcc62664faf7fb1683aaea1db5692d03d4937ee8920ef716ea5a09e49",
+      "role": "candidate",
+      "seed": 43,
+      "stage": "replicate",
+      "weight_decay": 0.1
+    },
+    {
+      "batch": 32,
+      "beta1": 0.98,
+      "beta2": 0.9999,
+      "config": {
+        "data": {
+          "cache_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/data/c4",
+          "dataset": "allenai/c4",
+          "prefetch": true,
+          "prepare_train_tokens": null,
+          "prepare_validation_tokens": null,
+          "prepare_workers": 8,
+          "revision": "1588ec454efa1a09f29cd18ddd04fe05fc8653a2",
+          "shard_tokens": 33554432,
+          "shuffle_buffer": 100000,
+          "shuffle_group_size": 2,
+          "shuffle_seed": 42,
+          "tokenize_batch_size": 256,
+          "tokenizer": "TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T",
+          "tokenizer_revision": "59f6f375b26bde864a6ca194a9a3044570490064"
+        },
+        "decentralized": {
+          "adaptive_consensus": null,
+          "num_models": 4,
+          "scheme": "awc",
+          "topology": "one_peer_exponential"
+        },
+        "evaluation": {
+          "batch_size": 128,
+          "seed": 12345,
+          "subset_blocks": 1024
+        },
+        "lr_schedule": {
+          "min_lr_ratio": 0.0,
+          "name": "cosine",
+          "warmup_steps": 1248
+        },
+        "model": {
+          "context_length": 512,
+          "ffn_width": 896,
+          "heads": 5,
+          "init_std": 0.02,
+          "layers": 8,
+          "norm_eps": 1e-05,
+          "rope_theta": 10000.0,
+          "vocab_size": 32000,
+          "width": 320
+        },
+        "optimizer": {
+          "beta1": 0.98,
+          "beta2": 0.9999,
+          "eps": 1e-08,
+          "grad_clip": null,
+          "lr": 0.004,
+          "weight_decay": 0.1
+        },
+        "runtime": {
+          "amp": true,
+          "attention_backend": "sdpa",
+          "compile": true,
+          "compile_mode": "default",
+          "cpu_threads": 8,
+          "deterministic": false,
+          "device": "cuda:0",
+          "fused_optimizer": true,
+          "output_dir": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/runs/packed4-awc-exponential-20m-c512-small-batch-clipping/experiments/4f89a0e069c0bcd94efb-s44/attempt-001",
+          "sdpa_backend": "auto",
+          "seed": 44
+        },
+        "training": {
+          "batch_tokens": 16384,
+          "checkpoint_epochs": [
+            1
+          ],
+          "checkpoint_policy": "none",
+          "epoch_tokens_per_parameters": 0.5000273,
+          "log_every": 80,
+          "micro_batch_size": 8,
+          "save_epoch_training_state": false,
+          "tokens_per_parameters": 20.001092
+        }
+      },
+      "config_file": "configs/4f89a0e069c0bcd94efb-s44.yaml",
+      "config_sha256": "7df33300ae55799219a2ede76477255d9128dc0847b27a4a0054d7bd5330d174",
+      "id": "4f89a0e069c0bcd94efb-s44",
+      "index": 11,
+      "lr": 0.004,
+      "policies": [],
+      "recipe": "4f89a0e069c0bcd94efb",
+      "recipe_identity": "51c3035db6e73731e655c3311538141379234f51558d82046370347f18824fc6",
+      "role": "candidate",
+      "seed": 44,
+      "stage": "replicate",
+      "weight_decay": 0.1
+    }
+  ],
+  "source_files": {
+    "audit_clipping.py": "a33f33384339ec51ce44d16152eb11b468e60b909870df69ede7f90f8eb8a2f7",
+    "campaign.py": "8f28e99b8a3c7a2ddd4676ad0048e433e37043c84acb026454f7fbaa2a612010",
+    "campaign_base.py": "d3c678562605e20f757a2c5c147fa51688613a795863326ee078cad9e2c9ac01",
+    "configs/20m.yaml": "19739a9bb22f20b2d3052d3df353156c29b42272e63f3d83e2b8b9bb52bfe880",
+    "configs/cosine.yaml": "9c78a6e00b5532ec84dfb7d4b92e3e3736e8f64127569f38a29b9c2d849e0475",
+    "pyproject.toml": "6194efd1e3b255670aa8a9ee57d9585a5aa5207ff68fe81c4d38615322c6309f",
+    "src/tiny_llm/__init__.py": "ee6eeb9fd0464c10d982f2ac3dd2677c5534f23eeb0f9adfd2d7435b88785e7d",
+    "src/tiny_llm/__main__.py": "76687090399e394dd59f6e72bf11f99ca37184564e53a6f19a3c3be74ee96789",
+    "src/tiny_llm/analysis/__init__.py": "f7899324f928575b7c353c51b0c5e5b21b547e5effb8e045e1ac9e9ad68e1ca4",
+    "src/tiny_llm/analysis/core.py": "b0a902912c7e291f712f579cfdb3a85d7807571f2364c17b31ebe696ad6663ca",
+    "src/tiny_llm/analysis/plot.py": "7de80840117c68347c45647dc9a0fb52e482b25765f1c8ad701a7ad2fb867f3e",
+    "src/tiny_llm/analysis/slurm.py": "906166aaa0f9c5d859fa7eb5d23831da27161bd58e3beb0fc46d629fd5a8986b",
+    "src/tiny_llm/benchmark.py": "014acb615f768db6e84e9bd46c4b4263ee661a3847924427e1c3f0a7dda28a53",
+    "src/tiny_llm/checkpoints.py": "23e13cfbb1245f4018452722507d8ad626616e92abc051650442457abdb88bea",
+    "src/tiny_llm/cli.py": "a12171058f83879d99990aaf7262ae8481a04adac48b37ab1c06d66b998c6e65",
+    "src/tiny_llm/config.py": "edd3e0d789346731b7dc316f16582d49cfcf445f7e93122efdf6a6af0e28dad1",
+    "src/tiny_llm/data.py": "d99d048e53681330963641aeeb536315a877aa30c32fc84a9e162d72ffe7dba2",
+    "src/tiny_llm/experiments.py": "f32be02988dba93b169d0b4cb88aed7dc1e7a71df25216d2b1eb625d00c59745",
+    "src/tiny_llm/model.py": "a6af3f75f6d4234eb52da5fe7a70635cf6b88a838b130e870642809eb860ecf8",
+    "src/tiny_llm/packed.py": "808335d28d7f4314236e9e3b2e81da95961409df33c7314e5dcb5cd49d3bd145",
+    "src/tiny_llm/packed_benchmark.py": "b488e1c02070278eed55dc0e2780afb9ec5b0375dad81a07d6d4159c7d002d46",
+    "src/tiny_llm/packed_optimizer.py": "7c6366461ffbea5b8ff51e8c92a3dfb4e377d654d1886ff215d1a8d216f0c726",
+    "src/tiny_llm/runtime.py": "fb932b11b7859e3cbc277f19c5bcd744e0c6811f622f7f8ce692c2a282c7f960",
+    "src/tiny_llm/state.py": "46ba4ccf0681120bb09d6e852ffa4239e018788d1e1197ac308ee28209393466",
+    "src/tiny_llm/train.py": "5cf70d8f5cf4cf463b453ef3e5f35979db416c49d5d139af255384a8b9e9b967",
+    "test_campaign.py": "447f8832d0ea21bd1c231c21453156ecfa393bbf71b5e2202f58a401e114a7d8",
+    "uv.lock": "11fe47e1e133585bfc4fc83fd2498320dfcb349655e565a166489c668447cb6f"
+  },
+  "source_hash": "f5c3286f2653a811c300725fa01e46daca2e4b7402b0e2fdcab1325567887f26",
+  "version": 1,
+  "versions": {
+    "datasets": "5.0.1",
+    "numpy": "2.5.3",
+    "pydantic": "2.13.5",
+    "torch": "2.14.0",
+    "transformers": "5.16.1",
+    "triton": "3.8.0"
+  },
+  "worker_python": "/nobackup/proj/disk/naiss2024-23-12/personal/zesen/repo/tiny-llm/.venv-aarch64/bin/python"
+}

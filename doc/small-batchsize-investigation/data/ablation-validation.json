@@ -1,0 +1,17 @@
+{
+  "all_resolved": true,
+  "all_successful": true,
+  "collected_utc": "2026-09-30T20:47:44.012731+00:00",
+  "no_checkpoints": true,
+  "output_hashes": {
+    "clipping-comparison.csv": "982eda1cf912bb5a973459947a834bd7e92dbb322a56d8017a93b36a78509ccd",
+    "clipping-comparison.json": "0e8799b42ef0eddba249c3eb1987715c1d0dc9fe57a68b933babf065b6a1965c",
+    "report.md": "65bb287d1c3975cee0f4ad24298a5169a69d41305823a8a91de0016acc29f4a8",
+    "runs.csv": "86ccaca57ff959ce588b05d72c017d98e17a4c281a82bbd68ec39a029e4ac5f0",
+    "runs.json": "d330191d61961071ab996a555160b3b7b6beb60332121cb4fcbbbec607b8942c",
+    "slurm-accounting.json": "5a3080a383af6b7e15b999783051964a87eaff116727b1e5f8e66a4d02a9e20e"
+  },
+  "status_counts": {
+    "complete": 12
+  }
+}

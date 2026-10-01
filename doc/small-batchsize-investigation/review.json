@@ -1,0 +1,221 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "reviewed_at_utc": "2026-10-01T09:28:31.702006+00:00",
+  "evidence_as_of": "2026-10-01",
+  "visual_review": {
+    "status": "passed",
+    "reviewer": "Codex visual inspection of rendered pages",
+    "slide_pages_reviewed": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13
+    ],
+    "report_pages_reviewed": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28
+    ],
+    "slides": "13 pages, 16:9; white backgrounds, navy headings, consistent method colors, vector figures, source footers",
+    "report": "28 A4 pages, including three landscape pages for full replication tables",
+    "checks": [
+      "Readable typography at presentation/document scale",
+      "No text or figure overflow or overlap",
+      "Figure axes and labels visible",
+      "Only 16, 32, 64 and 128 appear on numerical batch axes",
+      "Sample SD and missing measurements labeled"
+    ],
+    "render_commands": [
+      "pdftoppm -scale-to 1600 -png slides.pdf /tmp/small-batch-slide",
+      "pdftoppm -scale-to 1600 -png report.pdf /tmp/small-batch-report"
+    ],
+    "rendered_previews_retained_in_package": false
+  },
+  "scientific_review": {
+    "status": "passed",
+    "coverage": [
+      "Exact protocols checked against frozen campaign sources",
+      "Three-seed means and sample SD, seeds 43\u201344 means, fixed-recipe seed differences",
+      "Perplexity ratios and update/global-target/per-worker-target half-lives",
+      "Clipping numerators and denominators; historical synchronous batch-128 clipping missing",
+      "Frozen screening eligibility, full-configuration identities including clipping, imported-result deduplication",
+      "480 matched seed-42 pairs and 13 matched three-seed recipes",
+      "Earlier synchronous fresh-seed confirmation separated from final conditional beta1 recipes",
+      "Optimizer ordering, clipped gradient, Adam bias correction and half-life notation reviewed"
+    ],
+    "interpretation_limits": [
+      "Findings apply to the tested model, cache, budgets and finite grids",
+      "Different tuning procedures make final method comparisons exploratory",
+      "Three-seed error bars are sample SD, not confidence intervals",
+      "Replication seeds contribute to final selection; no fresh confirmation of final recipes",
+      "No significance, statistical equivalence, causal-mechanism or four-GPU scaling claim",
+      "Disabled clipping counters do not establish sub-threshold gradient norms",
+      "Peak memory includes fixed-batch-128 final evaluation"
+    ],
+    "unresolved_issues": []
+  },
+  "automated_acceptance": {
+    "provenance": {
+      "bundled_extracts": 42,
+      "indexed_sources": 261,
+      "derived_files": 10,
+      "figure_files": 20,
+      "original_sources_checked": true
+    },
+    "statistics": {
+      "replicated_recipes": 64,
+      "clipped_screening": 840,
+      "unclipped_screening": 480,
+      "matched_seed42_pairs": 480,
+      "sample_sd_not_standard_error": true
+    },
+    "eligibility": {
+      "clipped_frozen_recipes": 40,
+      "unclipped_frozen_recipes": 20,
+      "primary_imports": 8,
+      "supplemental_imports": 4,
+      "seed42_only_promotion": true,
+      "duplicate_observations": 0
+    },
+    "normalized_analysis": {
+      "replicated_recipes": 64,
+      "winner_recipes": 12,
+      "clipping_denominators": 7,
+      "historical_sync128_clipping": "missing",
+      "loss_differences_and_perplexity": true,
+      "beta2_profile_cells": 28
+    },
+    "figures": {
+      "figures": 10,
+      "vector_formats": [
+        "pdf",
+        "svg"
+      ],
+      "batch_axes_with_only_16_32_64_128": 10,
+      "sha256": {
+        "quality.pdf": "f792f3cc40516ec8a11d255704e201f6aa12a5987ffe5576de805547ddc91bc1",
+        "quality.svg": "8af4ff9d7039de532bac93aeb20847ec2b12248218c41042cb8bced6e0a86f10",
+        "gap.pdf": "f0c5d8df155eb1d1f27314ef13658460c6d2d5108eaa534132c3d85dc552e221",
+        "gap.svg": "4cec83d718410ac53877d30a8a3ed2042cadf672306a10233efc78c642a512d5",
+        "beta1.pdf": "010f2ddac82db3ebd7cb7e9cbcc55fbf0d9f713a0356f6bbda3aa2cd99273c03",
+        "beta1.svg": "9879042ca6170d3b28ebf3bb6b2ae824a6e1fab602eca30eb7f5f3284843c2f1",
+        "beta2.pdf": "cfe3ad1d8a64b4cce158e2244b8999cbb58006b8ecf1592a49faa062f686d46a",
+        "beta2.svg": "7d48d6683dd79d62fe28cd99fd59ab0372b30eae7b8a051caea223b5f96e4b52",
+        "clipping.pdf": "712c7bc5bca261e8a9be7c95779bfb2df2bd984fa88e24675743f62ff9948ef7",
+        "clipping.svg": "8f620fae772ce446efe1d94a67e4394380e9de1f3579427ca64eb1d108da6160",
+        "ablation.pdf": "718d221ffddd64f413af8add06f11137c9d8d4d2072f2ad2c705b5f331c8d600",
+        "ablation.svg": "218a37db4ff5770bd36d1f851c70edb74855835f16c4fb6ee9c58f35447e484b",
+        "matched-grid.pdf": "cc64b872e6ff0518002e73ad1951ee7e03fb7440579cb7b81897659edd9d834b",
+        "matched-grid.svg": "40a016585c483d96877bd5eba1d20c0bd03772c70a5e2be339c97c576e15cca2",
+        "retuned.pdf": "a53020d613dd88666a536342b288fad766bb2b4ad86b44244e8bb802ba313b18",
+        "retuned.svg": "6a6b1bf60636a42625d6a26aa61ed518e2f00e8bb6d39085e25570e3d958da43",
+        "throughput.pdf": "13358952b4a451ca40e4afec6d78e767f043ac47347ec82a1a25043b7e691c4e",
+        "throughput.svg": "b72d16633f5c80b1d2ca3b384a1423aae98479381454e5a89526495740afd56e",
+        "replication.pdf": "26ec9917306898f6e291d546ba826b2038f0b4960caf95fad2e18241f126d21d",
+        "replication.svg": "b1bbd276c2324cccb8baea368acf22bb3770c91d46368f90729a933b8e684088"
+      }
+    },
+    "documents": {
+      "slide_pages": 13,
+      "report_pages": 28,
+      "slide_aspect_ratio": "16:9",
+      "report_paper": "A4",
+      "text_within_page_bounds": true,
+      "recomputed_numeric_callouts": 16,
+      "replicated_report_values": 382
+    }
+  },
+  "portable_rebuild": {
+    "status": "passed",
+    "command": [
+      "bash",
+      "build.sh"
+    ],
+    "campaign_paths_required": false,
+    "rebuilt_from_bundled_data": true,
+    "pdf_and_figures_byte_identical": true,
+    "compared_files": {
+      "data/analysis.json": true,
+      "assets/throughput.pdf": true,
+      "assets/replication.pdf": true,
+      "assets/beta2.svg": true,
+      "assets/clipping.svg": true,
+      "assets/gap.pdf": true,
+      "assets/clipping.pdf": true,
+      "assets/beta2.pdf": true,
+      "assets/beta1.pdf": true,
+      "assets/matched-grid.pdf": true,
+      "assets/gap.svg": true,
+      "assets/quality.pdf": true,
+      "assets/replication.svg": true,
+      "assets/retuned.svg": true,
+      "assets/beta1.svg": true,
+      "assets/throughput.svg": true,
+      "assets/retuned.pdf": true,
+      "assets/ablation.svg": true,
+      "assets/quality.svg": true,
+      "assets/ablation.pdf": true,
+      "assets/matched-grid.svg": true,
+      "slides.pdf": true,
+      "report.pdf": true
+    }
+  },
+  "reproducibility": {
+    "build_command": "bash build.sh",
+    "refresh_command": "bash build.sh --refresh",
+    "original_sources_required_for_default_build": false,
+    "pdf_and_figure_comparison": "Byte-identical outputs after removing generated PDFs, figures and validation from an isolated copy and rebuilding from bundled data"
+  },
+  "artifact_sha256": {
+    "slides.pdf": "8846cfca7d9ee834feaa9f7dc15402712dc693ff7e5daadf9a85d3f9156d689c",
+    "report.pdf": "4b9f1df8dea84970ef8cf2ffb11d0abe8c376357c207576ba6760cb5d972828c",
+    "slides.typ": "df8197a1a1723690b6e09d4c0c9874b721fe97600c34bc027999a834dfe74d7e",
+    "report.typ": "40f4903028e87bec137061a8173cf247ce390cd4768c70f679257d2cf50777f2",
+    "build.sh": "78d59357dc7bd59f3b1cbdb83eaa00d5c951efdcb5cb24a25cb397c69e8d127f",
+    "build_figures.py": "2adf1007c4281cd42dd25bea3e168e83983e7db9a5f4ee3ec61ef1a03d92b60c",
+    "verify.py": "fbc54f4cdeb109b89cf2059c466a48d0ad832080cbc5571f6a7775678c2676a0",
+    "provenance.json": "385db0f8dd354611c5a855cc53968bedbb5453b86f49eb18feaeefd958c3f912",
+    "data/analysis.json": "a4d37371d9ad394c4f8a38b24c95f4e5d3430dc7e6658ea36597fd7d8f0f0d46",
+    "validation.json": "558dde74a8b6d158143e122887f2719a0c63dab123eea573af447b87fa493bfe"
+  },
+  "preservation": {
+    "training_or_job_submission": false,
+    "existing_campaigns_and_documents_modified": false,
+    "preexisting_tracked_edit_preserved": "configs/packed8-20m-awc.yaml"
+  }
+}

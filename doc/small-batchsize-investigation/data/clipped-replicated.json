@@ -1,0 +1,1562 @@
+[
+  {
+    "batch": 16,
+    "lr": 0.002,
+    "beta1": 0.99,
+    "beta2": 0.9999,
+    "weight_decay": 0.1,
+    "recipe": "c352ddd312366e4e4b7c",
+    "local_batch": 4,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5607264307617563,
+      3.5736132090861994,
+      3.578126271193095
+    ],
+    "seed42": 3.5607264307617563,
+    "seed43": 3.5736132090861994,
+    "seed44": 3.578126271193095,
+    "mean_loss": 3.570821970347017,
+    "std_loss": 0.009029500098751052,
+    "replication_mean_loss": 3.5758697401396473,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch"
+    ],
+    "beta1_global_half_life_targets": 564982.2837680408,
+    "beta1_per_worker_half_life_targets": 141245.5709420102,
+    "beta2_global_half_life_targets": 56779777.853304185,
+    "beta2_per_worker_half_life_targets": 14194944.463326046,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 1
+  },
+  {
+    "batch": 16,
+    "lr": 0.002,
+    "beta1": 0.99,
+    "beta2": 0.99999,
+    "weight_decay": 0.1,
+    "recipe": "d4ae9345d30625e06017",
+    "local_batch": 4,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.561835022829589,
+      3.5746061443609167,
+      3.5791867512452327
+    ],
+    "seed42": 3.561835022829589,
+    "seed43": 3.5746061443609167,
+    "seed44": 3.5791867512452327,
+    "mean_loss": 3.571875972811913,
+    "std_loss": 0.008992274310084458,
+    "replication_mean_loss": 3.5768964478030747,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension"
+    ],
+    "beta1_global_half_life_targets": 564982.2837680408,
+    "beta1_per_worker_half_life_targets": 141245.5709420102,
+    "beta2_global_half_life_targets": 567823331.181708,
+    "beta2_per_worker_half_life_targets": 141955832.795427,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 2
+  },
+  {
+    "batch": 16,
+    "lr": 0.003,
+    "beta1": 0.99,
+    "beta2": 0.9999,
+    "weight_decay": 0.1,
+    "recipe": "938c673a12757e190b36",
+    "local_batch": 4,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.566641791593837,
+      3.5708912786372307,
+      3.579020247909455
+    ],
+    "seed42": 3.566641791593837,
+    "seed43": 3.5708912786372307,
+    "seed44": 3.579020247909455,
+    "mean_loss": 3.5721844393801745,
+    "std_loss": 0.006289733199407954,
+    "replication_mean_loss": 3.574955763273343,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch"
+    ],
+    "beta1_global_half_life_targets": 564982.2837680408,
+    "beta1_per_worker_half_life_targets": 141245.5709420102,
+    "beta2_global_half_life_targets": 56779777.853304185,
+    "beta2_per_worker_half_life_targets": 14194944.463326046,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 3
+  },
+  {
+    "batch": 16,
+    "lr": 0.003,
+    "beta1": 0.99,
+    "beta2": 0.99999,
+    "weight_decay": 0.1,
+    "recipe": "0abadee40ae4ddefe335",
+    "local_batch": 4,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5686403601937426,
+      3.5711749673971314,
+      3.581063565654554
+    ],
+    "seed42": 3.5686403601937426,
+    "seed43": 3.5711749673971314,
+    "seed44": 3.581063565654554,
+    "mean_loss": 3.573626297748476,
+    "std_loss": 0.006564356316422219,
+    "replication_mean_loss": 3.5761192665258426,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension"
+    ],
+    "beta1_global_half_life_targets": 564982.2837680408,
+    "beta1_per_worker_half_life_targets": 141245.5709420102,
+    "beta2_global_half_life_targets": 567823331.181708,
+    "beta2_per_worker_half_life_targets": 141955832.795427,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 4
+  },
+  {
+    "batch": 16,
+    "lr": 0.002,
+    "beta1": 0.99,
+    "beta2": 0.999999,
+    "weight_decay": 0.1,
+    "recipe": "584b8870fda2842f44c9",
+    "local_batch": 4,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5650745806953856,
+      3.5746893975664378,
+      3.581305772707766
+    ],
+    "seed42": 3.5650745806953856,
+    "seed43": 3.5746893975664378,
+    "seed44": 3.581305772707766,
+    "mean_loss": 3.5736899169898635,
+    "std_loss": 0.008161624813902186,
+    "replication_mean_loss": 3.577997585137102,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension"
+    ],
+    "beta1_global_half_life_targets": 564982.2837680408,
+    "beta1_per_worker_half_life_targets": 141245.5709420102,
+    "beta2_global_half_life_targets": 5678258863.852465,
+    "beta2_per_worker_half_life_targets": 1419564715.9631162,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": true,
+    "rank": 5
+  },
+  {
+    "batch": 16,
+    "lr": 0.002,
+    "beta1": 0.995,
+    "beta2": 0.99999,
+    "weight_decay": 0.1,
+    "recipe": "c2037a96741fdbbb9ab2",
+    "local_batch": 4,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.57267066964431,
+      3.572134672597317,
+      3.5764434419190985
+    ],
+    "seed42": 3.57267066964431,
+    "seed43": 3.572134672597317,
+    "seed44": 3.5764434419190985,
+    "mean_loss": 3.573749594720242,
+    "std_loss": 0.0023482829379542856,
+    "replication_mean_loss": 3.574289057258208,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension"
+    ],
+    "beta1_global_half_life_targets": 1132810.8379018104,
+    "beta1_per_worker_half_life_targets": 283202.7094754526,
+    "beta2_global_half_life_targets": 567823331.181708,
+    "beta2_per_worker_half_life_targets": 141955832.795427,
+    "lr_boundary": false,
+    "beta1_boundary": true,
+    "beta2_boundary": false,
+    "rank": 6
+  },
+  {
+    "batch": 16,
+    "lr": 0.002,
+    "beta1": 0.995,
+    "beta2": 0.9994323350124558,
+    "weight_decay": 0.1,
+    "recipe": "a9fcf5c26f5d8e7c6984",
+    "local_batch": 4,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5720753224037636,
+      3.5728800836428243,
+      3.5765289747267897
+    ],
+    "seed42": 3.5720753224037636,
+    "seed43": 3.5728800836428243,
+    "seed44": 3.5765289747267897,
+    "mean_loss": 3.573828126924459,
+    "std_loss": 0.0023733613929380185,
+    "replication_mean_loss": 3.5747045291848067,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch"
+    ],
+    "beta1_global_half_life_targets": 1132810.8379018104,
+    "beta1_per_worker_half_life_targets": 283202.7094754526,
+    "beta2_global_half_life_targets": 9999999.999999981,
+    "beta2_per_worker_half_life_targets": 2499999.9999999953,
+    "lr_boundary": false,
+    "beta1_boundary": true,
+    "beta2_boundary": false,
+    "rank": 7
+  },
+  {
+    "batch": 16,
+    "lr": 0.003,
+    "beta1": 0.995,
+    "beta2": 0.99999,
+    "weight_decay": 0.1,
+    "recipe": "826d68194a66b6ae3218",
+    "local_batch": 4,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5729241376544083,
+      3.571032147876518,
+      3.580983553902518
+    ],
+    "seed42": 3.5729241376544083,
+    "seed43": 3.571032147876518,
+    "seed44": 3.580983553902518,
+    "mean_loss": 3.5749799464778147,
+    "std_loss": 0.00528463649765751,
+    "replication_mean_loss": 3.5760078508895177,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension"
+    ],
+    "beta1_global_half_life_targets": 1132810.8379018104,
+    "beta1_per_worker_half_life_targets": 283202.7094754526,
+    "beta2_global_half_life_targets": 567823331.181708,
+    "beta2_per_worker_half_life_targets": 141955832.795427,
+    "lr_boundary": false,
+    "beta1_boundary": true,
+    "beta2_boundary": false,
+    "rank": 8
+  },
+  {
+    "batch": 16,
+    "lr": 0.002,
+    "beta1": 0.99,
+    "beta2": 0.9994323350124558,
+    "weight_decay": 0.1,
+    "recipe": "c39fbda5966d0fcd5b3d",
+    "local_batch": 4,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5688058014830504,
+      3.5751497701295047,
+      3.5862731501679552
+    ],
+    "seed42": 3.5688058014830504,
+    "seed43": 3.5751497701295047,
+    "seed44": 3.5862731501679552,
+    "mean_loss": 3.57674290726017,
+    "std_loss": 0.008841981223562981,
+    "replication_mean_loss": 3.5807114601487298,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch"
+    ],
+    "beta1_global_half_life_targets": 564982.2837680408,
+    "beta1_per_worker_half_life_targets": 141245.5709420102,
+    "beta2_global_half_life_targets": 9999999.999999981,
+    "beta2_per_worker_half_life_targets": 2499999.9999999953,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 9
+  },
+  {
+    "batch": 16,
+    "lr": 0.002,
+    "beta1": 0.99,
+    "beta2": 0.999,
+    "weight_decay": 0.1,
+    "recipe": "4f30ab6b18b328f48bf5",
+    "local_batch": 4,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5720352852040964,
+      3.57840763468948,
+      3.5914586300189186
+    ],
+    "seed42": 3.5720352852040964,
+    "seed43": 3.57840763468948,
+    "seed44": 3.5914586300189186,
+    "mean_loss": 3.5806338499708317,
+    "std_loss": 0.009901192191249655,
+    "replication_mean_loss": 3.584933132354199,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch"
+    ],
+    "beta1_global_half_life_targets": 564982.2837680408,
+    "beta1_per_worker_half_life_targets": 141245.5709420102,
+    "beta2_global_half_life_targets": 5675422.098870274,
+    "beta2_per_worker_half_life_targets": 1418855.5247175684,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 10
+  },
+  {
+    "batch": 32,
+    "lr": 0.004,
+    "beta1": 0.98,
+    "beta2": 0.999999,
+    "weight_decay": 0.1,
+    "recipe": "e3fbe27da09d02fa5f59",
+    "local_batch": 8,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5592333037468737,
+      3.5608621353621244,
+      3.5668740074786545
+    ],
+    "seed42": 3.5592333037468737,
+    "seed43": 3.5608621353621244,
+    "seed44": 3.5668740074786545,
+    "mean_loss": 3.5623231488625513,
+    "std_loss": 0.004024426507657121,
+    "replication_mean_loss": 3.5638680714203894,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension"
+    ],
+    "beta1_global_half_life_targets": 562128.7893650742,
+    "beta1_per_worker_half_life_targets": 140532.19734126856,
+    "beta2_global_half_life_targets": 11356517727.70493,
+    "beta2_per_worker_half_life_targets": 2839129431.9262323,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": true,
+    "rank": 1
+  },
+  {
+    "batch": 32,
+    "lr": 0.004,
+    "beta1": 0.98,
+    "beta2": 0.9999,
+    "weight_decay": 0.1,
+    "recipe": "4f89a0e069c0bcd94efb",
+    "local_batch": 8,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5585806499471673,
+      3.5621239431022933,
+      3.5679181568127274
+    ],
+    "seed42": 3.5585806499471673,
+    "seed43": 3.5621239431022933,
+    "seed44": 3.5679181568127274,
+    "mean_loss": 3.562874249954062,
+    "std_loss": 0.004713754225132513,
+    "replication_mean_loss": 3.5650210499575103,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch"
+    ],
+    "beta1_global_half_life_targets": 562128.7893650742,
+    "beta1_per_worker_half_life_targets": 140532.19734126856,
+    "beta2_global_half_life_targets": 113559555.70660837,
+    "beta2_per_worker_half_life_targets": 28389888.926652092,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 2
+  },
+  {
+    "batch": 32,
+    "lr": 0.004,
+    "beta1": 0.98,
+    "beta2": 0.99999,
+    "weight_decay": 0.1,
+    "recipe": "c03802811825dc66ff2f",
+    "local_batch": 8,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5640458374055712,
+      3.5602625068659535,
+      3.565118569588899
+    ],
+    "seed42": 3.5640458374055712,
+    "seed43": 3.5602625068659535,
+    "seed44": 3.565118569588899,
+    "mean_loss": 3.563142304620141,
+    "std_loss": 0.0025510027269792937,
+    "replication_mean_loss": 3.562690538227426,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension"
+    ],
+    "beta1_global_half_life_targets": 562128.7893650742,
+    "beta1_per_worker_half_life_targets": 140532.19734126856,
+    "beta2_global_half_life_targets": 1135646662.363416,
+    "beta2_per_worker_half_life_targets": 283911665.590854,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 3
+  },
+  {
+    "batch": 32,
+    "lr": 0.003,
+    "beta1": 0.98,
+    "beta2": 0.99999,
+    "weight_decay": 0.1,
+    "recipe": "417d7e71a4cd2bebcc52",
+    "local_batch": 8,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5580509684164205,
+      3.5663676918894613,
+      3.5729031108273572
+    ],
+    "seed42": 3.5580509684164205,
+    "seed43": 3.5663676918894613,
+    "seed44": 3.5729031108273572,
+    "mean_loss": 3.5657739237110797,
+    "std_loss": 0.007443853439981878,
+    "replication_mean_loss": 3.5696354013584095,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension"
+    ],
+    "beta1_global_half_life_targets": 562128.7893650742,
+    "beta1_per_worker_half_life_targets": 140532.19734126856,
+    "beta2_global_half_life_targets": 1135646662.363416,
+    "beta2_per_worker_half_life_targets": 283911665.590854,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 4
+  },
+  {
+    "batch": 32,
+    "lr": 0.003,
+    "beta1": 0.98,
+    "beta2": 0.999999,
+    "weight_decay": 0.1,
+    "recipe": "21136f4f73e95f9fb722",
+    "local_batch": 8,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.557834088173446,
+      3.5653075537286085,
+      3.574571640628594
+    ],
+    "seed42": 3.557834088173446,
+    "seed43": 3.5653075537286085,
+    "seed44": 3.574571640628594,
+    "mean_loss": 3.565904427510216,
+    "std_loss": 0.008384724758785133,
+    "replication_mean_loss": 3.5699395971786014,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension"
+    ],
+    "beta1_global_half_life_targets": 562128.7893650742,
+    "beta1_per_worker_half_life_targets": 140532.19734126856,
+    "beta2_global_half_life_targets": 11356517727.70493,
+    "beta2_per_worker_half_life_targets": 2839129431.9262323,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": true,
+    "rank": 5
+  },
+  {
+    "batch": 32,
+    "lr": 0.004,
+    "beta1": 0.98,
+    "beta2": 0.999,
+    "weight_decay": 0.1,
+    "recipe": "527b53a0b7e4efba097e",
+    "local_batch": 8,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5623920943512264,
+      3.5650582498242844,
+      3.5704943315332063
+    ],
+    "seed42": 3.5623920943512264,
+    "seed43": 3.5650582498242844,
+    "seed44": 3.5704943315332063,
+    "mean_loss": 3.565981558569572,
+    "std_loss": 0.004129277917216064,
+    "replication_mean_loss": 3.5677762906787454,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch"
+    ],
+    "beta1_global_half_life_targets": 562128.7893650742,
+    "beta1_per_worker_half_life_targets": 140532.19734126856,
+    "beta2_global_half_life_targets": 11350844.197740547,
+    "beta2_per_worker_half_life_targets": 2837711.049435137,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 6
+  },
+  {
+    "batch": 32,
+    "lr": 0.006,
+    "beta1": 0.98,
+    "beta2": 0.9999,
+    "weight_decay": 0.1,
+    "recipe": "dc1355a2894a6d45b9b1",
+    "local_batch": 8,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5613486302100714,
+      3.5645929718474085,
+      3.5754590136886137
+    ],
+    "seed42": 3.5613486302100714,
+    "seed43": 3.5645929718474085,
+    "seed44": 3.5754590136886137,
+    "mean_loss": 3.567133538582031,
+    "std_loss": 0.007390303781150245,
+    "replication_mean_loss": 3.570025992768011,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch"
+    ],
+    "beta1_global_half_life_targets": 562128.7893650742,
+    "beta1_per_worker_half_life_targets": 140532.19734126856,
+    "beta2_global_half_life_targets": 113559555.70660837,
+    "beta2_per_worker_half_life_targets": 28389888.926652092,
+    "lr_boundary": true,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 7
+  },
+  {
+    "batch": 32,
+    "lr": 0.003,
+    "beta1": 0.98,
+    "beta2": 0.9999,
+    "weight_decay": 0.1,
+    "recipe": "6c26924b4c723b7e3e51",
+    "local_batch": 8,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5585695111644426,
+      3.565129208048535,
+      3.5814976053733205
+    ],
+    "seed42": 3.5585695111644426,
+    "seed43": 3.565129208048535,
+    "seed44": 3.5814976053733205,
+    "mean_loss": 3.5683987748620996,
+    "std_loss": 0.011808553102478971,
+    "replication_mean_loss": 3.573313406710928,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch"
+    ],
+    "beta1_global_half_life_targets": 562128.7893650742,
+    "beta1_per_worker_half_life_targets": 140532.19734126856,
+    "beta2_global_half_life_targets": 113559555.70660837,
+    "beta2_per_worker_half_life_targets": 28389888.926652092,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 8
+  },
+  {
+    "batch": 32,
+    "lr": 0.003,
+    "beta1": 0.98,
+    "beta2": 0.999,
+    "weight_decay": 0.1,
+    "recipe": "f3dc1e0e4c82e2e3fc09",
+    "local_batch": 8,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.562471633897261,
+      3.568610162937048,
+      3.5805422081788056
+    ],
+    "seed42": 3.562471633897261,
+    "seed43": 3.568610162937048,
+    "seed44": 3.5805422081788056,
+    "mean_loss": 3.5705413350043713,
+    "std_loss": 0.009188769388847185,
+    "replication_mean_loss": 3.5745761855579268,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch"
+    ],
+    "beta1_global_half_life_targets": 562128.7893650742,
+    "beta1_per_worker_half_life_targets": 140532.19734126856,
+    "beta2_global_half_life_targets": 11350844.197740547,
+    "beta2_per_worker_half_life_targets": 2837711.049435137,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 9
+  },
+  {
+    "batch": 32,
+    "lr": 0.002,
+    "beta1": 0.98,
+    "beta2": 0.999999,
+    "weight_decay": 0.1,
+    "recipe": "7aa555ab8251313a68f5",
+    "local_batch": 8,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.566264671969464,
+      3.572772517410272,
+      3.582356877059888
+    ],
+    "seed42": 3.566264671969464,
+    "seed43": 3.572772517410272,
+    "seed44": 3.582356877059888,
+    "mean_loss": 3.573798022146541,
+    "std_loss": 0.008094968260663641,
+    "replication_mean_loss": 3.57756469723508,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension"
+    ],
+    "beta1_global_half_life_targets": 562128.7893650742,
+    "beta1_per_worker_half_life_targets": 140532.19734126856,
+    "beta2_global_half_life_targets": 11356517727.70493,
+    "beta2_per_worker_half_life_targets": 2839129431.9262323,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": true,
+    "rank": 10
+  },
+  {
+    "batch": 64,
+    "lr": 0.006,
+    "beta1": 0.95,
+    "beta2": 0.9999,
+    "weight_decay": 0.1,
+    "recipe": "f9ed555427ea66abd6b6",
+    "local_batch": 16,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5574055545153493,
+      3.5706575876385953,
+      3.567991659221206
+    ],
+    "seed42": 3.5574055545153493,
+    "seed43": 3.5706575876385953,
+    "seed44": 3.567991659221206,
+    "mean_loss": 3.5653516004583836,
+    "std_loss": 0.007009388573782259,
+    "replication_mean_loss": 3.5693246234299005,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch"
+    ],
+    "beta1_global_half_life_targets": 442807.331519361,
+    "beta1_per_worker_half_life_targets": 110701.83287984025,
+    "beta2_global_half_life_targets": 227119111.41321674,
+    "beta2_per_worker_half_life_targets": 56779777.853304185,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 1
+  },
+  {
+    "batch": 64,
+    "lr": 0.008,
+    "beta1": 0.95,
+    "beta2": 0.99999,
+    "weight_decay": 0.1,
+    "recipe": "ae19b33fdd26895068fa",
+    "local_batch": 16,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5639174223369214,
+      3.5686316461101475,
+      3.5645492768206064
+    ],
+    "seed42": 3.5639174223369214,
+    "seed43": 3.5686316461101475,
+    "seed44": 3.5645492768206064,
+    "mean_loss": 3.5656994484225586,
+    "std_loss": 0.0025589348333760124,
+    "replication_mean_loss": 3.5665904614653767,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension"
+    ],
+    "beta1_global_half_life_targets": 442807.331519361,
+    "beta1_per_worker_half_life_targets": 110701.83287984025,
+    "beta2_global_half_life_targets": 2271293324.726832,
+    "beta2_per_worker_half_life_targets": 567823331.181708,
+    "lr_boundary": true,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 2
+  },
+  {
+    "batch": 64,
+    "lr": 0.006,
+    "beta1": 0.95,
+    "beta2": 0.999,
+    "weight_decay": 0.1,
+    "recipe": "242947947421eabcc389",
+    "local_batch": 16,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5642686615549555,
+      3.567971358738433,
+      3.566500566980696
+    ],
+    "seed42": 3.5642686615549555,
+    "seed43": 3.567971358738433,
+    "seed44": 3.566500566980696,
+    "mean_loss": 3.566246862424695,
+    "std_loss": 0.0018643406634612887,
+    "replication_mean_loss": 3.5672359628595647,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch"
+    ],
+    "beta1_global_half_life_targets": 442807.331519361,
+    "beta1_per_worker_half_life_targets": 110701.83287984025,
+    "beta2_global_half_life_targets": 22701688.395481095,
+    "beta2_per_worker_half_life_targets": 5675422.098870274,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 3
+  },
+  {
+    "batch": 64,
+    "lr": 0.006,
+    "beta1": 0.95,
+    "beta2": 0.99999,
+    "weight_decay": 0.1,
+    "recipe": "c1f42d512807a0882149",
+    "local_batch": 16,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.560502035294414,
+      3.569146647800476,
+      3.5699538569362006
+    ],
+    "seed42": 3.560502035294414,
+    "seed43": 3.569146647800476,
+    "seed44": 3.5699538569362006,
+    "mean_loss": 3.5665341800103634,
+    "std_loss": 0.005239558574232819,
+    "replication_mean_loss": 3.5695502523683382,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension"
+    ],
+    "beta1_global_half_life_targets": 442807.331519361,
+    "beta1_per_worker_half_life_targets": 110701.83287984025,
+    "beta2_global_half_life_targets": 2271293324.726832,
+    "beta2_per_worker_half_life_targets": 567823331.181708,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 4
+  },
+  {
+    "batch": 64,
+    "lr": 0.006,
+    "beta1": 0.98,
+    "beta2": 0.9999,
+    "weight_decay": 0.1,
+    "recipe": "ad4b19e38de4f9a8fb2a",
+    "local_batch": 16,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5647930911922816,
+      3.5716937404502445,
+      3.5656408544407086
+    ],
+    "seed42": 3.5647930911922816,
+    "seed43": 3.5716937404502445,
+    "seed44": 3.5656408544407086,
+    "mean_loss": 3.567375895361078,
+    "std_loss": 0.0037633117452416432,
+    "replication_mean_loss": 3.5686672974454767,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch"
+    ],
+    "beta1_global_half_life_targets": 1124257.5787301485,
+    "beta1_per_worker_half_life_targets": 281064.3946825371,
+    "beta2_global_half_life_targets": 227119111.41321674,
+    "beta2_per_worker_half_life_targets": 56779777.853304185,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 5
+  },
+  {
+    "batch": 64,
+    "lr": 0.006,
+    "beta1": 0.95,
+    "beta2": 0.999999,
+    "weight_decay": 0.1,
+    "recipe": "9cc749b988d80c579f2c",
+    "local_batch": 16,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5614217529029517,
+      3.5716631068721565,
+      3.5702957936644872
+    ],
+    "seed42": 3.5614217529029517,
+    "seed43": 3.5716631068721565,
+    "seed44": 3.5702957936644872,
+    "mean_loss": 3.5677935511465315,
+    "std_loss": 0.00556032786754833,
+    "replication_mean_loss": 3.5709794502683216,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension"
+    ],
+    "beta1_global_half_life_targets": 442807.331519361,
+    "beta1_per_worker_half_life_targets": 110701.83287984025,
+    "beta2_global_half_life_targets": 22713035455.40986,
+    "beta2_per_worker_half_life_targets": 5678258863.852465,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": true,
+    "rank": 6
+  },
+  {
+    "batch": 64,
+    "lr": 0.004,
+    "beta1": 0.95,
+    "beta2": 0.99999,
+    "weight_decay": 0.1,
+    "recipe": "143128f34c49a9565f28",
+    "local_batch": 16,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.562738555767816,
+      3.5702140669042355,
+      3.5726443570442044
+    ],
+    "seed42": 3.562738555767816,
+    "seed43": 3.5702140669042355,
+    "seed44": 3.5726443570442044,
+    "mean_loss": 3.5685323265720856,
+    "std_loss": 0.005162597470305892,
+    "replication_mean_loss": 3.5714292119742197,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension"
+    ],
+    "beta1_global_half_life_targets": 442807.331519361,
+    "beta1_per_worker_half_life_targets": 110701.83287984025,
+    "beta2_global_half_life_targets": 2271293324.726832,
+    "beta2_per_worker_half_life_targets": 567823331.181708,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 7
+  },
+  {
+    "batch": 64,
+    "lr": 0.006,
+    "beta1": 0.95,
+    "beta2": 0.99773127277945,
+    "weight_decay": 0.1,
+    "recipe": "b5ff6f79c9fc3a9eb502",
+    "local_batch": 16,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5618280415079067,
+      3.5731590841823127,
+      3.570994452922973
+    ],
+    "seed42": 3.5618280415079067,
+    "seed43": 3.5731590841823127,
+    "seed44": 3.570994452922973,
+    "mean_loss": 3.5686605262043973,
+    "std_loss": 0.006015275759935148,
+    "replication_mean_loss": 3.572076768552643,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch"
+    ],
+    "beta1_global_half_life_targets": 442807.331519361,
+    "beta1_per_worker_half_life_targets": 110701.83287984025,
+    "beta2_global_half_life_targets": 10000000.000000205,
+    "beta2_per_worker_half_life_targets": 2500000.000000051,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 8
+  },
+  {
+    "batch": 64,
+    "lr": 0.004,
+    "beta1": 0.95,
+    "beta2": 0.999,
+    "weight_decay": 0.1,
+    "recipe": "6b5353d9aee77be5213a",
+    "local_batch": 16,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5609732126179887,
+      3.5775484548004854,
+      3.5719734241745047
+    ],
+    "seed42": 3.5609732126179887,
+    "seed43": 3.5775484548004854,
+    "seed44": 3.5719734241745047,
+    "mean_loss": 3.5701650305309927,
+    "std_loss": 0.008434297779277478,
+    "replication_mean_loss": 3.5747609394874953,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch"
+    ],
+    "beta1_global_half_life_targets": 442807.331519361,
+    "beta1_per_worker_half_life_targets": 110701.83287984025,
+    "beta2_global_half_life_targets": 22701688.395481095,
+    "beta2_per_worker_half_life_targets": 5675422.098870274,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 9
+  },
+  {
+    "batch": 64,
+    "lr": 0.004,
+    "beta1": 0.95,
+    "beta2": 0.999999,
+    "weight_decay": 0.1,
+    "recipe": "af3c8cfa336756893e1c",
+    "local_batch": 16,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5656572373500963,
+      3.570221655703125,
+      3.5747464639000097
+    ],
+    "seed42": 3.5656572373500963,
+    "seed43": 3.570221655703125,
+    "seed44": 3.5747464639000097,
+    "mean_loss": 3.5702084523177438,
+    "std_loss": 0.004544627659770578,
+    "replication_mean_loss": 3.5724840598015675,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension"
+    ],
+    "beta1_global_half_life_targets": 442807.331519361,
+    "beta1_per_worker_half_life_targets": 110701.83287984025,
+    "beta2_global_half_life_targets": 22713035455.40986,
+    "beta2_per_worker_half_life_targets": 5678258863.852465,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": true,
+    "rank": 10
+  },
+  {
+    "batch": 128,
+    "lr": 0.008,
+    "beta1": 0.95,
+    "beta2": 0.999,
+    "weight_decay": 0.1,
+    "recipe": "be61dd9bfec85d0148d8",
+    "local_batch": 32,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5755547529551945,
+      3.5764750438194617,
+      3.5751508631723525
+    ],
+    "seed42": 3.5755547529551945,
+    "seed43": 3.5764750438194617,
+    "seed44": 3.5751508631723525,
+    "mean_loss": 3.575726886649003,
+    "std_loss": 0.0006786649415968763,
+    "replication_mean_loss": 3.575812953495907,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch"
+    ],
+    "beta1_global_half_life_targets": 885614.663038722,
+    "beta1_per_worker_half_life_targets": 221403.6657596805,
+    "beta2_global_half_life_targets": 45403376.79096219,
+    "beta2_per_worker_half_life_targets": 11350844.197740547,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 1
+  },
+  {
+    "batch": 128,
+    "lr": 0.008,
+    "beta1": 0.95,
+    "beta2": 0.9954676926821011,
+    "weight_decay": 0.1,
+    "recipe": "4d38786490718e7f666b",
+    "local_batch": 32,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.577205328472724,
+      3.5798219673087344,
+      3.5757326821061484
+    ],
+    "seed42": 3.577205328472724,
+    "seed43": 3.5798219673087344,
+    "seed44": 3.5757326821061484,
+    "mean_loss": 3.577586659295869,
+    "std_loss": 0.002071140570925242,
+    "replication_mean_loss": 3.5777773247074416,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch"
+    ],
+    "beta1_global_half_life_targets": 885614.663038722,
+    "beta1_per_worker_half_life_targets": 221403.6657596805,
+    "beta2_global_half_life_targets": 10000000.000000084,
+    "beta2_per_worker_half_life_targets": 2500000.000000021,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 2
+  },
+  {
+    "batch": 128,
+    "lr": 0.008,
+    "beta1": 0.95,
+    "beta2": 0.99999,
+    "weight_decay": 0.1,
+    "recipe": "e122c7ab544f385bfc8f",
+    "local_batch": 32,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5775385781539377,
+      3.584027533872578,
+      3.5770900948714295
+    ],
+    "seed42": 3.5775385781539377,
+    "seed43": 3.584027533872578,
+    "seed44": 3.5770900948714295,
+    "mean_loss": 3.5795520689659814,
+    "std_loss": 0.0038823477318889626,
+    "replication_mean_loss": 3.5805588143720035,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension"
+    ],
+    "beta1_global_half_life_targets": 885614.663038722,
+    "beta1_per_worker_half_life_targets": 221403.6657596805,
+    "beta2_global_half_life_targets": 4542586649.453664,
+    "beta2_per_worker_half_life_targets": 1135646662.363416,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 3
+  },
+  {
+    "batch": 128,
+    "lr": 0.008,
+    "beta1": 0.95,
+    "beta2": 0.999999,
+    "weight_decay": 0.1,
+    "recipe": "8260dd56aacc89c33a62",
+    "local_batch": 32,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5790708871908112,
+      3.5827568511461085,
+      3.578063710616355
+    ],
+    "seed42": 3.5790708871908112,
+    "seed43": 3.5827568511461085,
+    "seed44": 3.578063710616355,
+    "mean_loss": 3.579963816317758,
+    "std_loss": 0.0024707051275530347,
+    "replication_mean_loss": 3.5804102808812317,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension"
+    ],
+    "beta1_global_half_life_targets": 885614.663038722,
+    "beta1_per_worker_half_life_targets": 221403.6657596805,
+    "beta2_global_half_life_targets": 45426070910.81972,
+    "beta2_per_worker_half_life_targets": 11356517727.70493,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": true,
+    "rank": 4
+  },
+  {
+    "batch": 128,
+    "lr": 0.006,
+    "beta1": 0.95,
+    "beta2": 0.999,
+    "weight_decay": 0.1,
+    "recipe": "9bc066c4b46640c24290",
+    "local_batch": 32,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.579533998613068,
+      3.580000762880983,
+      3.583352459223965
+    ],
+    "seed42": 3.579533998613068,
+    "seed43": 3.580000762880983,
+    "seed44": 3.583352459223965,
+    "mean_loss": 3.5809624069060053,
+    "std_loss": 0.002082961781307935,
+    "replication_mean_loss": 3.5816766110524743,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch"
+    ],
+    "beta1_global_half_life_targets": 885614.663038722,
+    "beta1_per_worker_half_life_targets": 221403.6657596805,
+    "beta2_global_half_life_targets": 45403376.79096219,
+    "beta2_per_worker_half_life_targets": 11350844.197740547,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 5
+  },
+  {
+    "batch": 128,
+    "lr": 0.006,
+    "beta1": 0.95,
+    "beta2": 0.9954676926821011,
+    "weight_decay": 0.1,
+    "recipe": "fc9c89030bdaef987766",
+    "local_batch": 32,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5763509585509428,
+      3.5847224386020695,
+      3.5869934996622885
+    ],
+    "seed42": 3.5763509585509428,
+    "seed43": 3.5847224386020695,
+    "seed44": 3.5869934996622885,
+    "mean_loss": 3.5826889656051004,
+    "std_loss": 0.005605103000723853,
+    "replication_mean_loss": 3.585857969132179,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch"
+    ],
+    "beta1_global_half_life_targets": 885614.663038722,
+    "beta1_per_worker_half_life_targets": 221403.6657596805,
+    "beta2_global_half_life_targets": 10000000.000000084,
+    "beta2_per_worker_half_life_targets": 2500000.000000021,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 6
+  },
+  {
+    "batch": 128,
+    "lr": 0.006,
+    "beta1": 0.95,
+    "beta2": 0.99999,
+    "weight_decay": 0.1,
+    "recipe": "c5d8ae790a55a307fad1",
+    "local_batch": 32,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.58082591209207,
+      3.5847893167920577,
+      3.5876814227081484
+    ],
+    "seed42": 3.58082591209207,
+    "seed43": 3.5847893167920577,
+    "seed44": 3.5876814227081484,
+    "mean_loss": 3.5844322171974254,
+    "std_loss": 0.003441677867284578,
+    "replication_mean_loss": 3.586235369750103,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension"
+    ],
+    "beta1_global_half_life_targets": 885614.663038722,
+    "beta1_per_worker_half_life_targets": 221403.6657596805,
+    "beta2_global_half_life_targets": 4542586649.453664,
+    "beta2_per_worker_half_life_targets": 1135646662.363416,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 7
+  },
+  {
+    "batch": 128,
+    "lr": 0.006,
+    "beta1": 0.95,
+    "beta2": 0.9999,
+    "weight_decay": 0.1,
+    "recipe": "0743e48c82ff2cf7b47e",
+    "local_batch": 32,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.580918457106907,
+      3.58704760125071,
+      3.5907237603304547
+    ],
+    "seed42": 3.580918457106907,
+    "seed43": 3.58704760125071,
+    "seed44": 3.5907237603304547,
+    "mean_loss": 3.5862299395626906,
+    "std_loss": 0.004953526097990179,
+    "replication_mean_loss": 3.5888856807905825,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch"
+    ],
+    "beta1_global_half_life_targets": 885614.663038722,
+    "beta1_per_worker_half_life_targets": 221403.6657596805,
+    "beta2_global_half_life_targets": 454238222.8264335,
+    "beta2_per_worker_half_life_targets": 113559555.70660837,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 8
+  },
+  {
+    "batch": 128,
+    "lr": 0.006,
+    "beta1": 0.95,
+    "beta2": 0.999999,
+    "weight_decay": 0.1,
+    "recipe": "da989b04ddf540976158",
+    "local_batch": 32,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5843644351578385,
+      3.590042614710635,
+      3.593195892185183
+    ],
+    "seed42": 3.5843644351578385,
+    "seed43": 3.590042614710635,
+    "seed44": 3.593195892185183,
+    "mean_loss": 3.589200980684552,
+    "std_loss": 0.004475479771136711,
+    "replication_mean_loss": 3.591619253447909,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension"
+    ],
+    "beta1_global_half_life_targets": 885614.663038722,
+    "beta1_per_worker_half_life_targets": 221403.6657596805,
+    "beta2_global_half_life_targets": 45426070910.81972,
+    "beta2_per_worker_half_life_targets": 11356517727.70493,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": true,
+    "rank": 9
+  },
+  {
+    "batch": 128,
+    "lr": 0.004,
+    "beta1": 0.95,
+    "beta2": 0.99999,
+    "weight_decay": 0.1,
+    "recipe": "a7c26d0fafd65cf06c2f",
+    "local_batch": 32,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5887704666449003,
+      3.594523586595169,
+      3.6013795134480726
+    ],
+    "seed42": 3.5887704666449003,
+    "seed43": 3.594523586595169,
+    "seed44": 3.6013795134480726,
+    "mean_loss": 3.5948911888960473,
+    "std_loss": 0.006312556052016947,
+    "replication_mean_loss": 3.597951550021621,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension"
+    ],
+    "beta1_global_half_life_targets": 885614.663038722,
+    "beta1_per_worker_half_life_targets": 221403.6657596805,
+    "beta2_global_half_life_targets": 4542586649.453664,
+    "beta2_per_worker_half_life_targets": 1135646662.363416,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 10
+  }
+]

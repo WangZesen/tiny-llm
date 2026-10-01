@@ -1,0 +1,158 @@
+[
+  {
+    "batch": 16,
+    "lr": 0.002,
+    "beta1": 0.99,
+    "beta2": 0.9999,
+    "weight_decay": 0.1,
+    "recipe": "c352ddd312366e4e4b7c",
+    "local_batch": 4,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5607264307617563,
+      3.5736132090861994,
+      3.578126271193095
+    ],
+    "seed42": 3.5607264307617563,
+    "seed43": 3.5736132090861994,
+    "seed44": 3.578126271193095,
+    "mean_loss": 3.570821970347017,
+    "std_loss": 0.009029500098751052,
+    "replication_mean_loss": 3.5758697401396473,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch"
+    ],
+    "beta1_global_half_life_targets": 564982.2837680408,
+    "beta1_per_worker_half_life_targets": 141245.5709420102,
+    "beta2_global_half_life_targets": 56779777.853304185,
+    "beta2_per_worker_half_life_targets": 14194944.463326046,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 1
+  },
+  {
+    "batch": 32,
+    "lr": 0.004,
+    "beta1": 0.98,
+    "beta2": 0.999999,
+    "weight_decay": 0.1,
+    "recipe": "e3fbe27da09d02fa5f59",
+    "local_batch": 8,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5592333037468737,
+      3.5608621353621244,
+      3.5668740074786545
+    ],
+    "seed42": 3.5592333037468737,
+    "seed43": 3.5608621353621244,
+    "seed44": 3.5668740074786545,
+    "mean_loss": 3.5623231488625513,
+    "std_loss": 0.004024426507657121,
+    "replication_mean_loss": 3.5638680714203894,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "packed4-awc-exponential-20m-c512-small-batch-beta2-extension"
+    ],
+    "beta1_global_half_life_targets": 562128.7893650742,
+    "beta1_per_worker_half_life_targets": 140532.19734126856,
+    "beta2_global_half_life_targets": 11356517727.70493,
+    "beta2_per_worker_half_life_targets": 2839129431.9262323,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": true,
+    "rank": 1
+  },
+  {
+    "batch": 64,
+    "lr": 0.006,
+    "beta1": 0.95,
+    "beta2": 0.9999,
+    "weight_decay": 0.1,
+    "recipe": "f9ed555427ea66abd6b6",
+    "local_batch": 16,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5574055545153493,
+      3.5706575876385953,
+      3.567991659221206
+    ],
+    "seed42": 3.5574055545153493,
+    "seed43": 3.5706575876385953,
+    "seed44": 3.567991659221206,
+    "mean_loss": 3.5653516004583836,
+    "std_loss": 0.007009388573782259,
+    "replication_mean_loss": 3.5693246234299005,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch"
+    ],
+    "beta1_global_half_life_targets": 442807.331519361,
+    "beta1_per_worker_half_life_targets": 110701.83287984025,
+    "beta2_global_half_life_targets": 227119111.41321674,
+    "beta2_per_worker_half_life_targets": 56779777.853304185,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 1
+  },
+  {
+    "batch": 128,
+    "lr": 0.008,
+    "beta1": 0.95,
+    "beta2": 0.999,
+    "weight_decay": 0.1,
+    "recipe": "be61dd9bfec85d0148d8",
+    "local_batch": 32,
+    "workers": 4,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "losses": [
+      3.5755547529551945,
+      3.5764750438194617,
+      3.5751508631723525
+    ],
+    "seed42": 3.5755547529551945,
+    "seed43": 3.5764750438194617,
+    "seed44": 3.5751508631723525,
+    "mean_loss": 3.575726886649003,
+    "std_loss": 0.0006786649415968763,
+    "replication_mean_loss": 3.575812953495907,
+    "sources": [
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch",
+      "packed4-awc-exponential-20m-c512-small-batch"
+    ],
+    "beta1_global_half_life_targets": 885614.663038722,
+    "beta1_per_worker_half_life_targets": 221403.6657596805,
+    "beta2_global_half_life_targets": 45403376.79096219,
+    "beta2_per_worker_half_life_targets": 11350844.197740547,
+    "lr_boundary": false,
+    "beta1_boundary": false,
+    "beta2_boundary": false,
+    "rank": 1
+  }
+]

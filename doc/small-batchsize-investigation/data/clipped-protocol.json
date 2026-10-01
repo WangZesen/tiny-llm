@@ -1,0 +1,124 @@
+{
+  "kind": "unified completed campaign; reporting aggregate",
+  "completed_runs": 920,
+  "screening_configurations": 840,
+  "replicated_configurations": 40,
+  "additional_replication_runs": 80,
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "source_campaigns": [
+    {
+      "root": "runs/packed4-awc-exponential-20m-c512-small-batch",
+      "manifest_sha256": "6a3c6de375c43f1bde0b26eedb272181725fd5d22d8cf4cdedab83894be954b9",
+      "source_hash": "f5c3286f2653a811c300725fa01e46daca2e4b7402b0e2fdcab1325567887f26",
+      "cache_identity": "7618ae8749071f012cd3e3e27f96480ea18c5da5dca59cf90330f35beaa4da1c"
+    },
+    {
+      "root": "runs/packed4-awc-exponential-20m-c512-small-batch-beta2-extension",
+      "manifest_sha256": "c52f0bcb383e2460e5a519d70dcb31769843553abbc1720eb84140d4e62a05c8",
+      "source_hash": "f5c3286f2653a811c300725fa01e46daca2e4b7402b0e2fdcab1325567887f26",
+      "cache_identity": "7618ae8749071f012cd3e3e27f96480ea18c5da5dca59cf90330f35beaa4da1c"
+    }
+  ],
+  "global_batches": [
+    16,
+    32,
+    64,
+    128
+  ],
+  "local_batches": [
+    4,
+    8,
+    16,
+    32
+  ],
+  "learning_rates": {
+    "128": [
+      0.002,
+      0.003,
+      0.004,
+      0.006,
+      0.008,
+      0.012
+    ],
+    "16": [
+      0.00025,
+      0.0005,
+      0.001,
+      0.002,
+      0.003,
+      0.004
+    ],
+    "32": [
+      0.0005,
+      0.001,
+      0.002,
+      0.003,
+      0.004,
+      0.006
+    ],
+    "64": [
+      0.001,
+      0.002,
+      0.003,
+      0.004,
+      0.006,
+      0.008
+    ]
+  },
+  "beta1_values": [
+    0.9,
+    0.95,
+    0.98,
+    0.99,
+    0.995
+  ],
+  "beta2_values": {
+    "16": [
+      0.98,
+      0.99,
+      0.999,
+      0.9994323350124558,
+      0.9999,
+      0.99999,
+      0.999999
+    ],
+    "32": [
+      0.98,
+      0.99,
+      0.9988649922684496,
+      0.999,
+      0.9999,
+      0.99999,
+      0.999999
+    ],
+    "64": [
+      0.98,
+      0.99,
+      0.99773127277945,
+      0.999,
+      0.9999,
+      0.99999,
+      0.999999
+    ],
+    "128": [
+      0.98,
+      0.99,
+      0.9954676926821011,
+      0.999,
+      0.9999,
+      0.99999,
+      0.999999
+    ]
+  },
+  "training_targets": 408092672,
+  "warmup_targets": 20447232,
+  "validation_targets": 197411295,
+  "checkpoint_policy": "none",
+  "selection": "Pool all complete three-seed recipes; sort mean loss then LR, beta1, beta2.",
+  "replication_history": "Two frozen sets of five recipes per batch; not a pooled top-ten selection.",
+  "comparison_scope": "Weight decay 0.1; synchronous final conditional beta1 tuning; exploratory comparison."
+}

@@ -40,7 +40,7 @@ const usage = [
 
 <Layout
   title="tiny-llm"
-  description="Current experiments in learning-rate schedules and decentralized language-model training."
+  description="Experiments in batch size, learning-rate schedules, and decentralized language-model training."
   wide
 >
   <header class="publication-heading home-heading" data-pagefind-body>
@@ -52,8 +52,8 @@ const usage = [
     </h1>
     <div class="publication-deck">
       <p class="lead">
-        The latest hyperparameter tuning for 20.4M-parameter language models on C4. Cosine-to-zero
-        and WSD, synchronous and decentralized training, measured across token budgets.
+        Hyperparameter tuning for 20.4M-parameter language models on C4. Synchronous and
+        decentralized training, measured across batch sizes, learning-rate schedules, and token budgets.
       </p>
       <div class="publication-finding">
         <span class="eyebrow">From the experiments</span>
@@ -65,16 +65,51 @@ const usage = [
       </div>
     </div>
     <div class="publication-byline">
-      <span>1,188 cosine runs</span>
+      <span>Schedule studies: 1,188 cosine runs</span>
       <span>594 WSD seed/horizon results</span>
       <span>Three seeds per configuration</span>
       <span>One GH200 per run</span>
     </div>
   </header>
 
+  <section class="publication-section" id="small-batch" data-pagefind-body>
+    <div class="publication-section-title">
+      <span class="section-number">01 / Small-batch investigation · 1 October 2026</span>
+      <h2>Small batches can improve validation quality.</h2>
+    </div>
+    <p class="section-intro">
+      At a fixed training budget, the strongest tested synchronous and clipped four-worker
+      decentralized recipes use global batches 64 and 32, respectively. Batch 16 is not consistently
+      best. Smaller batches favor higher first-moment momentum, while clipping's benefit depends
+      on batch size and learning rate.
+    </p>
+    <figure class="publication-figure">
+      <a href={url('assets/small-batchsize-investigation/assets/quality.pdf')}>
+        <img
+          src={url('assets/small-batchsize-investigation/assets/quality.svg')}
+          width="1590"
+          height="456"
+          loading="lazy"
+          alt="Tuned three-seed validation loss at global batches 16, 32, 64, and 128: synchronous training is best at 64 and clipped four-worker decentralized training at 32."
+        />
+      </a>
+      <figcaption>
+        Selected recipes at context 512 and 408,092,672 training targets. Lower loss is better;
+        error bars show sample SD over seeds 42–44. Tuning procedures differ, so the method
+        comparison is exploratory.{' '}
+        <a href={url('assets/small-batchsize-investigation/assets/quality.pdf')}>Download figure PDF&nbsp;↗</a>
+      </figcaption>
+    </figure>
+    <p>
+      <a href={url('results/small-batchsize-investigation/')}>
+        Small-Batch Training with AdamW — report and 13-slide presentation ↗
+      </a>
+    </p>
+  </section>
+
   <section class="publication-section" id="schedules" data-pagefind-body>
     <div class="publication-section-title">
-      <span class="section-number">01 / Results</span>
+      <span class="section-number">02 / Results</span>
       <h2>Cosine-to-zero meets WSD.</h2>
     </div>
     <p class="section-intro">
@@ -148,7 +183,7 @@ const usage = [
 
   <section class="publication-section" id="workers" data-pagefind-body>
     <div class="publication-section-title">
-      <span class="section-number">02 / Results</span>
+      <span class="section-number">03 / Results</span>
       <h2>One global budget. One, four, or eight workers.</h2>
     </div>
     <p class="section-intro">
@@ -189,15 +224,16 @@ const usage = [
 
   <section class="publication-section protocol-section" id="protocol" data-pagefind-body>
     <div>
-      <span class="section-number">03 / Protocol</span>
+      <span class="section-number">04 / Schedule-study protocol</span>
       <h2>
         What stays shared.
         <br />
         What changes.
       </h2>
       <p>
-        The same model size, token-cache identity, global batches, and validation target are used
-        across the current campaigns. Schedules, search grids, and continuation policies differ.
+        The schedule and worker studies above share model size, token-cache identity, global batch,
+        and validation target. Schedules, search grids, and continuation policies differ. The
+        small-batch investigation has its own protocol, detailed in its report.
       </p>
       <a href={url('methods/protocol/')}>Read the experimental protocol ↗</a>
     </div>
@@ -231,7 +267,7 @@ const usage = [
 
   <section class="publication-section" id="usage" data-pagefind-body>
     <div class="publication-section-title">
-      <span class="section-number">04 / Usage</span>
+      <span class="section-number">05 / Usage</span>
       <h2>From a cache to an experiment.</h2>
     </div>
     <div class="usage-grid">
@@ -253,7 +289,7 @@ const usage = [
 
   <section class="publication-section" id="performance" data-pagefind-body>
     <div class="publication-section-title">
-      <span class="section-number">05 / Performance</span>
+      <span class="section-number">06 / Performance</span>
       <h2>Measured on a single GH200.</h2>
     </div>
     <p class="section-intro">

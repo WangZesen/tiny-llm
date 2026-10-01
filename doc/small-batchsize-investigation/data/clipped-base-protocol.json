@@ -1,0 +1,107 @@
+{
+  "batches": [
+    128,
+    64,
+    32,
+    16
+  ],
+  "beta1s": [
+    0.9,
+    0.95,
+    0.98,
+    0.99,
+    0.995
+  ],
+  "beta2s": {
+    "128": [
+      0.98,
+      0.99,
+      0.999,
+      0.9999,
+      0.9954676926821011
+    ],
+    "16": [
+      0.98,
+      0.99,
+      0.999,
+      0.9999,
+      0.9994323350124558
+    ],
+    "32": [
+      0.98,
+      0.99,
+      0.999,
+      0.9999,
+      0.9988649922684496
+    ],
+    "64": [
+      0.98,
+      0.99,
+      0.999,
+      0.9999,
+      0.99773127277945
+    ]
+  },
+  "boundary_extension": false,
+  "checkpoint_policy": "none",
+  "concurrency": 48,
+  "expected_replication": 40,
+  "expected_screen": 600,
+  "half_life_coordinate": "global targets",
+  "local_batches": [
+    32,
+    16,
+    8,
+    4
+  ],
+  "local_moments": true,
+  "lrs": {
+    "128": [
+      0.002,
+      0.003,
+      0.004,
+      0.006,
+      0.008,
+      0.012
+    ],
+    "16": [
+      0.00025,
+      0.0005,
+      0.001,
+      0.002,
+      0.003,
+      0.004
+    ],
+    "32": [
+      0.0005,
+      0.001,
+      0.002,
+      0.003,
+      0.004,
+      0.006
+    ],
+    "64": [
+      0.001,
+      0.002,
+      0.003,
+      0.004,
+      0.006,
+      0.008
+    ]
+  },
+  "max_attempts": 2,
+  "replication_seeds": [
+    43,
+    44
+  ],
+  "save_epoch_training_state": false,
+  "scheme": "awc",
+  "screen_seed": 42,
+  "tokens": 408092672,
+  "top_k": 5,
+  "topology": "one_peer_exponential",
+  "validation_tokens": 197411295,
+  "warmup_tokens": 20447232,
+  "weight_decay": 0.1,
+  "workers": 4
+}

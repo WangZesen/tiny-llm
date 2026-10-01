@@ -1,0 +1,156 @@
+{
+  "batches": [
+    128,
+    64,
+    32,
+    16
+  ],
+  "beta1s": [
+    0.9,
+    0.95,
+    0.98,
+    0.99,
+    0.995
+  ],
+  "beta2_half_lives": [
+    {
+      "beta2": 0.99999,
+      "global_batch": 128,
+      "global_targets": 4542586649.453664,
+      "local_batch": 32,
+      "per_worker_targets": 1135646662.363416
+    },
+    {
+      "beta2": 0.999999,
+      "global_batch": 128,
+      "global_targets": 45426070910.81972,
+      "local_batch": 32,
+      "per_worker_targets": 11356517727.70493
+    },
+    {
+      "beta2": 0.99999,
+      "global_batch": 64,
+      "global_targets": 2271293324.726832,
+      "local_batch": 16,
+      "per_worker_targets": 567823331.181708
+    },
+    {
+      "beta2": 0.999999,
+      "global_batch": 64,
+      "global_targets": 22713035455.40986,
+      "local_batch": 16,
+      "per_worker_targets": 5678258863.852465
+    },
+    {
+      "beta2": 0.99999,
+      "global_batch": 32,
+      "global_targets": 1135646662.363416,
+      "local_batch": 8,
+      "per_worker_targets": 283911665.590854
+    },
+    {
+      "beta2": 0.999999,
+      "global_batch": 32,
+      "global_targets": 11356517727.70493,
+      "local_batch": 8,
+      "per_worker_targets": 2839129431.9262323
+    },
+    {
+      "beta2": 0.99999,
+      "global_batch": 16,
+      "global_targets": 567823331.181708,
+      "local_batch": 4,
+      "per_worker_targets": 141955832.795427
+    },
+    {
+      "beta2": 0.999999,
+      "global_batch": 16,
+      "global_targets": 5678258863.852465,
+      "local_batch": 4,
+      "per_worker_targets": 1419564715.9631162
+    }
+  ],
+  "beta2s": {
+    "128": [
+      0.99999,
+      0.999999
+    ],
+    "16": [
+      0.99999,
+      0.999999
+    ],
+    "32": [
+      0.99999,
+      0.999999
+    ],
+    "64": [
+      0.99999,
+      0.999999
+    ]
+  },
+  "boundary_extension": false,
+  "checkpoint_policy": "none",
+  "concurrency": 48,
+  "expected_replication": 40,
+  "expected_screen": 240,
+  "extension_reason": "User requested two values closer to one after beta2 endpoint winners",
+  "half_life_coordinate": "global targets",
+  "local_batches": [
+    32,
+    16,
+    8,
+    4
+  ],
+  "local_moments": true,
+  "lrs": {
+    "128": [
+      0.002,
+      0.003,
+      0.004,
+      0.006,
+      0.008,
+      0.012
+    ],
+    "16": [
+      0.00025,
+      0.0005,
+      0.001,
+      0.002,
+      0.003,
+      0.004
+    ],
+    "32": [
+      0.0005,
+      0.001,
+      0.002,
+      0.003,
+      0.004,
+      0.006
+    ],
+    "64": [
+      0.001,
+      0.002,
+      0.003,
+      0.004,
+      0.006,
+      0.008
+    ]
+  },
+  "max_attempts": 2,
+  "parent_campaign": "runs/packed4-awc-exponential-20m-c512-small-batch",
+  "promotion_pool": "new beta2 grid only; parent selections remain frozen",
+  "replication_seeds": [
+    43,
+    44
+  ],
+  "save_epoch_training_state": false,
+  "scheme": "awc",
+  "screen_seed": 42,
+  "tokens": 408092672,
+  "top_k": 5,
+  "topology": "one_peer_exponential",
+  "validation_tokens": 197411295,
+  "warmup_tokens": 20447232,
+  "weight_decay": 0.1,
+  "workers": 4
+}
