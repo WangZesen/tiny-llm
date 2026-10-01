@@ -13,7 +13,18 @@ test('homepage follows publication priorities with clean navigation and readable
   ).toHaveText(['Results', 'Usage', 'Performance']);
   expect(
     await page.locator('main > section').evaluateAll((nodes) => nodes.map((n) => n.id)),
-  ).toEqual(['schedules', 'workers', 'protocol', 'usage', 'performance']);
+  ).toEqual(['small-batch', 'schedules', 'workers', 'protocol', 'usage', 'performance']);
+  const investigation = page.locator('#small-batch');
+  const quality = investigation.getByRole('img');
+  await quality.scrollIntoViewIfNeeded();
+  await expect
+    .poll(() => quality.evaluate((image) => (image as HTMLImageElement).naturalWidth))
+    .toBeGreaterThan(0);
+  await expect(investigation.getByRole('link', { name: /Download figure PDF/ })).toHaveAttribute(
+    'href',
+    '/tiny-llm/assets/small-batchsize-investigation/assets/quality.pdf',
+  );
+  await page.evaluate(() => window.scrollTo(0, 0));
   await expect(
     page.getByRole('table', { name: 'Current winning configurations' }).locator('tbody tr'),
   ).toHaveCount(15);
@@ -46,6 +57,20 @@ test('homepage follows publication priorities with clean navigation and readable
       path: info.outputPath('publication-mobile-figures.png'),
       scale: 'css',
     });
+  }
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2),
+  ).toBeTruthy();
+  await investigation.getByRole('link', { name: /report and 13-slide presentation/ }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'Small-Batch Training with AdamW',
+  );
+  for (const name of ['13-slide presentation', 'Report and technical appendix — 28 pages']) {
+    const link = page.getByRole('link', { name, exact: true });
+    await expect(link).toBeVisible();
+    const response = await page.request.get((await link.getAttribute('href'))!);
+    expect(response.ok()).toBeTruthy();
+    expect((await response.body()).subarray(0, 5).toString()).toBe('%PDF-');
   }
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2),
