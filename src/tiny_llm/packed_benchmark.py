@@ -27,7 +27,14 @@ from tiny_llm.train import loss_function, make_optimizer
 def benchmark_packed_worker(
     config: Config, destination: Path, execution: str, warmup: int = 3, steps: int = 8
 ) -> dict:
-    if config.decentralized and config.decentralized.adaptive_consensus is not None:
+    if config.runtime.training_backend == "gh200":
+        from tiny_llm.gh200.benchmark import benchmark_update
+
+        if execution != "packed" or config.decentralized is None:
+            raise ValueError("GH200 decentralized benchmarks require packed execution")
+        return benchmark_update(config, destination, warmup, steps)
+    if (config.runtime.training_backend != "gh200" and config.decentralized
+            and config.decentralized.adaptive_consensus is not None):
         raise ValueError("adaptive consensus is supported by training only, not packed benchmarks")
     config = Config.model_validate(config.model_dump())
     if config.decentralized is None or execution not in ("packed", "sequential"):
@@ -182,7 +189,8 @@ def benchmark_packed(
     warmup: int = 3,
     steps: int = 8,
 ) -> dict:
-    if config.decentralized and config.decentralized.adaptive_consensus is not None:
+    if (config.runtime.training_backend != "gh200" and config.decentralized
+            and config.decentralized.adaptive_consensus is not None):
         raise ValueError("adaptive consensus is supported by training only, not packed benchmarks")
     output.mkdir(parents=True, exist_ok=True)
     results = []
@@ -194,6 +202,9 @@ def benchmark_packed(
             "num_models": n,
             "topology": (config.decentralized.topology if config.decentralized else "complete"),
             "scheme": config.decentralized.scheme if config.decentralized else "awc",
+            "adaptive_consensus": (config.decentralized.adaptive_consensus.model_dump()
+                                   if config.decentralized and config.decentralized.adaptive_consensus
+                                   else None),
         }
         raw["training"]["micro_batch_size"] = config.training.batch_tokens // (
             n * config.model.context_length
@@ -202,7 +213,8 @@ def benchmark_packed(
         path = output / f"n-{n}.yaml"
         save_config(candidate, path)
         pair = {}
-        for execution in ("sequential", "packed"):
+        executions = ("packed",) if config.runtime.training_backend == "gh200" else ("sequential", "packed")
+        for execution in executions:
             destination = output / f"n-{n}-{execution}.json"
             with destination.with_suffix(".log").open("w") as log:
                 process = subprocess.run(
@@ -234,13 +246,14 @@ def benchmark_packed(
                     log=str(destination.with_suffix(".log")),
                 )
         row = dict(num_models=n, **pair)
-        if all(value["status"] == "ok" for value in pair.values()):
+        if "sequential" in pair and all(value["status"] == "ok" for value in pair.values()):
             row["speedup"] = (
                 pair["sequential"]["seconds_per_step"] / pair["packed"]["seconds_per_step"]
             )
         results.append(row)
     summary = dict(comparisons=results)
     atomic_json(output / "summary.json", summary)
-    if any(row[mode]["status"] != "ok" for row in results for mode in ("packed", "sequential")):
+    if any(value["status"] != "ok" for row in results
+           for key, value in row.items() if key in ("packed", "sequential")):
         raise RuntimeError(f"some benchmark workers failed; see {output / 'summary.json'}")
     return summary

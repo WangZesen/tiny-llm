@@ -70,7 +70,7 @@ Lower is better. Four-worker WSD has not been measured. WSD results at 120 and
 
 ## Usage
 
-Use Python 3.12+, UV, and an NVIDIA GPU with BF16 support. The locked PyTorch
+Use Python 3.12+, UV, and an NVIDIA GH200 for the default training backend. The locked PyTorch
 build uses CUDA 13 and needs a compatible driver. Run from the repository root:
 
 ```bash
@@ -82,7 +82,7 @@ uv run tiny-llm train --config configs/20m.yaml --config configs/cosine.yaml \
 ```
 
 The example uses the selected synchronous cosine recipe at 20 tokens per parameter.
-The training presets themselves retain their existing defaults.
+The training presets retain their existing optimizer settings.
 
 1. [Prepare data](doc/guides/data.md): cache creation, reuse, budgets, and analysis capacity.
 2. [Train locally](doc/guides/training.md): sync and packed workers, schedules, checkpoints, and resume.
@@ -93,6 +93,12 @@ The published cosine sweeps saved no weights or checkpoints. To run checkpoint
 analysis, retain checkpoints when training a new run.
 
 ## Single-GH200 performance
+
+GH200 is the default backend for synchronous and packed training, including
+accumulation, AWC/ATC and adaptive consensus. Native training remains available
+with `--set runtime.training_backend=native`. See the
+[qualification report](doc/performance/gh200-integration.md)
+and [backend usage](doc/guides/training.md#gh200-update-backend).
 
 [Current throughput and memory measurements](doc/performance/training.md) come
 from the same 1,188 cosine runs. Steady training throughput, elapsed training

@@ -106,6 +106,19 @@ class PackedAdamW:
             ],
         }
 
+    def local_state_dict(self, worker: int) -> TorchState:
+        """Canonical named moments for an independently inspectable worker file."""
+        optimizer, parameters = self.optimizers[worker], self.local_parameters[worker]
+        names = [entry.name for entry in self.layout]
+        name_by_id = {id(p): name for name, p in zip(names, parameters, strict=True)}
+        return dict(
+            state={name: optimizer.state[p] for name, p in zip(names, parameters, strict=True)},
+            param_groups=[
+                {**group, "params": [name_by_id[id(p)] for p in group["params"]]}
+                for group in optimizer.param_groups
+            ],
+        )
+
     @torch.no_grad()
     def load_state_dict(self, state: TorchState) -> None:
         self._check_storage()

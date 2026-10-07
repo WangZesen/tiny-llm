@@ -62,13 +62,17 @@ def benchmark(
     protocol = dict(
         version=2, warmup=warmup, steps=steps, windows=windows, data_mode=data_mode, profile=profile
     )
+    if config.runtime.training_backend == "gh200":
+        protocol.update(version=3, backend="gh200", logging_cadence=config.training.log_every)
     if data_mode == "real":
         protocol["cache_identity"] = TokenCache(config.data.cache_dir).manifest["identity"]
     results = []
     for batch in (4, 8, 16, 32):
         if batch * config.model.context_length > config.training.batch_tokens:
             continue
-        for compiled in (False,) if config.runtime.deterministic else (False, True):
+        compile_options = ((True,) if config.runtime.training_backend == "gh200" else
+                           (False,) if config.runtime.deterministic else (False, True))
+        for compiled in compile_options:
             name = f"micro-{batch}-compile-{int(compiled)}"
             candidate = config.model_copy(deep=True)
             candidate.training.micro_batch_size = batch
@@ -150,6 +154,10 @@ def benchmark_worker(
     data_mode: str = "synthetic",
     profile: bool = False,
 ) -> dict[str, Any]:
+    if config.runtime.training_backend == "gh200":
+        from tiny_llm.gh200.benchmark import benchmark_update
+
+        return benchmark_update(config, destination, warmup, steps, windows, data_mode, profile)
     if config.decentralized is not None:
         raise ValueError("use benchmark-packed for decentralized training")
     if min(warmup, steps, windows) < 1 or data_mode not in ("synthetic", "real"):
@@ -337,6 +345,8 @@ def tune_gh200(config: Config, output: Path, budget_minutes: float = 75):
         profile=False,
         cache_identity=TokenCache(config.data.cache_dir).manifest["identity"],
     )
+    if config.runtime.training_backend == "gh200":
+        protocol.update(version=3, backend="gh200", logging_cadence=config.training.log_every)
     deadline = time.monotonic() + budget_minutes * 60
     results = []
     seen = set()
@@ -348,6 +358,8 @@ def tune_gh200(config: Config, output: Path, budget_minutes: float = 75):
         mode: Literal["default", "reduce-overhead", "max-autotune"] = "default",
         threads: int = 8,
     ) -> None:
+        if config.runtime.training_backend == "gh200" and (not compiled or mode != "default"):
+            return
         key = (batch, compiled, backend, mode, threads)
         if key in seen or deadline - time.monotonic() < 60:
             return

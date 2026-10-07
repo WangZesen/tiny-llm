@@ -286,6 +286,9 @@ def evaluate(
 
 def recipe_identity(config: Config, cache: TokenCache) -> str:
     value = config.model_dump(mode="json")
+    # Backend transitions preserve the mathematical recipe; provenance records
+    # the actual execution backend separately, including native checkpoint imports.
+    value["runtime"].pop("training_backend")
     for key in RETENTION_FIELDS:
         value["training"].pop(key)
     for name in ("output_dir", "device", "cpu_threads"):
@@ -350,13 +353,18 @@ def _train(config: Config, resume: Path | None) -> dict:
     boundaries = training_boundaries(config, config.model.parameter_count)
     selected_epochs = config.training.saved_epochs()
     consensus_schedule = adaptive_consensus_schedule(config, boundaries)
-    model = (
+    engine = None
+    if config.runtime.training_backend == "gh200":
+        from tiny_llm.gh200.engine import GH200Update
+
+        engine = GH200Update(config, device)
+    model = engine.model if engine else (
         PackedLlama(config.model, num_models, actual_backend(config))
         if decentralized
         else Llama(config.model, actual_backend(config))
     ).to(device)
     averaged = None
-    if decentralized:
+    if decentralized or engine is not None:
         with preserve_rng():
             averaged = Llama(config.model, actual_backend(config)).to(device)
 
@@ -370,8 +378,8 @@ def _train(config: Config, resume: Path | None) -> dict:
     blocks, length = boundaries[-1], config.model.context_length
     if blocks > cache.blocks("train", length):
         raise ValueError(f"cache too small: need {blocks * length + 1:,} training tokens")
-    optimizer = make_optimizer(model, config, device)
-    compute_loss = loss_function(model, config, device)
+    optimizer = engine.optimizer if engine else make_optimizer(model, config, device)
+    compute_loss = None if engine else loss_function(model, config, device)
     startup_stage("model and optimizer setup")
     identity = recipe_identity(config, cache)
     cursor, step, completed_epochs, best_loss = 0, 0, 0, float("inf")
@@ -384,11 +392,14 @@ def _train(config: Config, resume: Path | None) -> dict:
             raise ValueError(f"incompatible training checkpoint version: {state.get('version')}")
         if state["recipe_identity"] != identity:
             raise ValueError("resume checkpoint is incompatible with this recipe or token cache")
-        if isinstance(model, PackedLlama):
+        if engine is not None:
+            engine.load_canonical_state(state)
+        elif isinstance(model, PackedLlama):
             model.load_packed_state_dict(state["model"])
         else:
             model.load_state_dict(state["model"], strict=True)
-        optimizer.load_state_dict(state["optimizer"])
+        if engine is None:
+            optimizer.load_state_dict(state["optimizer"])
         cursor, step, completed_epochs = state["cursor"], state["step"], state["completed_epochs"]
         best_loss, best_epoch = state["best_loss"], state["best_epoch"]
         restore_rng(state["rng"])
@@ -398,6 +409,7 @@ def _train(config: Config, resume: Path | None) -> dict:
             cursor * length,
             completed_epochs,
         )
+    initial_cursor, initial_step = cursor, step
     for epoch in sorted(selected_epochs):
         if epoch <= completed_epochs:
             continue
@@ -430,7 +442,14 @@ def _train(config: Config, resume: Path | None) -> dict:
         epochs=len(boundaries),
         deterministic=config.runtime.deterministic,
         loader=loader.identity,
+        training_backend=config.runtime.training_backend,
     )
+    if resume and state is not None:
+        metadata["resume_backend_transition"] = dict(
+            source=state["config"]["runtime"].get("training_backend", "native"),
+            target=config.runtime.training_backend, checkpoint=str(resume.resolve()),
+            step=step, cursor=cursor,
+        )
     if decentralized:
         metadata.update(
             num_models=num_models,
@@ -466,16 +485,19 @@ def _train(config: Config, resume: Path | None) -> dict:
     previous_handlers = {sig: signal.signal(sig, stop) for sig in (signal.SIGINT, signal.SIGTERM)}
 
     def checkpoint(name: str, *, epoch: bool = False) -> None:
+        if engine is not None:
+            engine.inspect(step)
         if config.training.checkpoint_policy == "none":
             return
+        canonical = engine.canonical_state() if engine else None
         state = TrainingState(
             version=3 if decentralized else 2,
             recipe_identity=identity,
             config=config.model_dump(mode="json"),
-            model=model.packed_state_dict()
-            if isinstance(model, PackedLlama)
-            else model.state_dict(),
-            optimizer=optimizer.state_dict(),
+            model=canonical["model"] if canonical else (
+                model.packed_state_dict() if isinstance(model, PackedLlama) else model.state_dict()
+            ),
+            optimizer=canonical["optimizer"] if canonical else optimizer.state_dict(),
             rng=rng_state(),
             cursor=cursor,
             step=step,
@@ -500,6 +522,10 @@ def _train(config: Config, resume: Path | None) -> dict:
         logger.info("Collecting fixed validation subset with a sequential scan")
         cache.validation_subset(config, should_stop=lambda: stopped)
         model.train()
+        if engine is not None:
+            engine.prepare()
+            engine.inspect(step)
+            startup_stage("complete update compilation and capture")
         if device.type == "cuda":
             torch.cuda.synchronize(device)
         startup_stage("validation subset")
@@ -509,13 +535,28 @@ def _train(config: Config, resume: Path | None) -> dict:
         for epoch_index in range(completed_epochs, len(boundaries)):
             boundary = boundaries[epoch_index]
             clip_counts = torch.zeros(num_models, device=device, dtype=torch.int64)
+            if engine is not None:
+                engine.reset_epoch()
+                clip_counts = engine.optimizer.clip_counts
             while cursor < boundary:
                 step_blocks = config.training.batch_tokens // length
                 lr = learning_rate(config, (cursor + step_blocks) * length, blocks * length)
-                for group in optimizer.param_groups:
-                    group["lr"] = lr
-                if isinstance(model, PackedLlama):
+                if engine is None:
+                    assert isinstance(optimizer, (PackedAdamW, torch.optim.AdamW))
+                    for group in optimizer.param_groups:
+                        group["lr"] = lr
+                if engine is not None:
+                    mixing_gamma = consensus_schedule.gamma(step, lr) if consensus_schedule else 1.0
+                    engine.execute(loader.next_batch, lr, mixing_gamma)
+                    local_grad_norms = engine.optimizer.norms
+                    grad_norm = local_grad_norms.max()
+                    step_grad_norms = local_grad_norms
+                    step_loss = engine.optimizer.loss_sum
+                    if decentralized:
+                        packed_metrics = (engine.optimizer.losses, local_grad_norms, mixing_gamma)
+                elif isinstance(model, PackedLlama):
                     assert isinstance(optimizer, PackedAdamW) and decentralized is not None
+                    assert compute_loss is not None
                     optimizer.zero_grad(set_to_none=True)
                     local_batch = step_blocks // num_models
                     x, y = loader.next_batch(step_blocks, device)
@@ -542,6 +583,7 @@ def _train(config: Config, resume: Path | None) -> dict:
                     packed_metrics = (means.detach(), local_grad_norms, mixing_gamma)
                 else:
                     assert isinstance(optimizer, torch.optim.AdamW)
+                    assert compute_loss is not None
                     step_loss, grad_norm = optimizer_update(
                         model,
                         optimizer,
@@ -552,16 +594,20 @@ def _train(config: Config, resume: Path | None) -> dict:
                         step_blocks,
                     )
                     step_grad_norms = grad_norm
-                if config.optimizer.grad_clip is not None:
+                if engine is None and config.optimizer.grad_clip is not None:
                     clip_counts.add_(step_grad_norms > config.optimizer.grad_clip)
                 cursor += step_blocks
                 step += 1
-                window_loss += step_loss.item()
+                if engine is None:
+                    window_loss += step_loss.item()
                 window_tokens += step_blocks * length
                 if step == first_session_step:
                     # Reuse the existing scalar synchronization above; no extra GPU barrier.
                     startup_stage("first update (including data loading and compilation)")
                 if step % config.training.log_every == 0 or cursor == boundary:
+                    if engine is not None:
+                        engine.inspect(step)
+                        window_loss = float(engine.optimizer.loss_sum.item())
                     if device.type == "cuda":
                         torch.cuda.synchronize(device)
                     now = time.monotonic()
@@ -604,8 +650,12 @@ def _train(config: Config, resume: Path | None) -> dict:
                         row["tokens_per_second"],
                     )
                     window_loss = 0.0
+                    if engine is not None:
+                        engine.reset_window()
                     window_start, window_tokens = time.monotonic(), 0
                 if stopped:
+                    if engine is not None:
+                        engine.inspect(step)
                     result = dict(status="interrupted", step=step, tokens=cursor * length)
                     atomic_json(output / "status.json", result)
                     return result
@@ -643,7 +693,7 @@ def _train(config: Config, resume: Path | None) -> dict:
                     epoch_model,
                     output / f"epoch-{epoch_index + 1:03d}.safetensors",
                 )
-            if isinstance(model, PackedLlama) and save_epoch:
+            if decentralized and isinstance(model, PackedLlama) and save_epoch:
                 for worker in range(num_models):
                     directory = output / f"node-{worker:03d}"
                     directory.mkdir(exist_ok=True)
@@ -731,6 +781,13 @@ def _train(config: Config, resume: Path | None) -> dict:
         atomic_json(output / "status.json", result)
         return result
     except BaseException as exc:
+        if engine is not None:
+            # Host iterations can run ahead of a failed device update until the
+            # next logging boundary. Only successful device updates commit data.
+            step = int(engine.optimizer.completed.item())
+            cursor = initial_cursor + (step - initial_step) * (
+                config.training.batch_tokens // length
+            )
         atomic_json(
             output / "status.json",
             dict(

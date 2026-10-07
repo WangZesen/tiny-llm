@@ -7,7 +7,7 @@ title: "Training and evaluation"
 Start with the [data-preparation guide](data.md) to create a cache with enough
 capacity for your training and analysis budget.
 
-Use Python 3.12+, UV, and an NVIDIA GPU with BF16 support for training.
+Use Python 3.12+, UV, and an NVIDIA GH200 for the default training backend.
 The locked PyTorch build uses CUDA 13 and requires a compatible driver.
 Run commands from the repository root.
 
@@ -15,6 +15,57 @@ Run commands from the repository root.
 uv sync --locked
 ```
 
+
+## GH200 update backend
+
+The `runtime.training_backend` selector defaults to `gh200` for both synchronous
+and packed training. Select `native` explicitly with
+`--set runtime.training_backend=native` for native training, including CPU or
+other GPU hardware. Native retirement remains subject to every gate in the
+[qualification report](../performance/gh200-integration.md). The GH200
+implementation supports synchronous training and independent packed workers at
+the 20M, 50M and 90M widths, fixed configured batch/context shapes, accumulation
+including a remainder microbatch, clipping on/off, AWC/ATC, all existing
+topologies and adaptive consensus.
+
+```bash
+uv run tiny-llm train --config configs/20m.yaml \
+  --set runtime.output_dir=runs/gh200-sync
+uv run tiny-llm train --config configs/20m.yaml --config configs/packed4-20m-awc.yaml \
+  --set runtime.output_dir=runs/gh200-packed4
+```
+
+This backend requires an actual GH200, compiled BF16 autocast and SDPA.
+CPU, reference-attention, deterministic, non-AMP and uncompiled GH200 training
+requests fail clearly. It uses its own complete-update CUDA graph and gathered
+Triton AdamW; the native backend's `compile_mode` and `fused_optimizer` switches
+do not change that execution policy. Ordinary RoPE is retained. Reference
+evaluation and CPU/FP64 Hessian and gradient analysis remain available.
+
+Checkpoint exports keep the canonical parameter layout and both Adam moments.
+To import a native checkpoint, use the same mathematical recipe, seed and cache,
+use `runtime.training_backend=gh200` (now the default), choose a new output directory, and pass
+`--resume PATH`. The backend transition, checkpoint path and committed position
+are recorded in `environment-resume.json`. Preparation restores weights,
+moments, counters and RNG in place before consuming training data.
+
+The device immediately freezes all workers' optimizer, consensus and counter
+writes if any worker has a nonfinite loss or gradient. The host checks this
+sticky error flag at logging boundaries and before evaluation, saving or stopping.
+Failure reports use the actual successful-update count and committed data position.
+
+The standard benchmark worker uses the same GH200 update engine. It accepts
+both synchronous and packed configurations, including real data:
+
+```bash
+uv run tiny-llm benchmark-worker --config configs/20m.yaml \
+  --config configs/packed4-20m-awc.yaml \
+  --data-mode real --warmup 20 --steps 100 --windows 5 --output runs/gh200-timing.json
+```
+
+These ad hoc measurements do not replace the frozen native/candidate campaign
+or its requirement for three independent allocations and timing windows of at
+least one second.
 
 ## Published configurations
 
@@ -173,7 +224,8 @@ uv run tiny-llm prepare --config configs/smoke.yaml
 uv run tiny-llm train --config configs/smoke.yaml
 ```
 
-The smoke configuration truncates C4, so its evaluation is marked incomplete.
+The smoke configuration explicitly selects the native backend for a short eager
+pipeline check. It truncates C4, so its evaluation is marked incomplete.
 
 ### Learning-rate schedules
 

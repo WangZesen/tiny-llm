@@ -41,6 +41,7 @@ evaluation:
   batch_size: 8
   seed: 12345
 runtime:
+  training_backend: native
   seed: 42
   deterministic: false
   device: cuda:0

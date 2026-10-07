@@ -73,6 +73,7 @@ def tiny_config(tmp_path: Path) -> Config:
     config = Config(
         model=ModelConfig(vocab_size=17, layers=1, width=8, heads=2, ffn_width=16, context_length=4)
     )
+    config.runtime.training_backend = "native"
     config.runtime.device = "cpu"
     config.runtime.amp = False
     config.runtime.compile = False

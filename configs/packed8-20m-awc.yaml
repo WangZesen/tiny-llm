@@ -13,9 +13,9 @@ training:
 runtime:
   output_dir: runs/packed8-20m-awc
 optimizer:
-  lr: 0.0056
+  lr: 0.014
   beta1: 0.95
-  beta2: 0.999
+  beta2: 0.99
   eps: 1.0e-08
   weight_decay: 0.1
   grad_clip: 1.0

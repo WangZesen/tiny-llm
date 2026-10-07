@@ -2404,6 +2404,7 @@ def self_test(args):
                 vocab_size=17, layers=1, width=8, heads=2, ffn_width=16, context_length=4
             )
         )
+        config.runtime.training_backend = "native"
         config.runtime.device = "cpu"
         config.runtime.amp = config.runtime.compile = False
         config.runtime.cpu_threads = 1

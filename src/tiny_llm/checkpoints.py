@@ -1,9 +1,11 @@
 """Full training checkpoints and compact, independently inspectable worker snapshots."""
 
+from __future__ import annotations
+
 import hashlib
 import math
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import torch
 
@@ -15,11 +17,14 @@ from tiny_llm.packed_optimizer import PackedAdamW
 from tiny_llm.runtime import atomic_checkpoint, preserve_rng
 from tiny_llm.state import TorchState, TrainingState
 
+if TYPE_CHECKING:
+    from tiny_llm.gh200.optimizer import ArenaAdamW
+
 RETENTION_FIELDS = {"checkpoint_policy", "checkpoint_epochs", "save_epoch_training_state"}
 POSITION_FIELDS = ("recipe_identity", "cursor", "step", "completed_epochs")
 
 
-def compact_cpu(value):
+def compact_cpu(value: Any) -> Any:
     if isinstance(value, torch.Tensor):
         return value.detach().to("cpu").clone(memory_format=torch.contiguous_format)
     if isinstance(value, dict):
@@ -40,15 +45,15 @@ def save_epoch_checkpoint(
     path: Path,
     state: TrainingState,
     model: Llama | PackedLlama,
-    optimizer: torch.optim.AdamW | PackedAdamW,
+    optimizer: torch.optim.AdamW | PackedAdamW | ArenaAdamW,
 ) -> None:
     """Publish the root last; an interrupted uncommitted epoch may be rewritten."""
     path = Path(path)
     require_new_epoch(path)
-    if not isinstance(model, PackedLlama):
+    if state["version"] == 2:
         atomic_checkpoint(path, state)
         return
-    assert isinstance(optimizer, PackedAdamW)
+    assert isinstance(model, PackedLlama) and not isinstance(optimizer, torch.optim.AdamW)
     shared: dict[str, Any] = {
         key: value
         for key, value in state.items()
@@ -56,11 +61,7 @@ def save_epoch_checkpoint(
     }
     shared.update(version=4, kind="packed_epoch", num_workers=model.num_models, workers=[])
     position = {key: state[key] for key in POSITION_FIELDS}
-    names = [entry.name for entry in model.layout]
-    for worker, (local_optimizer, parameters) in enumerate(
-        zip(optimizer.optimizers, optimizer.local_parameters, strict=True)
-    ):
-        name_by_id = {id(p): name for name, p in zip(names, parameters, strict=True)}
+    for worker in range(model.num_models):
         local = dict(
             version=1,
             kind="packed_worker",
@@ -69,16 +70,7 @@ def save_epoch_checkpoint(
             model_config=state["config"]["model"],
             **position,
             model=model.local_state_dict(worker),
-            optimizer=dict(
-                state={
-                    name: local_optimizer.state[p]
-                    for name, p in zip(names, parameters, strict=True)
-                },
-                param_groups=[
-                    {**group, "params": [name_by_id[id(p)] for p in group["params"]]}
-                    for group in local_optimizer.param_groups
-                ],
-            ),
+            optimizer=optimizer.local_state_dict(worker),
         )
         relative = Path(f"node-{worker:03d}") / path.name
         destination = path.parent / relative

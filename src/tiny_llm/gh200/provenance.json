@@ -1,0 +1,12 @@
+{
+  "source": "/home/zesen/repo/small-batch/vendor/tiny_llm_gh200",
+  "upstream_revision": "c15f3d916bd75f9fa6ed9eae3b795044592f6f87",
+  "original_sha256": {
+    "kernels.py": "9b38d613cb5fcd48d4477609a6c52f5d76a80bc75ea3df9bff5436223174b274",
+    "gh200_fusions.py": "770442138e30796fb3429323b1202b1f3d150d83eccc7d0e2680f32b963f7aff",
+    "gh200_pipeline.py": "326fab520c3c7647a17846cfac31929b4445fc457ea7a63daaa2f405831f5cae",
+    "gh200_swiglu.py": "18980b3ac746079812ea2676d0ed43643d7c107a04adeca3d3ca642848dce383",
+    "gh200_rope.py": "527d4b66bdb225241dfd1df2ad9d9e5a9186c92c2038d8d05a234c1c2eb86be0"
+  },
+  "adaptations": "Replica-indexed normalization; 50M dimensions. See model.py, optimizer.py and engine.py for production integration."
+}

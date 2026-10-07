@@ -19,6 +19,8 @@ def test_strict_overrides(tmp_path: Path):
     config = load_config(path, ["optimizer.lr=0.003", "runtime.deterministic=false"])
     assert config.optimizer.lr == 0.003
     assert config.runtime.deterministic is False
+    assert config.runtime.training_backend == "gh200"
+    assert load_config(path, ["runtime.training_backend=native"]).runtime.training_backend == "native"
     with pytest.raises(ValidationError):
         load_config(path, ["optimizer.learning_rate=0.1"])
     with pytest.raises(ValidationError):
@@ -67,6 +69,9 @@ def test_preparation_defaults_and_presets():
         assert config.data.shuffle_buffer == 100_000
         assert config.data.prepare_workers == 8
         assert config.data.tokenize_batch_size == 256
+    for path in directory.glob("*.yaml"):
+        expected_backend = "native" if path.name == "smoke.yaml" else "gh200"
+        assert load_config(path).runtime.training_backend == expected_backend
     config = load_config(directory / "20m.yaml", ["data.prepare_workers=3"])
     assert config.data.prepare_workers == 3
     assert Config.model_validate(config.model_dump()).data.prepare_workers == 3

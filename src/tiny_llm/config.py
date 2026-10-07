@@ -141,6 +141,7 @@ class EvaluationConfig(StrictModel):
 
 
 class RuntimeConfig(StrictModel):
+    training_backend: Literal["native", "gh200"] = "gh200"
     seed: int = Field(default=42, ge=0, lt=2**32)
     deterministic: bool = False
     device: str = "cuda:0"
