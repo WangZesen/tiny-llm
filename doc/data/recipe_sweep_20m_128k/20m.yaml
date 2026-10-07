@@ -1,0 +1,55 @@
+model:
+  vocab_size: 32000
+  layers: 8
+  width: 320
+  heads: 5
+  ffn_width: 896
+  context_length: 1024
+  rope_theta: 10000.0
+  norm_eps: 1.0e-05
+  init_std: 0.02
+data:
+  cache_dir: data/c4
+  dataset: allenai/c4
+  revision: 1588ec454efa1a09f29cd18ddd04fe05fc8653a2
+  tokenizer: TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T
+  tokenizer_revision: 59f6f375b26bde864a6ca194a9a3044570490064
+  shuffle_seed: 42
+  shuffle_buffer: 100000
+  shuffle_group_size: 2
+  prefetch: true
+  shard_tokens: 33554432
+  tokenize_batch_size: 256
+  prepare_workers: 8
+  prepare_train_tokens: null
+  prepare_validation_tokens: null
+optimizer:
+  lr: 0.0056
+  beta1: 0.9
+  beta2: 0.98
+  eps: 1.0e-08
+  weight_decay: 0.1
+  grad_clip: 1.0
+training:
+  tokens_per_parameters: 20.0
+  epoch_tokens_per_parameters: 0.5
+  batch_tokens: 131072
+  micro_batch_size: 128
+  checkpoint_policy: final
+  log_every: 20
+evaluation:
+  subset_blocks: 1024
+  batch_size: 128
+  seed: 12345
+runtime:
+  seed: 42
+  deterministic: false
+  device: cuda:0
+  amp: true
+  compile: true
+  compile_mode: default
+  sdpa_backend: auto
+  fused_optimizer: true
+  attention_backend: sdpa
+  output_dir: runs/20m
+  cpu_threads: 8

@@ -481,7 +481,9 @@ export default function Explorer({ studies }: { studies: Study[] }) {
             <button onClick={() => download('csv')}>Download filtered CSV</button>
             <button onClick={() => download('json')}>Download filtered JSON</button>
             <a href={asset(`data/${study.directory}/runs.csv`)}>All seed records ↗</a>
-            {study.preset && <a href={asset(`configs/${study.preset}`)}>Selected preset ↗</a>}
+            {study.preset && (
+              <a href={asset(`data/${study.directory}/${study.preset}`)}>Selected preset ↗</a>
+            )}
           </div>
           <div className="table-wrap">
             <table aria-label="Configuration rankings">

@@ -151,6 +151,15 @@ use `npm --prefix site run preview` to inspect it. Website builds validate
 committed publication checksums and statistics using Node, without Python or
 campaign access. Generated data, copied assets, and build outputs are ignored by Git.
 
+### Historical study presets
+
+The historical cosine explorer validates and downloads each study's selected
+recipe from its own directory under `doc/data/`. The `preset` field in
+`doc/data/studies.json` names that local YAML snapshot. These four snapshots
+preserve the presets from commit `c15f3d9`, before the GH200 integration changed
+the active packed-8 recipe. Their optimizer settings remain checked against the
+recorded winners; files under `configs/` can evolve independently.
+
 ## Validation
 
 ```bash

@@ -7,6 +7,7 @@ export interface RegistryEntry {
   scheme: string;
   clip: number | null;
   color: string;
+  /** Archived recipe filename relative to this study's data directory. */
   preset: string | null;
   runs: number;
   configurations: number;

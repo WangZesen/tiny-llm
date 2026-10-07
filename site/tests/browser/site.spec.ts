@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { parse } from 'yaml';
 test('home, math, theme, archive and local search', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -57,6 +58,21 @@ test('filters, sorting, inspection, curves, downloads, URL restoration', async (
     await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2),
   ).toBeTruthy();
   expect(errors).toEqual([]);
+});
+test('archived study downloads its measured preset', async ({ page }) => {
+  await page.goto('explorer/?study=awc8');
+  const preset = page.getByRole('link', { name: 'Selected preset' });
+  await expect(preset).toHaveAttribute(
+    'href',
+    '/tiny-llm/assets/data/recipe_sweep_packed8_awc_20m_128k/packed8-20m-awc.yaml',
+  );
+  const response = await page.request.get((await preset.getAttribute('href'))!);
+  expect(response.ok()).toBeTruthy();
+  expect(parse(await response.text()).optimizer).toMatchObject({
+    lr: 0.0056,
+    beta1: 0.95,
+    beta2: 0.999,
+  });
 });
 test('missing curves remain explicit and selection is capped at four', async ({ page }) => {
   await page.goto('explorer/?study=awc4&selected=awc4--0.008--0.95--0.98');

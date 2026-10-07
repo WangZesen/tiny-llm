@@ -105,7 +105,7 @@ export function loadStudies(requireCurves = true): Study[] {
     near(winner.mean, raw.winner.mean_loss);
     for (const k of ['lr', 'beta2'] as const) assert.equal(winner[k], raw.winner[k]);
     if (entry.preset) {
-      const preset = parse(readFileSync(path.join(root, 'configs', entry.preset), 'utf8'));
+      const preset = parse(readFileSync(path.join(dataRoot, entry.directory, entry.preset), 'utf8'));
       for (const k of ['lr', 'beta1', 'beta2'] as const)
         near(preset.optimizer[k] ?? 0.9, winner[k]);
       assert.equal(preset.training.batch_tokens, protocol.batch_tokens);
