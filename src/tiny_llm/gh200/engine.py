@@ -7,7 +7,7 @@ import time
 import torch
 
 from tiny_llm.checkpoints import compact_cpu
-from tiny_llm.config import Config
+from tiny_llm.config import PRESETS, Config
 from tiny_llm.runtime import preserve_rng
 
 from .loss import local_cross_entropy
@@ -25,8 +25,11 @@ class GH200Update:
                 or not runtime.compile):
             raise ValueError("GH200 training requires compiled BF16 SDPA and nondeterministic execution")
         geometry = (config.model.width, config.model.heads, config.model.ffn_width)
-        if geometry not in ((320, 5, 896), (512, 8, 1408), (640, 10, 1792)):
-            raise ValueError("GH200 training supports the 20M, 50M and 90M model widths")
+        if geometry not in {
+            (preset["width"], preset["heads"], preset["ffn_width"])
+            for preset in PRESETS.values()
+        }:
+            raise ValueError("GH200 training requires a supported preset's model widths")
         self.config, self.device = config, device
         self.workers = config.decentralized.num_models if config.decentralized else 1
         self.model = GH200Model(config.model, self.workers, device)

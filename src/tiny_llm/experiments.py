@@ -211,7 +211,8 @@ def report(root: Path):
 
     rows = []
     fig, axes = plt.subplots(1, 3, figsize=(16, 4), constrained_layout=True)
-    for preset, ax in zip(PRESETS, axes, strict=True):
+    # This report belongs to the fixed, three-size optimizer-tuning campaign.
+    for preset, ax in zip(("20m", "50m", "90m"), axes, strict=True):
         completed = []
         for directory in sorted(root.glob(f"{preset}-*")):
             metrics = directory / "metrics.jsonl"

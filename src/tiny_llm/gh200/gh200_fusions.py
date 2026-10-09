@@ -211,10 +211,10 @@ def _validate_inputs(branch, residual, weight, rows):
     if (
         branch.ndim < 2
         or branch.numel() == 0
-        or branch.shape[-1] not in (320, 512, 640)
+        or branch.shape[-1] not in (320, 512, 640, 960, 1280)
         or not branch.is_contiguous()
     ):
-        raise ValueError("GH200 fusion requires contiguous inputs of width 320, 512 or 640")
+        raise ValueError("GH200 fusion requires contiguous inputs of width 320/512/640/960/1280")
     expected = (branch.shape[-1],) if weight.ndim == 1 else (branch.shape[0], branch.shape[-1])
     if tuple(weight.shape) != expected or weight.dtype != torch.float32:
         raise ValueError("RMSNorm weight must be FP32 with the input width")
@@ -234,7 +234,7 @@ def _validate_inputs(branch, residual, weight, rows):
 def residual_norm(branch, residual, weight, eps=1e-5, *, rows=4):
     """Return (FP32 residual sum, BF16 weighted RMSNorm) with a fused VJP.
 
-    Intended for first-order training of the fixed 320/640-wide configurations.
+    Intended for first-order training of the supported model presets.
     The BF16 result must replace a normalization immediately followed by a BF16
     autocast linear operation, not a general FP32 RMSNorm output.
     """

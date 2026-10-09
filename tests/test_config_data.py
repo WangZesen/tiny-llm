@@ -94,7 +94,9 @@ def test_prepare_workers_do_not_change_recipe_or_cache(cache_dir: Path, tiny_con
 
 
 @pytest.mark.parametrize(
-    "preset,expected", [("20m", 20403520), ("50m", 48507392), ("90m", 91605120)]
+    "preset,expected",
+    [("20m", 20403520), ("50m", 48507392), ("90m", 91605120),
+     ("250m", 251943360), ("500m", 516814080)],
 )
 def test_parameters_and_epochs(preset, expected):
     config = Config(model=ModelConfig(**PRESETS[preset]))

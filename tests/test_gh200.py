@@ -37,7 +37,8 @@ def test_fused_views_preserve_canonical_layout_initialization_and_rng(workers):
 
 
 @pytest.mark.cuda
-@pytest.mark.parametrize("width,heads,ffn", [(320, 5, 896), (512, 8, 1408), (640, 10, 1792)])
+@pytest.mark.parametrize("width,heads,ffn", [(320, 5, 896), (512, 8, 1408), (640, 10, 1792),
+                                            (960, 15, 2560), (1280, 20, 3456)])
 @pytest.mark.parametrize("workers", [1, 4])
 def test_gh200_model_and_gradients_against_compiled_native(width, heads, ffn, workers):
     from tiny_llm.gh200.loss import local_cross_entropy

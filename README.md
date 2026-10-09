@@ -105,5 +105,15 @@ from the same 1,188 cosine runs. Steady training throughput, elapsed training
 throughput, evaluation time, session duration, and peak memory have distinct
 measurement boundaries. All packed workers execute on one GH200.
 
+[Synthetic batch-throughput sweeps](doc/guides/throughput.md) measure complete
+updates at contexts 512/1024/2048/4096, doubling batch size until CUDA OOM. Each
+point uses one GH200 in a 14-minute job. Reusable 250M and 500M architecture
+presets extend the existing model family; their optimizer recipes are not tuned.
+The [optimizer timing follow-up](doc/guides/throughput.md#optimizer-time-within-each-update)
+measures optimizer milliseconds and its share of each full iteration using
+events inside the captured update and a paired baseline.
+The [combined report](runs/gh200-training-cost-c512-4096-20261009/README.md) adds training-time
+estimates at 20 tokens per parameter, relative costs, and publication-ready figures.
+
 [Historical archive](https://wangzesen.github.io/tiny-llm/archive/) ·
 [Development and publication maintenance](doc/guides/website.md)

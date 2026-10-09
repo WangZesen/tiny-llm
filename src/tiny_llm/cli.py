@@ -69,6 +69,7 @@ def build_parser() -> argparse.ArgumentParser:
         "evaluate",
         "benchmark",
         "benchmark-worker",
+        "benchmark-throughput-worker",
         "benchmark-packed",
         "benchmark-packed-worker",
         "sweep",
@@ -92,6 +93,12 @@ def build_parser() -> argparse.ArgumentParser:
             _add_benchmark_arguments(child, packed=name.startswith("benchmark-packed"))
         if name == "benchmark-packed":
             child.add_argument("--num-models", type=int, nargs="+", default=[4, 8])
+        if name == "benchmark-throughput-worker":
+            child.add_argument("--output", required=True, type=Path)
+            child.add_argument("--warmup", type=int, default=20)
+            child.add_argument("--windows", type=int, default=5)
+            child.add_argument("--window-seconds", type=float, default=10.0)
+            child.add_argument("--optimizer-timing", action="store_true")
         if name == "benchmark-packed-worker":
             child.add_argument("--execution", choices=("packed", "sequential"), required=True)
         if name == "benchmark":
@@ -218,6 +225,17 @@ def dispatch(args: argparse.Namespace, config: Config, parser: argparse.Argument
                         windows=args.windows,
                         profile=args.profile,
                     )
+        case "benchmark-throughput-worker":
+            from tiny_llm.throughput import benchmark_throughput
+
+            result = benchmark_throughput(
+                config, args.output, warmup=args.warmup, windows=args.windows,
+                window_seconds=args.window_seconds,
+                **({"optimizer_timing": True} if args.optimizer_timing else {}),
+            )
+            print(json.dumps(result, indent=2))
+            if result["status"] not in ("ok", "cuda_oom"):
+                raise SystemExit(1)
         case "benchmark-worker":
             from tiny_llm.benchmark import benchmark_worker
 
